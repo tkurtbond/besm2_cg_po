@@ -1,0 +1,658 @@
+# PLAN.md - a BESM 2nd Edition Revised character generator in Oberon-2, with poc
+
+`besm2_cg_po` builds a character for *Big Eyes, Small Mouth* 2nd
+Edition Revised (BESM2ER) in a window: the user sets Body, Mind and
+Soul, picks Attributes, Defects and Skills by name and level, builds
+Weapon Attacks from their Abilities and Disabilities, and the program
+works out every cost and derived value (ACV, DCV, HP, EP, SV, and the
+rest) and keeps the running totals of Character Points, Bonus Points
+and Skill Points as the character changes. It holds no rules text:
+every name it shows carries its rulebook page, both the page printed
+in the book and the PDF's page, and **?** opens the rulebook's PDF at
+that page. It saves and loads YAML in besm2_fmt's format, extended as
+"A4. The YAML extensions" decides, so pobesm2_fmt2, the Oberon-2 and
+Ada `besm2_fmt`s and `besm2-rst` print what it makes.
+
+Beside it, in this repository, is **`besm2_calc_po`** (name to be
+confirmed), a command-line program that reads the same YAML, does the
+same calculations with the same modules, and checks, fills in or
+formats a character ("A3. Where the calculations live").
+
+Both are written in Oberon-2 for poc (Peaseblossom,
+`~/Repos/Oberon/Peaseblossom/`), with polibfyaml
+(`~/Repos/Oberon/polibfyaml/`) for YAML, Ropes
+(`~/Repos/Oberon/Ropes/`) for text and ArgParser for the command line;
+the generator also uses pofltk (FLTK 1.4, `~/Repos/Oberon/pofltk/`)
+for its window. Their design, build and tests follow `ova_cg_po`
+(`~/Repos/RPG/Tools/ova_cg_po/`), the OVA generator, which solves the
+same problems (pages beside names, the viewer, overrides, saving
+through polibfyaml's emitter, window tests on Xvfb and sway) for
+another game; the loader and formatter code is copied from
+pobesm2_fmt2 (`~/Repos/RPG/Tools/pobesm2_fmt2/`), as ova_cg_po copies
+ova_fmt_po's.
+
+The plan has two parts: **Part A**, the analysis, whose findings are
+recorded back into this file before Part B uses them; and **Part B**,
+building the programs, in phases, each ending with tests that pass and
+a note here marking it `[done]`.
+
+## What exists
+
+| Program | Where | Language, YAML | Notes |
+|---|---|---|---|
+| `besm2-rst.scm` | `~/current/RPG/Tools/BESM/` | Chicken 5, yaml egg | the original; copied from `besm4-rst.scm` and cut down, so some 4E shapes remain (`enhancements`, `limiters`) |
+| `besm2-rst-f.scm` | same | Chicken 5, slibfyaml | reads every document of a file |
+| `besm2-rst-e.scm` | same, with `besm-entities.scm` | Chicken 5, yaml egg | entities parsed once into records |
+| `besm2-rst-f-e.scm` | same | Chicken 5, slibfyaml | `-f` plus `-e` |
+| `besm2_fmt` | `~/Repos/RPG/Tools/besm2_fmt/` | Ada, alibfyaml | **the reference** for golden output; its `QUIRKS.md`, `SOURCE-COMPARISON.md` and PLAN.md list deliberate departures from besm2-rst |
+| `obesm2_fmt` | `~/Repos/RPG/Tools/obesm2_fmt/` | voc, olibfyaml | Oberon-2 port of the Ada; `ADA-DIFFERENCES.md` |
+| `obesm2_fmt2` | `~/Repos/RPG/Tools/obesm2_fmt2/` | voc, olibfyaml, Ropes | strings as ropes |
+| `pobesm2_fmt2` | `~/Repos/RPG/Tools/pobesm2_fmt2/` | poc, polibfyaml, Ropes | `Besm2Entities`, `Besm2Out`, `Besm2Text`, the four formatters: the code both new programs reuse |
+| `ova_cg_po` | `~/Repos/RPG/Tools/ova_cg_po/` | poc, polibfyaml, pofltk | the model for the generator: modules, viewer, tests |
+
+### The rulebook and its pages
+
+The rulebook is `~/Reference/RPG/Dyskami/BESM/2E/BESM2ER_bookmarked.pdf`
+(210 PDF pages, 432 x 648 pt), with text in `BESM2ER-nolayout.text`
+and `BESM2ER-layout.text` beside it.
+
+- **The PDF has no `/PageLabels`** (`qpdf --json=2
+  --json-key=pagelabels` gives `[]`), so a viewer's page box shows the
+  PDF page only.
+- **The PDF page is the printed page + 2** (PDF page 5 prints 3, 20
+  prints 18, 100 prints 98; A2 checks it throughout).
+- **Both are always shown** (the user, 2026-11-06): wherever the
+  program gives an item's page it gives the page printed in the book,
+  for a paper copy or the book's own index and cross-references, and
+  the PDF page, for the viewer's page box and its "go to page":
+  `Highly Skilled (p. 42, PDF 44)`. See "Pages beside names".
+- A viewer is always sent the PDF page (index); evince's
+  `--page-label` can't be used, unlike in ova_cg_po, since there are no
+  labels.
+
+Contents (printed pages): Character Creation 11 (Summary 12, GM
+Discussion 13, Character Outline 14, Stats 15, Attributes 16,
+Mecha-Only Attributes 93, Defects 100, Mecha-Only Defects 114, Skill
+System 117, Derived Values 129, Background Points 130); Game Mechanics
+132 (Weaponry and Equipment 149, Expanded Combat 156-161, Staged Stat
+Cost 166); Reference Section 192; Index 196; Character Sheets 202.
+
+### The YAML today
+
+From the fixtures (`besm2_fmt/test/data/`, `~/current/RPG/Tools/BESM/test-data/`):
+a file is one or more documents, each a sequence of entities
+(characters, templates, mecha, items). An entity has `name`,
+`tagline`, `size`, `description`, `mecha`, `stats` (`{name, value,
+points}`), `derived` (`{name, value, alternatives}`), `attributes`
+(`{name, level, points, effective, details, elements, enhancements,
+limiters}`), `defects` (`{name, points, details}`) and `skills`
+(`{name, level, points, specialisations}`). `composite-2e.yaml` also
+has keys no program knows (`bogus:`, `page:`), which suggests unknown
+keys are ignored; A1 confirms it for every program.
+
+**Every cost is written by hand**: the formatters total `points`,
+they compute nothing. And the generator needs things that are only
+in free text today:
+
+- a Weapon Attack's damage, Abilities and Disabilities are in
+  `details` (`Damage 45, Auto-fire, Area Effect, Limited Shots ×2 [3
+  shots], Stoppable`);
+- whether a Weapon Attack is the primary attack (4 points a level) or
+  a secondary one (2 points at the primary's level, 1 below it, p. 82
+  "Alternate Attacks"; the Coleopteran's Railgun 3 costs 12, its
+  Plasma Fist 2 and Rocket Pod 2 cost 1 each) is only in the points;
+- a Defect's rank is only its `points` (`-2`), with no `level`;
+- what an Attribute or Defect is about is packed into its name
+  (`"Own a Big Mecha: FV2021 Coleopteran"`, `"Weapon: Railgun"`,
+  `"Unique Defect: Obsessed by Military History"`), and the name is
+  sometimes abbreviated (`Weapon` for Weapon Attack);
+- the link from Own a Big Mecha to the mecha entity in the same file
+  is by that packed name, by eye;
+- nothing records the campaign's Character Points, Background Points,
+  the Skill Points, the genre that sets Skill costs, or the optional
+  rules in use.
+
+## Part A - Analysis
+
+Each step ends by writing its findings into "Findings" below (or into
+a section of its own if large), with the pages and the date, so Part B
+works from this file, not from memory. Scratch scripts go in
+`tools/` if they are to be kept (as ova_cg_po's
+`tools/rulebook-headings.py`), else the scratchpad.
+
+### A1. The existing programs
+
+Goal: one description of what a BESM2ER YAML file *means* today, and
+which program is right where they disagree.
+
+1. Read `besm2-rst.scm` and `besm-entities.scm` (the entity records of
+   the `-e` variants), and diff `besm2-rst.scm` against `-f`, `-e`,
+   `-f-e`, to list every key each reads, whether it is required, and
+   how it is shown. Confirm the four variants agree but for the
+   multi-document reading the README describes.
+2. Read besm2_fmt's PLAN.md (sections 6, 9, the open questions),
+   `QUIRKS.md`, `SOURCE-COMPARISON.md`; obesm2_fmt's
+   `ADA-DIFFERENCES.md`; pobesm2_fmt2's README and PLAN.md. Make one
+   table of the known departures (byte vs. character underlines,
+   case folding, empty `effective`, empty lists, multi-document files,
+   U+2212 minus) and which side the new programs take: **besm2_fmt's**,
+   since it is the golden reference, unless the user says otherwise.
+3. Write down the schema as `besm2_fmt` accepts it: each key, its
+   type, required or not, and **what each of the eight programs does
+   with an unknown key** (ignored, or an error), and with a known key
+   of an unexpected shape. That decides whether a file with the new
+   keys of A4 can be given to a formatter not yet taught them.
+4. Run all the formatters over every fixture (the existing `make
+   compare` targets in each repo) and confirm they still agree, so the
+   baseline is known before anything changes.
+5. Note which pobesm2_fmt2 modules the new programs can copy unchanged
+   (`Besm2Entities`, `Besm2Out`, `Besm2Text`, `Besm2Config`, the
+   formatters) and what each depends on, and the module names that
+   would clash (pobesm2_fmt2 already has `Besm2Cli` and `Besm2Fmt`).
+6. Measure how the formatters are built to grow: what it took to add
+   the last key to all of them (git history), as evidence for A3.
+
+### A2. The rules
+
+Goal: every rule the programs compute, each with its page, and every
+item they list, each with its page, checked against the PDF. Only
+names, numbers and page numbers go into the programs or this file; no
+descriptions.
+
+1. **Page offset.** Confirm PDF = printed + 2 throughout (several
+   pages in each chapter, and the reference pages), and note any
+   unnumbered plates that would shift it. If it shifts anywhere, the
+   tables hold both numbers rather than computing one from the other.
+2. **Character creation** (pp. 11-16, 129-131): starting Character
+   Points by power level (p. 13), the Stat limits (1-12, the points
+   allotted to Stats, p. 15), Attribute levels (1-6, and above 6),
+   the Bonus Points from Defects, Background Points (p. 130), Skill
+   Points (20, plus Highly Skilled, less Unskilled, p. 117), and how
+   the GM's limits (a ceiling on Stats, on Attribute levels, on Bonus
+   Points) are stated.
+3. **Stats and derived values** (p. 15, 129): Body/Mind/Soul cost;
+   ACV, DCV, HP, EP, SV, and how Attributes and Defects change them
+   (Combat Mastery, Defence Mastery, Massive Damage, Damn Healthy!,
+   Energy Bonus, Armour, Toughness, Extra Attacks, Size, ...); the
+   `alternatives` (hand-to-hand vs. ranged ACV with Skills). Work
+   every derived value of every fixture character by hand, as
+   ova_cg_po did with OVA's samples, and list any the rules don't
+   reproduce.
+4. **Attributes** (pp. 16-99, Mecha-Only 93-99): for each, its name,
+   printed and PDF page, cost per level (fixed, or variable), level
+   range, whether it takes a subject (Own a Big Mecha's mecha, Weapon
+   Attack's name, Unique Attribute's), whether it is mecha-only,
+   whether it grants other points (Highly Skilled: Skill Points; Own a
+   Big Mecha: Mecha Points; Item of Power, Companion, Servant, ...),
+   and what derived values it changes. Also the Attributes with
+   sub-choices (Elemental Control's elements, Features, Sixth Sense,
+   Combat Technique, ...), and the abbreviations the existing files use
+   (`Weapon`), to keep as aliases.
+5. **Weapon Attack** (p. 81) and its **Abilities** (from p. 83) and
+   **Disabilities** (from p. 89): the base damage (15 a level), each
+   Ability's and Disability's name, pages, its effect on damage (each
+   -15 or +15, per the example on p. 92), how many times it may be
+   taken, what its detail is (Limited Shots' `[3 shots]`), and which
+   exclude each other; the primary and secondary attack costs
+   ("Alternate Attacks", p. 82); and the Expanded Combat rules (pp.
+   156-161) if they change any of it. This is the BESM2 analogue of
+   OVA's Perks and Flaws.
+6. **Defects** (pp. 100-116, Mecha-Only 114-116): name, pages, the
+   Bonus Points per rank (1, 2, 3, and any with other scales),
+   subject, mecha-only, and the Defects that remove points elsewhere
+   (Unskilled).
+7. **Skills** (pp. 117-128): each Skill's name, pages, its cost per
+   level **by genre** (the Skill cost table), its specialisations
+   and their rule, and which Stat it is used with. Record the genres
+   the table has.
+8. **Mecha** (Own a Big Mecha, Mecha Points, Mecha-Only Attributes
+   and Defects, Size): how a mecha's points come from its owner's
+   Attribute, so the programs can check a mecha entity against its
+   owner.
+9. **Staged Stat Cost and other options** (p. 166, and any optional
+   rule in chapters 2 and 4 that changes costs): which the programs
+   offer, like ova_cg_po's Character > Limits.
+10. **Errata**: `besm-2nd-rev-errata.ms.pdf` beside the rulebook:
+    apply each erratum that changes a cost, page or rule, and say so.
+11. **Every page by machine**: as ova_cg_po's
+    `tools/rulebook-headings.py` did, find each entry's heading in the
+    PDF by its font, and compare with the tables (`make
+    check-pages`); then check a sample by eye. Record the counts of
+    Attributes, Defects, Skills, Abilities and Disabilities.
+
+### A3. Where the calculations live (decided, 2026-11-06)
+
+Two ways to have every number computed:
+
+**(a) Change the eight existing formatters** (four Scheme, the Ada,
+three Oberon-2) so each computes the costs and derived values.
+
+- Every rule table and every calculation (A2: some hundreds of
+  items, the genre Skill table, the derived values, mecha points,
+  Weapon Attack damage) written eight times in four languages, and
+  kept byte-for-byte in agreement, as AGENTS.md requires of them. The
+  tables are the larger and harder part of the work, and the part most
+  likely to be revised (errata, a misread page), so every correction
+  is also made eight times.
+- The formatters format more than BESM2ER characters: templates,
+  items, mecha, and entries from other books (the Coleopteran is
+  `BRCS, p. 94=95`) whose Attributes aren't in this rulebook's tables.
+  For those they would still have to print the written numbers, so
+  they would need both behaviours, and a rule for which applies.
+- A formatter that silently changes a number the user wrote changes
+  their sheet; one that only warns is a checker, not a formatter.
+- Their golden tests and the byte-for-byte comparisons between them
+  stay as they are only if computing is off by default, which leaves
+  most of the work unused by the formatting they exist for.
+
+**(b) Keep the formatters as formatters, and compute in one place.**
+The formatters keep printing what the file says. The calculations
+live once, in Oberon-2 modules with no window (`Besm2Rules`,
+`Besm2Calc`, `Besm2Character`, `Besm2Save`), used by two programs in
+this repository:
+
+- `besm2_cg_po`, the window, which **writes every number into the
+  file it saves** (the one in effect: the computed one, or the user's
+  override), so any formatter prints a generated character correctly
+  without computing anything;
+- `besm2_calc_po`, a command-line program for files made or changed
+  by hand or by other tools:
+  - `--check`: compare every number in the file with the computed
+    one; list the differences (with item, printed and PDF page) on
+    standard error; exit status 1 if there are any;
+  - `--fill` (`-o FILE`, or in place with a backup): write the file
+    back with every number computed, keeping a listed override
+    (`overrides:`); the same `Besm2Save` the generator uses, so the
+    two write identical YAML;
+  - `--upgrade`: turn the free text of "The YAML today" into the keys
+    of A4 where it can (split `Name: subject`, parse a Weapon Attack's
+    `details` in the book's notation, give a Defect its level from its
+    points, expand aliases), and report what it couldn't parse;
+  - the formatting options of besm2_fmt (`-t`, `-m`, `-H`, ...),
+    through pobesm2_fmt2's formatters, copied: the character is
+    computed first and formatted after. For a file whose numbers agree
+    with the rules, the output is byte-for-byte pobesm2_fmt2's (a
+    test).
+
+The formatters then change only to **print** the new keys (A4), which
+is formatting, the kind of change they are built for.
+
+**Decided: (b).** One implementation of the rules, tested once, shared
+by the window and the command line; the formatters keep their
+contract ("print what the file says") and their agreement with each
+other; and the work on them is limited to printing a few new keys.
+`besm2_calc_po` is also the way to bring the existing hand-written
+files up to the new keys and check them. The shared modules import no
+pofltk, so the command-line program doesn't link FLTK.
+
+Whether the shared modules later move to a library of their own
+(with ova_cg_po's viewer, spawn and path modules, open question 3) is
+left until both programs work.
+
+### A4. The YAML extensions (decided, 2026-11-06)
+
+Rules for every new key:
+
+- **Optional**, so every existing file loads and formats exactly as
+  before; nothing existing changes meaning.
+- **A computed number stays where it is today** (`points`, `value`),
+  written by the generator and `--fill`, so formatters never compute.
+- **Structured keys replace free text only when present**: a file
+  with the old free text still formats as before.
+- Names are the rulebook's names, so they can be found in
+  `Besm2Rules`; the old abbreviations are aliases on loading.
+
+#### What an item is about: `subject`
+
+On an attribute or defect, `subject` holds what was after the `:` in
+the packed name, and `name` holds the rulebook's name alone:
+
+```yaml
+- name: Own a Big Mecha
+  subject: FV2021 Coleopteran
+  level: 2
+  points: 8
+```
+
+Formatters print `name: subject`, which is exactly today's packed
+name, so an `--upgrade`d file prints byte-for-byte as before (a
+test). Used by Own a Big Mecha, Weapon Attack, Item of Power,
+Companion, Unique Attribute, Unique Defect, Conditional Ownership, and
+whatever A2 finds takes one. (`description` was the name besm-tools'
+`todo.org` proposed, but the entity already has a `description` of
+another meaning, so `subject` it is.)
+
+#### Defects: `level`
+
+```yaml
+- name: Awkward Size
+  level: 2
+  points: -2
+  details: Huge (1-10 tonnes)
+```
+
+`level` is the Defect's rank (1-3, or what A2 finds); `points` stays,
+computed from it. Formatters keep printing the Bonus Points from
+`points`, so `level` changes nothing they print.
+
+#### Weapon Attacks: `damage`, `abilities`, `disabilities`, `primary`
+
+```yaml
+- name: Weapon Attack
+  subject: Plasma Buster Missiles
+  level: 3
+  points: 12
+  damage: 60
+  abilities: [Area Effect, Homing, Long Range]
+  disabilities:
+    - name: Limited Shots
+      counts-as: 2
+      detail: 3 shots
+    - Slow
+    - Stoppable
+```
+
+- `abilities` and `disabilities`: each item a name, or a mapping of
+  `name`, `counts-as` (the times taken, the same key ova_fmt uses for
+  repeated Perks and Flaws and besm2_fmt for enhancement counts) and
+  `detail`.
+- `damage`: computed (15 a level, less 15 for each Ability, more 15 for
+  each Disability, counting repeats; A2 confirms there are no
+  exceptions), written like `points`.
+- `primary: true`: marks the primary attack, 4 points a level; the
+  others are secondary (2 points at the primary's level, 1 below it).
+  When no attack says `primary`, the first of the highest level is the
+  primary, which is also the cheapest choice, so the key is needed only
+  when the user wants otherwise. It is computed and written only when
+  an entity has more than one Weapon Attack.
+- Formatters print these as the book records an attack (p. 92):
+  the Abilities, then the Disabilities, a repeat as `×2` (`x2` in
+  ASCII mode) and a detail in brackets, then the damage, then
+  `details` if any: `Weapon Attack 3: Plasma Buster Missiles (Area
+  Effect, Homing, Long Range, Limited Shots ×2 [3 shots], Slow,
+  Stoppable, 60 Damage. 12 CP)`. The existing fixtures write `Damage
+  45` first; an `--upgrade`d one will print in the book's order, a
+  change in output accepted for the structured form only.
+- `enhancements` and `limiters` (the 4E shapes) **stay as they are**,
+  printed as today, for the files that use them; the new programs
+  read them but don't compute with them, and `--upgrade` doesn't
+  convert them (a 4E enhancement's count is not a 2E Ability). Open
+  question 2 asks the user whether they should be deprecated.
+
+#### Mecha
+
+No new key: an Own a Big Mecha's `subject` is the `name` of the mecha
+entity (with `mecha: true`) in the same file, so the programs find it,
+compute its Mecha Points from the owner's level, and check its spending
+against them. A `subject` with no such entity is a notice, not an
+error (the mecha may be in another file). Attributes of a mecha keep
+`points` as today; whether the formatters should say `MP` rather than
+`CP` for a mecha is A1's to find.
+
+#### Character creation: `creation`
+
+On a character entity:
+
+```yaml
+creation:
+  character-points: 40      # the campaign's (p. 13)
+  background-points: 2      # 0-3 (p. 130)
+  genre: Mecha              # one of the Skill table's genres (p. 117)
+  skill-points: 30          # only when the GM's number differs from the rule
+  options:                  # the optional rules in use (A2.9)
+    staged-stat-cost: true
+    stat-ceiling: 10
+    bonus-point-ceiling: 8
+```
+
+Totals that follow from these (points spent, Bonus Points, Skill
+Points left) are not stored: they are computed and shown. Formatters
+ignore `creation` (open question 2 asks whether one should print a
+summary line).
+
+#### Overrides: `overrides`
+
+As in ova_cg_po: any mapping holding a computed number may hold
+`overrides:`, the list of its keys whose number the user typed
+(`overrides: [points]`, `overrides: [damage]`, a derived value's
+`overrides: [value]`). On loading, a listed key's number is the
+override; any other number that disagrees with the rules is kept as an
+override with a notice, never silently replaced. Formatters ignore
+`overrides` (open question 2: or mark an overridden number with `*`,
+as ova_fmt does).
+
+#### Sub-choices
+
+`elements` stays for Elemental Control and the like. If A2.4 finds
+other Attributes whose choices change their cost, they get `choices:`,
+a list of names, printed as `elements` is; otherwise choices stay in
+`details`.
+
+#### Rolling it out
+
+1. A fixture, `test/data/extended-2e.yaml`, with every new key, and
+   the upgraded forms of `composite-2e.yaml` and
+   `enyon-boase-2e.yaml`.
+2. The Ada `besm2_fmt` first: print `subject` and the Weapon Attack
+   keys, ignore the rest, golden files for the new fixture, the old
+   golden files unchanged; then obesm2_fmt, obesm2_fmt2 and
+   pobesm2_fmt2, each byte-for-byte with the Ada; then the four
+   `besm2-rst*.scm` (AGENTS.md: all should produce the same output).
+3. Each repo committed on its own, with the user's go-ahead.
+
+### A5. The sheet and the window
+
+Look at the character sheets (p. 202 and
+`BESM-2E-Character-Sheet-Form-Fillable.pdf`) for what a character
+holds and in what order, and sketch the window's tabs from them
+before Phase 6. Proposed, to be confirmed with the user:
+**Character** (name, tagline, size, the points summary, Stats,
+derived values), **Attributes**, **Defects**, **Skills**, **Mecha**
+(a mecha entity tied to its owner), **Background** (description, the
+Background Points), and a **Preview** tab with pobesm2_fmt2's output
+in each of its formats.
+
+### Findings
+
+(Filled in by A1-A5, with dates.)
+
+- Page offset: PDF = printed + 2 at PDF pages 5, 20, 82-94, 100
+  (2026-11-06). No page labels.
+- **Where the PDFs come from** (the user, 2026-11-06): `BESM2ER.pdf`
+  is the original, and the two `.text` files were made from it.
+  `BESM2ER_bookmarked.pdf` was made from it by another program,
+  combining it with a list of bookmarks (titles and pages) the user
+  typed. That step lost the text layer: `pdftotext` of the bookmarked
+  PDF gives dingbats (its Producer is Ghostscript's ps2write, then
+  iText). Both have 210 pages. So text and font checks
+  (`check-pages`) read `BESM2ER.pdf` or the `.text` files, and the
+  viewer opens the bookmarked one; A2.1 confirms the two paginate alike
+  page by page.
+- **The `.text` files have one form feed per page** (210), so the
+  text of PDF page *n* is the *n*th page of the file: a heading found
+  there gives its PDF page directly.
+- **The bookmarks are a hand-made page index** (`mutool show
+  BESM2ER_bookmarked.pdf outline`): chapters, steps, tables and many
+  single items (Highly Skilled `#page=44`, printed 42; Weapon Attack
+  83; Weapon Attack Abilities 85; Skill System 119), all at printed + 2.
+  Since they were typed, they are a second check, not the authority:
+  A2.11 compares the tables with the headings found by font in
+  `BESM2ER.pdf` and with the bookmarks, and reports a bookmark that
+  disagrees, for the user to fix. One is already broken: "Mecha-Only
+  Defects" has no destination.
+- Weapon Attack: p. 81 (PDF 83); "Alternate Attacks" p. 82 (PDF 84);
+  Abilities from p. 83 (PDF 85); Disabilities from p. 89 (PDF 91); the
+  worked example p. 92 (PDF 94).
+- Secondary Weapon Attacks: 2 points at the primary's level, 1 below
+  it; the primary 4 a level ("Alternate Attacks", p. 82). The
+  Coleopteran's three weapons fit.
+- Weapon Attack damage: 15 a level, -15 per Ability, +15 per
+  Disability (the example on p. 92).
+
+## Part B - Building besm2_cg_po and besm2_calc_po
+
+### The modules
+
+The same layering as ova_cg_po, so what isn't the window is tested
+with no display, and the command-line program is built from it alone:
+
+| Module | Used by | Contents |
+|---|---|---|
+| `Besm2Rules` | both | the tables of A2: every Attribute, Defect, Skill, Weapon Ability and Disability with printed page, PDF page, costs, limits, flags, aliases; the Skill cost table by genre; `Label`, `PageText`, `PdfPage` |
+| `Besm2Calc` | both | every cost, damage, derived value, total and warning; takes overrides as input |
+| `Besm2Character` | both | a character (and its mecha) as records; loading from `Besm2Entities`' entities, the edits, `Recompute` |
+| `Besm2Upgrade` | calc | free text to the keys of A4 |
+| `Besm2Entities`, `Besm2Out`, `Besm2Text`, `Besm2Config`, the formatters | both | pobesm2_fmt2's, copied and kept in step (with the new keys once A4 is rolled out) |
+| `Besm2Save` | both | YAML through polibfyaml's emitter (`NewDocument`, `CreateStyledScalar`, ...), written to `NAME.tmp` then renamed |
+| `Besm2CalcMain` | calc | the command line: `--check`, `--fill`, `--upgrade`, the formatting options |
+| `Besm2Cg` | window | the command line (a file, `--rulebook`, `--viewer`), the display check, then the window |
+| `Besm2Viewer`, `Besm2Spawn` (+ `.c`) | window | ova_cg_po's `OvaViewer` and `OvaSpawn`, adapted: no page labels, so always the PDF page |
+| `Besm2Paths`, `Besm2Settings` | window | as ova_cg_po's |
+| `Besm2Widgets` | window | `NumberBox` (computed number and its override box), `HelpButton` (**?**), `Panel` (a list and its editor) |
+| `Besm2Window`, `Besm2WeaponDialog`, `Besm2MechaPanel`, `Besm2Preview`, ... | window | the window, from A5 |
+
+Names that clash with pobesm2_fmt2's own (`Besm2Cli`, `Besm2Fmt`) are
+renamed in the copy, and the copy says so.
+
+### Points the programs keep
+
+- **Character Points**: the total (`creation.character-points` +
+  `background-points`), spent on Stats and Attributes, plus the Bonus
+  Points the Defects give; shown as spent / available, red when over.
+- **Bonus Points**: from Defects, with the GM's ceiling if set.
+- **Skill Points**: 20 + Highly Skilled's, less Unskilled's (or
+  `creation.skill-points`), spent at the genre's costs.
+- **Mecha Points**: from Own a Big Mecha, spent by the mecha entity.
+
+Every number in the window has an override box, as in ova_cg_po
+("Overriding a computed number"), and a file whose numbers disagree
+with the rules keeps them as overrides with a notice.
+
+### Pages beside names
+
+Wherever a name of a Stat, Attribute, Defect, Skill, Weapon Ability or
+Disability appears (lists, menus, dialogs, warnings, `besm2_calc_po`'s
+messages) **both pages are beside it**, from one procedure,
+`Besm2Rules.Label`, so the format can't differ from place to place:
+
+- in a menu or message: `Highly Skilled (p. 42, PDF 44)`;
+- in a list, a narrow page column: `p. 42, PDF 44`
+  (`Besm2Rules.PageText`);
+- a name not in the tables: `Name (p. ?)` and a warning.
+
+`TestRules` checks every item has both, and that they differ by the
+offset (or by what A2.1 records where it doesn't). The **?** button
+opens the viewer at the PDF page, and its tooltip gives both. The
+saved YAML holds names as the formatters expect them, without pages.
+
+### Build order
+
+0. **Skeleton.** `GNUmakefile` (from ova_cg_po's, building both
+   programs), `README.md`, `test/Check.Mod`, `test/poc-gc.supp`,
+   `tools/with-sway.sh`; a window with File > Quit that opens and
+   quits under Xvfb and sway; `besm2_calc_po -h`; `test/cli.sh` for
+   both (`-h`, bad options, no display for the window).
+1. **`Besm2Rules`.** The tables from A2; `TestRules`: every name
+   present once, both pages for each, each in its section's range,
+   costs as the reference section gives them, the label format; `make
+   check-pages` against the PDF's headings by font. Shown to fail with
+   planted bugs.
+2. **`Besm2Calc`.** Every rule from A2, with `TestCalc` over every
+   fixture character and mecha (each number the file holds compared)
+   and hand-made cases for each rule, each Weapon Ability and
+   Disability, primary and secondary attacks, each limit, and
+   overrides feeding what depends on them.
+3. **The YAML extensions** (A4, "Rolling it out") in the formatters,
+   before either program writes them.
+4. **Files and `besm2_calc_po`.** `Besm2Entities` copied;
+   `Besm2Character.Load`/`LoadAll`; `Besm2Save`; `Besm2Upgrade`;
+   `--check`, `--fill`, `--upgrade`, and formatting. `TestFiles`: each
+   fixture loads, saves and formats through pobesm2_fmt2 the same as
+   the original; upgraded fixtures print as before (but for the
+   Weapon Attacks' order); numbers that disagree become overrides with
+   notices; formatting a file whose numbers agree is byte-for-byte
+   pobesm2_fmt2's.
+5. **The rulebook viewer.** `Besm2Viewer`/`Besm2Spawn` from
+   ova_cg_po (okular over D-Bus, evince, mupdf, xdg-open, a template
+   with `%f` the file and `%p` the PDF page; reusing a running viewer);
+   `TestViewer` with fake viewers, `make test-viewers` with the real
+   ones on a headless sway.
+6. **The window: Character tab.** Name, tagline, size, Stats, derived
+   values with their override boxes, the points summary; File New,
+   Open, Save, Save As with the save-first question; Rulebook > Open,
+   Choose PDF..., Viewer....
+7. **Attributes, Defects and Skills tabs.** Pick by name (with both
+   pages) and level, subject, detail, Add / Change / Remove, **?**; the
+   totals and warnings update as you go; Skills' specialisations and
+   the genre.
+8. **Weapon Attacks.** The dialog: subject, level, Abilities and
+   Disabilities with counts and details, primary; damage and cost
+   following each change.
+9. **Mecha and several entities.** A mecha entity tied to its
+   owner's Own a Big Mecha, its Mecha Points checked; several entities
+   in a file (Add, Duplicate, Remove, Move, Next/Previous), as
+   ova_cg_po's Phase 13.
+10. **Options and limits.** Character > Creation...: the campaign's
+    Character Points, Background Points, genre, Skill Points, Staged
+    Stat Cost, the GM's ceilings.
+11. **Preview tab.** The formatters' output of the character as it
+    stands; Copy and Save.
+12. **Finish.** READMEs, valgrind clean on Xvfb and sway (and the
+    command-line program with no display), `make install`.
+
+### Testing
+
+- `make test` (no display): `TestRules`, `TestCalc`, `TestFiles`,
+  `TestModel`, `TestViewer` (fake viewers), `test/cli.sh`, and
+  `besm2_calc_po` against every fixture.
+- `make test-headless` / `make test-sway`: the window tests, on Xvfb
+  or a headless sway, never on the user's desktop.
+- `make test-viewers`: the real viewers on a private sway and D-Bus.
+- `make check-pages`: the tables against the PDF (needs the PDF).
+- `make valgrind-headless` / `valgrind-sway`.
+- Oracles: the fixture characters for calculations; pobesm2_fmt2 and
+  the Ada besm2_fmt for files and formatting.
+- Every new test is shown to fail with a planted bug before it is
+  trusted, as in ova_cg_po.
+
+## Copyright
+
+The programs and this repository hold the names of Stats, Attributes,
+Defects, Skills and Weapon Abilities and Disabilities, their costs,
+levels, limits and pages, and nothing of the rules' text. Tests that
+need the rulebook's text (`check-pages`, the Skill-table check) read it
+from the user's PDF at test time and keep none of it.
+
+## Open questions
+
+1. **Which side of the known besm-rst / besm2_fmt differences** the
+   new programs follow (proposed: besm2_fmt's).
+2. **Printing the new keys**: confirm the Weapon Attack format (the
+   book's order, so upgraded files change there); whether `creation`
+   gets a summary line in any format; whether an overridden number is
+   marked (`*`, as ova_fmt does); and whether `enhancements` and
+   `limiters` are deprecated for 2E files.
+3. **Share or copy** ova_cg_po's viewer, spawn, widgets and paths
+   modules (a library both generators use, or a copy as ova_cg_po
+   copies ova_fmt_po's).
+4. **Keep the Scheme programs in step** with the new keys, or only the
+   Ada and Oberon-2 ones.
+5. **Mecha**: one file holding the owner and the mecha (as
+   `composite-2e.yaml` does), or the mecha in a file of its own too.
+6. **Non-character entities** (templates, items): do the programs
+   compute and edit them too, or only characters and mecha.
+7. **The window's tabs** (A5).
+8. **`besm2_calc_po`'s name**, and whether `--fill` without `-o`
+   rewrites in place.
+
+Decided (2026-11-06, by the user unless it says otherwise):
+
+- ~~How pages are shown~~: both the printed page and the PDF page,
+  everywhere ("The rulebook and its pages", "Pages beside names").
+- ~~Compute in the formatters, or a new program~~: a new command-line
+  program sharing the generator's modules; the formatters only learn to
+  print the new keys (A3; decided by Claude at the user's request).
+- ~~How the free text becomes structured~~: `subject`, a Defect's
+  `level`, the Weapon Attack keys, the mecha link through `subject`,
+  `creation`, `overrides` (A4; decided by Claude at the user's
+  request, the printing still open in question 2).
