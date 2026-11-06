@@ -429,7 +429,7 @@ and `errata.tsv`.  Phase B turns them into `Besm2Rules`.
    pages; the unnumbered ones (PDF 1-3, 6, 13, 134, 154, 169,
    204-210) are the cover, chapter openers and sheets, and shift
    nothing.  The bookmarks agree with the headings for 370 entries;
-   the ones that don't, for the user to fix in the bookmark list:
+   the ones that didn't (all fixed by the user, 2026-11-06; see 11):
    "Force Field Disabilities" goes to PDF 39 (the heading is PDF 38,
    p. 36); "Mecha-Only Defects" and "Step 8: Background Points" have
    no destination; Linked (Attribute) (p. 87, PDF 89) has no bookmark;
@@ -548,17 +548,18 @@ and `errata.tsv`.  Phase B turns them into `Besm2Rules`.
     result 1 already said (misspelt titles, Force Field Disabilities
     at PDF 39, no Linked (Attribute)); the check prints these as
     notes and passes.  The user then fixed the bookmark list and
-    `BESM2ER_bookmarked.pdf` (2026-11-06): the misspellings and Force
-    Field Disabilities are right now.  Still to fix there, from this
-    check and the outline: no Linked (Attribute) bookmark (PDF 89);
-    "Unique Character Attribute — Wealth" lacks the heading's
-    "Sample"; "Mecha-Only Defects" (PDF 116) and "Step 8: Background
-    Points" (PDF 132, both found by font) have no destination; "Table
-    3-4 Defense Roll modifiers" should have a capital M; and Table 3-5
-    (PDF 148; "Criticals" in the chapter, "Critical Damage" in the
-    book's list of tables) has no bookmark.  Two pages looked at by eye agree with the
-    headings by font: PDF 44 (printed 42; Highly Skilled, Illusion)
-    and PDF 92 (printed 90; Drop Shields to Low Penetration).
+    `BESM2ER_bookmarked.pdf` (2026-11-06), and now every bookmark
+    agrees: the misspellings, Force Field Disabilities (PDF 38), Linked
+    (Attribute) (PDF 89), the Wealth sample's title, "Mecha-Only
+    Defects" (PDF 116), "Step 8: Background Points" (PDF 132), Table
+    3-4's capital M and Table 3-5 Critical Damage (PDF 148).  Every
+    bookmark titled like a heading goes to that heading's page, except
+    the chapters, which go to their opening pages (which have no
+    heading); "Shock Value" has two, PDF 132 and PDF 163, for the
+    book's two headings of that name.  Two pages looked at by eye
+    agree with the headings by font: PDF 44 (printed 42; Highly
+    Skilled, Illusion) and PDF 92 (printed 90; Drop Shields to Low
+    Penetration).
 12. **Checked against BESM Retro Second Edition and BESM1E** (AGENTS.md;
     Retro's PDF page is also its printed page + 2).  Retro sides with
     BESM2ER's entries against Table 2-2: Meld 2, 4 or 8 (Retro
