@@ -1061,6 +1061,28 @@ from the user's PDF at test time and keep none of it.
       rulebook were left out (AGENTS.md, copyright).  Its spellings
       ("Hanger Queen", "Weapon:", Super-Strength) are kept as aliases
       for the tests.
+    - In the campaign (Red-Planet-Blue-Helmets/2ER, 2026-11-06): the
+      punch is a note in the Coleopteran, KA-99 Archangel and WT-34
+      Bogatyr, and Glanna Matthews's and Lowdy Penhale's "X" entries
+      are named "0".  The Bogatyr's Partial Armor Defect (−1) is now
+      Heavy Armour 3's Partial option, thin (−1 to its cost, p. 40):
+      11 MP, and the same 60 MP in all.  The Archangel's Jumping had
+      two `details` keys (a duplicate key, so no program loaded the
+      file); the user kept "5 times normal".
+    - Found doing so (2026-11-06): in the grid tables the Scheme
+      programs never let a word end in a column's last place, and the
+      Ada and Oberon-2 programs do, so a detail line that exactly
+      fills its column wraps one word earlier in Scheme (the
+      Coleopteran's and Bogatyr's Life Support, the Bogatyr's Heavy
+      Armour).  None of the test fixtures has such a line.  Decided
+      (2026-11-06, by the user): fill the last place.  schemepunk's
+      `wrapped` stops a line short of the width and balances the
+      lines rather than filling them, so the Scheme programs now use
+      their own greedy wrap, the same as besm2_fmt's Word_Wrap; their
+      grid output matches besm2_fmt `-n` on the campaign's and the
+      fixtures' 2E files at widths 25, 40, 60 (the default) and 120, except for the
+      differences already in obesm2_fmt's ADA-DIFFERENCES.md (2.2,
+      4.2).
 12. **Auto-Fire: 3 slots or 1** (A2 results, 5 and 12): the entry
     says 3, and so do Retro's rule and its corrected Hellcat; BESM2ER's
     examples and the Coleopteran use 1.  Proposed: 3, with a
