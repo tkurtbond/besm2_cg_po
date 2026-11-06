@@ -59,7 +59,7 @@ PROGSRC := $(wildcard src/*.Mod src/*.c)
 # modules): TESTS need no display, GUITESTS do.  More come
 # with the modules of PLAN.md, Part B.
 TESTSUPPORT := test/Check.Mod
-TESTS       := TestRules TestCalc
+TESTS       := TestRules TestCalc TestOut
 GUITESTS    := TestWindow
 TESTBINS    := $(TESTS:%=$(OBJ)/%)
 GUITESTBINS := $(GUITESTS:%=$(OBJ)/%)
@@ -102,15 +102,20 @@ $(OBJ)/ListRules: test/ListRules.Mod $(PROGSRC) $(SHAREDLIBMANIFESTS) | $(OBJ)
 $(OBJ)/rules.txt: $(OBJ)/ListRules
 	$(OBJ)/ListRules > $@
 
+# pobesm2_fmt2, built, whose fixtures and output test/files.sh compares
+# besm2_calc_po's with (PLAN.md, Part B, step 4).
+POBESM2_FMT2 ?= $(HOME)/Repos/RPG/Tools/pobesm2_fmt2
+
 # What needs no display: the unit tests, Besm2Rules against rules/
-# (tools/check-rules.py), then test/cli.sh; fail at the end if any
-# failed.
+# (tools/check-rules.py), then test/cli.sh and test/files.sh; fail at
+# the end if any failed.
 test: $(PROGRAMS) $(TESTBINS) $(OBJ)/rules.txt
 	@status=0; for t in $(TESTS); do \
 	  echo "== $$t"; (cd test && timeout $(TIMEOUT) ../$(OBJ)/$$t) || status=1; \
 	done; \
 	echo "== check-rules.py"; tools/check-rules.py $(OBJ)/rules.txt rules || status=1; \
 	echo "== cli.sh"; test/cli.sh ./$(PROGRAM) ./$(CALC) || status=1; \
+	echo "== files.sh"; test/files.sh ./$(CALC) $(POBESM2_FMT2)/pobesm2_fmt2 $(POBESM2_FMT2)/test/data || status=1; \
 	exit $$status
 
 # The rulebook: the original, with a text layer, for the headings by

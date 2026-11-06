@@ -54,12 +54,15 @@ check "besm2_calc_po -h writes nothing to standard error" test ! -s "$out/stderr
 run "$calc" --no-such-option
 check "besm2_calc_po: an unknown option exits 2" test $st -eq 2
 
-run "$calc" some-file.yaml
-check "besm2_calc_po: a file, before files are written, exits 2" test $st -eq 2
-check "and says so" grep -qx "besm2_calc_po: reading files isn't written yet: some-file.yaml" "$out/stderr"
+run "$calc" no-such-file.yaml
+check "besm2_calc_po: a missing file exits 1" test $st -eq 1
+check "and says so, as pobesm2_fmt2 does" grep -qx "besm2_calc_po: no-such-file.yaml: error: No such file or directory" "$out/stderr"
 
-run "$calc"
-check "besm2_calc_po with nothing to do exits 0, with no display" test $st -eq 0
+run "$calc" --check --fill --upgrade no-such-file.yaml
+check "besm2_calc_po: its own options are known" test $st -eq 1
+
+run "$calc" < /dev/null
+check "besm2_calc_po reads standard input, here empty, and exits 0, with no display" test $st -eq 0
 check "and needs no display" test ! -s "$out/stderr"
 
 if [ $status -eq 0 ]; then echo "All checks passed."; else echo "Some checks failed."; fi

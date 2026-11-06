@@ -1049,7 +1049,7 @@ with no display, and the command-line program is built from it alone:
 |---|---|---|
 | `Besm2Rules` | both | the tables of A2: every Attribute, Defect, Skill, Weapon Ability and Disability with printed page, PDF page, costs, limits, flags, aliases; the Skill cost table by genre; `Label`, `PageText`, `PdfPage` |
 | `Besm2Calc` | both | every cost, damage, derived value, total and warning; takes overrides as input |
-| `Besm2Character` | both | a character (and its mecha) as records; loading from `Besm2Entities`' entities, the edits, `Recompute` |
+| `Besm2Character` | both | a character (and its mecha) as records; loading from the YAML nodes (each first through `Besm2Entities.Load`, so a file is refused for what pobesm2_fmt2 refuses, in its words: corrected 2026-11-06), the edits, `Recompute` |
 | `Besm2Upgrade` | calc | free text to the keys of A4 |
 | `Besm2Entities`, `Besm2Out`, `Besm2Text`, `Besm2Config`, the formatters | both | pobesm2_fmt2's, copied and kept in step (with the new keys once A4 is rolled out) |
 | `Besm2Save` | both | YAML through polibfyaml's emitter (`NewDocument`, `CreateStyledScalar`, ...), written to `NAME.tmp` then renamed |
@@ -1229,6 +1229,78 @@ saved YAML holds names as the formatters expect them, without pages.
    Weapon Attacks' order); numbers that disagree become overrides with
    notices; formatting a file whose numbers agree is byte-for-byte
    pobesm2_fmt2's.
+
+   *Done 2026-11-06.* `Besm2Out.ToRope`/`TakeRope` and `TestOut` in
+   pobesm2_fmt2, and `Besm2Cli.NewParser` there too (the options of
+   besm2_fmt as a parser a program can add to), then copied with the
+   rest of A1.5; `Besm2Character`, `Besm2Check`, `Besm2Save`,
+   `Besm2Upgrade`, `Besm2CalcMain`; `test/files.sh` (TestFiles, as a
+   script, since it runs two programs), in `make test`, against
+   pobesm2_fmt2's binary and fixtures (`POBESM2_FMT2`, by default
+   `~/Repos/RPG/Tools/pobesm2_fmt2`).  Decisions:
+   - **Reading.**  A file is parsed with `Fyaml.NoResolve`, so its
+     aliases can be reported, then resolved.  Each entity goes through
+     `Besm2Entities.Load` first, so what pobesm2_fmt2 refuses is
+     refused in its words and in its place, then is read into records.
+     Anchors that no alias names change nothing, and polibfyaml can't
+     see them, so only aliases are reported.
+   - **A number in the file** that is text where a number belongs
+     ("level: special") is kept as text (the `levelIsText` flags) and
+     printed back as written, with a warning; it is never priced.
+   - **Keep, not Adopt**, for a number the rules can't compute: a name
+     not in the rulebook, and every Skill of an entity without
+     `creation.genre` (one notice for them all: "no genre in creation
+     to price Skills by (Table 2-4, p. 119, PDF 121)").  The file's
+     number is kept as an override, so it prints with `\*`: such a
+     file is not one "whose numbers agree", and `test/files.sh`
+     doesn't expect it byte for byte (enyon-boase-2e and -ext).
+   - **A Defect's rank** when it has no `level`: its Bonus Points over
+     its cost a rank, at least 1 (Table 2-3, p. 100, PDF 102).
+   - **Notices** are of three kinds: *difference* (a number that
+     disagrees, kept as an override), *warning*, *error* (a `points`
+     or `value` outside −999..999, from `Besm2Check`).  A message is
+     "ENTITY: ITEM (p. N, PDF M): TEXT", the item with both pages
+     from `Besm2Rules`; `besm2_calc_po` puts "FILE: KIND: " in front.
+     `Besm2Check` looks at the file's nodes (aliases, ranges,
+     `enhancements`/`limiters`, `different-gunner` on a character,
+     empty strings and lists), since those exist only as written.
+   - **Options.**  `--check`, `--fill` and `--upgrade` are long only:
+     besm2_fmt's options take most letters.  `--check` may go with
+     either of the others.  `--fill` and `--upgrade` take one file or
+     standard input, since one output holds one file, and write
+     nothing for a file with a problem (an entity that doesn't load
+     would be lost), saying so, exit 1.
+   - **Formatting** reads and computes each file, saves it in memory
+     through `Besm2Save`, and formats what was saved with the copied
+     formatters, so a file prints exactly as its `--fill` output
+     prints through pobesm2_fmt2.  Notices are silent; problems are
+     reported as pobesm2_fmt2 reports them, under this program's name.
+   - **The upgrade** is a hook (`Besm2Character.SetUpgrade`, set by
+     `Besm2Upgrade.Install`) run on each entity after it is read and
+     before it is computed, so the numbers compared are the upgraded
+     entity's.  It splits packed names, writes BESM2ER's names for
+     aliases (Features or Accessories by entity; case alone is left),
+     gives Defects their `level`, and turns a Weapon Attack's
+     `details` into `damage`, `abilities` and `disabilities` when
+     every comma-separated part is a damage ("Damage ACV+45") or a
+     Weapon Ability or Disability ("Long-Range: 5 km", "Limited Shots
+     ×2 [3 shots]"); otherwise the details stay, with a warning naming
+     the first part it couldn't read (and both pages of the Abilities
+     and Disabilities).  A damage that was in the details is the
+     file's, compared as any other (`damageInFile`); one that wasn't
+     is computed.  "But for the Weapon Attacks' order" turned out to
+     be the order *within* a weapon's line: the formatters print
+     Abilities, then Disabilities, then the damage, where the free
+     text had the damage first.
+   - **Checked by `test/files.sh`:** of pobesm2_fmt2's 33 fixtures,
+     the 17 that load fill; every one formats as its `--fill` prints
+     in seven formatter option sets; that `--fill` prints as the
+     original but for the overrides' marks; the files whose numbers
+     agree (including the bad ones, errors and status) format byte for
+     byte as pobesm2_fmt2's; `--upgrade composite-2e.yaml`, given
+     composite-ext's `creation`, is composite-ext.yaml with BESM2ER's
+     names, and prints as composite-2e but for the weapons and the
+     renamed lines; `--fill` and `--upgrade` are idempotent.
 5. **The rulebook viewer.** `Besm2Viewer`/`Besm2Spawn` from
    ova_cg_po (okular over D-Bus, evince, mupdf, xdg-open, a template
    with `%f` the file and `%p` the PDF page; reusing a running viewer);

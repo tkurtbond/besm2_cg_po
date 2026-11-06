@@ -40,7 +40,7 @@ CONST
 
   Unlimited* = MAX(INTEGER);  (* no maximum: Highly Skilled's Level, Area Effect's times *)
 
-  (* The genres of Table 2-4 (p. 117), in its order *)
+  (* The genres of Table 2-4 (p. 119), in its order *)
   Cyberpunk* = 0; HotRodsAndGuns* = 1; MartialArts* = 2; MedievalFantasy* = 3;
   ModernMilitary* = 4; OccultHorror* = 5; SpaceOpera* = 6; TeenageRomance* = 7;
   NGenres* = 8;
@@ -57,7 +57,8 @@ CONST
   MechaAttributesPage* = 93;
   DefectsPage* = 100;           (* Step 5: Character Defects, Table 2-3 *)
   MechaDefectsPage* = 114;
-  SkillsPage* = 117;            (* Step 6: Skill System; Skill Point Costs, Table 2-4 *)
+  SkillsPage* = 117;            (* Step 6: Skill System; Skill Cost descriptions *)
+  SkillCostsPage* = 119;        (* Table 2-4: Skills, the costs by genre *)
   DerivedValuesPage* = 129;     (* Step 7: Combat Value, Health Points, Energy Points *)
   ShockValuePage* = 130;
   BackgroundPointsPage* = 130;  (* Step 8 *)
@@ -473,7 +474,7 @@ BEGIN
   MD("Wind Powered", 116, 2)
 END MechaDefects;
 
-(* pp. 120-128, the costs from Table 2-4 (p. 117): Cyberpunk, Hot Rods
+(* pp. 120-128, the costs from Table 2-4 (p. 119): Cyberpunk, Hot Rods
    and Guns, Martial Arts, Medieval Fantasy, Modern Military, Occult
    Horror, Space Opera, Teenage Romance. *)
 PROCEDURE Skills;

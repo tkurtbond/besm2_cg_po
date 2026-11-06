@@ -11,7 +11,7 @@ MODULE Besm2Calc; (* The numbers of a character and its mecha, computed from the
    - derived values (pp. 129-130): ACV, DCV, Health Points, Energy
      Points, Shock Value, and the Armour Rating (pp. 40, 48);
    - Skill Points (p. 117): 20, +10 a Level of Highly Skilled, -10 a
-     rank of Unskilled, spent at the genre's costs (Table 2-4, p. 119);
+     rank of Unskilled, spent at the genre's costs (Table 2-4, p. 119, PDF 121);
    - Mecha Points (p. 59): 20 a Level of Own a Big Mecha, 5 fewer for
      each "less powerful", spent on the mecha's Attributes less its
      Defects; a mecha's 40 Health Points and Toughness's 20 a Level
