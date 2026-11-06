@@ -812,6 +812,75 @@ BEGIN
   FOR i := 0 TO LEN(es^) - 1 DO IF es[i].isMecha & (es[i].owner = NIL) THEN C.Compute(es[i]) END END
 END ComputeAll;
 
+(* ---- The generator's ---- *)
+
+(* A new character, with no file, no name and no creation (PLAN.md,
+   Part B, step 6): Besm2Save writes its Stats and derived values. *)
+PROCEDURE New*(): Entity;
+  VAR e: Entity;
+BEGIN
+  NEW(e); C.InitEntity(e, FALSE); e.fromFile := FALSE;
+  e.hasName := FALSE; e.hasTagline := FALSE; e.hasDescription := FALSE; e.hasSize := FALSE;
+  e.name := NIL; e.tagline := NIL; e.description := NIL; e.size := NIL;
+  e.hasMechaKey := FALSE;
+  e.hasStats := FALSE; e.hasDerived := FALSE; e.hasAttributes := FALSE; e.hasDefects := FALSE;
+  e.hasSkills := FALSE; e.hasNotes := FALSE;
+  e.stats := NIL; e.derived := NIL; Besm2Text.Clear(e.notes);
+  e.hasCreation := FALSE; e.creationKeys := {}; e.extra := NIL;
+  e.label := Ropes.FromString("the character");
+  C.Compute(e);
+  RETURN e
+END New;
+
+(* The new entities: e alone. *)
+PROCEDURE One*(e: Entity): Entities;
+  VAR es: Entities;
+BEGIN NEW(es, 1); es[0] := e; RETURN es
+END One;
+
+(* Stat i of e, which the user set: an entity from a file gets it in
+   its `stats`, as a number, if it lacked it or had it as text; one
+   made here gets them all anyway (Besm2Save). *)
+PROCEDURE UseStat*(e: Entity; i: INTEGER);
+  VAR s, last: Stat;
+BEGIN
+  IF ~e.fromFile THEN RETURN END;
+  s := e.stats; last := NIL;
+  WHILE (s # NIL) & (s.index # i) DO last := s; s := s.next END;
+  IF s = NIL THEN
+    NEW(s); s.next := NIL; s.index := i;
+    CASE i OF C.Body: s.name := Ropes.FromString("Body")
+    | C.Mind: s.name := Ropes.FromString("Mind")
+    | C.Soul: s.name := Ropes.FromString("Soul")
+    END;
+    C.Clear(s.points); s.extra := NIL; s.fPoints := 0; s.listed := FALSE;
+    IF last = NIL THEN e.stats := s ELSE last.next := s END
+  END;
+  s.valueIsText := FALSE; s.valueText := NIL;
+  e.hasStats := TRUE
+END UseStat;
+
+(* The derived value of slot, which the user overrode: as UseStat. *)
+PROCEDURE UseDerived*(e: Entity; slot: INTEGER);
+  VAR d, last: DerivedValue;
+BEGIN
+  IF ~e.fromFile THEN RETURN END;
+  d := e.derived; last := NIL;
+  WHILE (d # NIL) & (d.slot # slot) DO last := d; d := d.next END;
+  IF d = NIL THEN
+    NEW(d); d.next := NIL; d.slot := slot;
+    CASE slot OF ACV: d.name := Ropes.FromString("ACV") | DCV: d.name := Ropes.FromString("DCV")
+    | HP: d.name := Ropes.FromString("HP") | EP: d.name := Ropes.FromString("EP")
+    | SV: d.name := Ropes.FromString("SV") | AR: d.name := Ropes.FromString("AR")
+    END;
+    d.hasAlternatives := FALSE; Besm2Text.Clear(d.alternatives); d.extra := NIL;
+    d.fValue := 0; d.listed := FALSE;
+    IF last = NIL THEN e.derived := d ELSE last.next := d END
+  END;
+  d.valueIsText := FALSE; d.valueText := NIL;
+  e.hasDerived := TRUE
+END UseDerived;
+
 PROCEDURE Note(kind: INTEGER; r: Rope);
   VAR n: Notice;
 BEGIN

@@ -1,6 +1,6 @@
 #!/bin/bash
 # cli.sh WINDOW CALC: the command lines of besm2_cg_po and besm2_calc_po,
-# and starting the window with no display (PLAN.md, Part B, step 0).
+# and starting the window with no display (PLAN.md, Part B, steps 0 and 6).
 # Needs no display: nothing here opens a window.
 set -u
 prog=$1 calc=$2
@@ -22,13 +22,31 @@ run "$prog" -h
 check "besm2_cg_po -h exits 0" test $st -eq 0
 check "besm2_cg_po -h prints the usage" grep -q 'besm2_cg_po \[options\]' "$out/stdout"
 check "besm2_cg_po -h needs no display" test ! -s "$out/stderr"
+check "besm2_cg_po -h tells of --rulebook" grep -q -- '--rulebook' "$out/stdout"
+check "besm2_cg_po -h tells of --viewer" grep -q -- '--viewer' "$out/stdout"
 
 run "$prog" --no-such-option
 check "besm2_cg_po: an unknown option exits 2" test $st -eq 2
 
-run "$prog" some-file.yaml
-check "besm2_cg_po: a file, before files are written, exits 2" test $st -eq 2
-check "and says so" grep -qx "besm2_cg_po: opening files isn't written yet: some-file.yaml" "$out/stderr"
+
+# A file is loaded before the display is needed, so its problems show
+# without one.
+run "$prog" no-such-file.yaml
+check "besm2_cg_po: a missing file exits 1" test $st -eq 1
+check "and says so, before needing a display" grep -qx "besm2_cg_po: no-such-file.yaml: error: No such file or directory" "$out/stderr"
+printf -- '- name: X\n  stats:\n  - name: Body\n    value: 4\n    points: lots\n' >"$out/bad.yaml"
+run "$prog" "$out/bad.yaml"
+check "besm2_cg_po: a file that doesn't load exits 1" test $st -eq 1
+check "and says where" grep -q "^besm2_cg_po: $out/bad.yaml:5:.*: error: .*not a valid integer" "$out/stderr"
+printf -- '- name: X\n  stats:\n  - name: Body\n    value: 4\n    points: 40\n' >"$out/good.yaml"
+run "$prog" "$out/good.yaml"
+check "besm2_cg_po: a file that loads goes on to need a display" grep -qx 'besm2_cg_po: no display: neither DISPLAY nor WAYLAND_DISPLAY is set' "$out/stderr"
+run "$prog" a.yaml b.yaml
+check "besm2_cg_po: two files exit 2" test $st -eq 2
+check "and says so" grep -qx "besm2_cg_po: one file at a time: b.yaml" "$out/stderr"
+run "$prog" --viewer '%z'
+check "besm2_cg_po: a --viewer without %f exits 2" test $st -eq 2
+check "and says so" grep -q "^besm2_cg_po: --viewer takes .*: %z$" "$out/stderr"
 
 run "$prog"
 check "besm2_cg_po: no display exits 1" test $st -eq 1

@@ -1001,6 +1001,18 @@ derived values), **Attributes**, **Defects**, **Skills**, **Mecha**
 Background Points), and a **Preview** tab with pobesm2_fmt2's output
 in each of its formats.
 
+**Decided** (the user, 2026-11-06), with the layout drafted for step 6:
+the window is 640 by 800, with the menus File, Character and Rulebook,
+and the tabs Character, Attributes, Defects, Skills, Mecha, Background
+and Preview, each filled in by its step.  The Character tab, top to
+bottom: Name, Tagline and Size; the Stats, Body, Mind and Soul, each
+"(p. 15, PDF 17)", with its Value spinner, its Points box (computed,
+and its override) and a **?**; "Derived values (p. 129, PDF 131)",
+ACV, DCV, HP, EP, SV, and AR only with an Armour; the points --
+"Character Points: Stats 15 + Attributes 22 - Bonus Points 4 = 33 of
+35", "Bonus Points: 4 (ceiling: none)", "Skill Points: 15 of 20" --
+and the Warnings.
+
 ### Findings
 
 (Filled in by A1-A5, with dates. A1's are in "A1 results".)
@@ -1341,10 +1353,89 @@ saved YAML holds names as the formatters expect them, without pages.
    values with their override boxes, the points summary; File New,
    Open, Save, Save As with the save-first question; Rulebook > Open,
    Choose PDF..., Viewer....
+   Decided with the user (2026-11-06), besides the layout (A5):
+   - A file with several entities, until step 9 can switch between
+     them, shows its first character (not a mecha); every entity is
+     kept, and saved back in its order, unchanged unless shown.
+   - A new character has no `creation`, so no Character Points until
+     step 10's Character > Creation...: the points show only what is
+     spent, "33 (no limit set)", never red.  A file's `creation` is
+     used as written.
+   - The Background tab (description and notes) moves to step 7.
+
+   *Done 2026-11-06.*  New modules, none with a window but
+   Besm2Widgets:
+   - `src/Besm2Widgets.Mod`: the number box (the computed number, and
+     an entry for its override; empty clears it, text that isn't a
+     whole number is refused and said so) and the **?** button, which
+     calls `openPage` with the printed page.  From ova_cg_po's
+     OvaWidgets, cut to what step 6 uses.
+   - `src/Besm2Warnings.Mod`: each `Besm2Calc` warning as a line, what
+     it is about with both pages, and the limit with the rule's pages,
+     e.g. "spent 21 Character Points of 20 (p. 13, PDF 15)".
+   - `src/Besm2Paths.Mod`: a path made absolute, for the rulebook
+     chosen (ova_cg_po's OvaPaths).
+   - `src/Besm2Character.Mod` gained `New` (a character with no file:
+     Stats at 1, no `creation`), `One`, and `UseStat`/`UseDerived`: a
+     file's entity that didn't list a Stat or derived value gets it
+     listed once the user changes it, so it is saved; one from no file
+     writes them all anyway (Besm2Save).
+   - `src/Besm2Window.Mod`, rewritten, and `src/Besm2Cg.Mod`:
+     `besm2_cg_po [options] [file.yaml]` loads the file before it needs
+     a display (so a bad file fails as besm2_calc_po's does, status 1);
+     a second file is status 2; `--rulebook` and `--viewer` as
+     besm2_calc_po's are, the ones chosen in the window kept in the
+     preferences.
+   Decided while building it (2026-11-06):
+   - **No Character menu yet.**  FLTK shows a menu only with items in
+     it, and its first, Creation..., is step 10's; it comes then.
+   - **A mecha shown** (a file of only mecha) has its Stats spinners
+     and boxes off, and of the derived values only HP (p. 59: a mecha
+     has no Stats); its points are "Mecha Points: Attributes ... -
+     Bonus Points ... = ...".  AR shows with Heavy or Light Armour, or
+     an override of AR.
+   - **A file's differences** (`Besm2Character.notices`) are told once,
+     on opening: "Numbers the file gives differently from the rules,
+     kept as overrides, and what else it has:", then each notice,
+     wrapped at 80 characters (`Besm2Layout.WordWrap`) so the message
+     fits on the screen; a wrap can fall inside "(p. 15, PDF 17)".
+   - **The save-first question** names the file, or "the characters"
+     if a file-less set has several, or the character's name, or "the
+     character": "Save the changes to Kei first?"  Save with Save As
+     cancelled leaves everything as it was.
+   Tests:
+   - `test/TestWarnings.Mod` (in `TESTS`): every warning's line,
+     including the pages (its first draft had two wrong: Weapon Attack
+     is p. 81, and Stealth the Skill p. 125, not the Attribute).  `test/TestPaths.Mod` (in `TESTS`).
+   - `test/TestWindow.Mod` (in `GUITESTS`), on its own fixtures in
+     `test/data/` (made up, every number as the rules compute it but
+     `differs.yaml`'s): the menus and shortcuts; a new character; a
+     Stat's spinner, the text inputs, overrides typed, emptied and
+     refused; the points lines and their red; the warnings; New, Open,
+     Save and Save As, and the save-first question answered each way,
+     through File > New, File > Open, File > Quit and the close
+     button; a file with a mecha first, saved back whole and in order;
+     a file without Stats saving the one changed; the notices wrapped;
+     a mecha alone; Rulebook > Open, Choose PDF... and Viewer..., with
+     a rulebook missing, a viewer that won't start, and one that does.
+     What it saves goes in `obj/`, and the fixtures it changes are
+     copied there first, so a Save gone wrong can't change them (one
+     planted bug did, before that).
+   - `test/cli.sh`: a missing file and a file that doesn't load exit 1
+     with no display needed; a file that loads goes on to need one; two
+     files, and a `--viewer` without `%f`, exit 2; `-h` names
+     `--rulebook` and `--viewer`.
+   Planted bugs caught by TestWindow: the points never red; the first
+   entity shown even if a mecha (5 failures); AR always shown; a
+   changed Stat not listed (`UseStat` skipped); Don't save refusing to
+   leave (4); Save As not keeping the path (4).  `make test`, `make
+   test-headless` and `make test-sway` pass (quit.sh is skipped on
+   sway, needing X11), and `make valgrind-headless` is clean.
 7. **Attributes, Defects and Skills tabs.** Pick by name (with both
    pages) and level, subject, detail, Add / Change / Remove, **?**; the
    totals and warnings update as you go; Skills' specialisations and
-   the genre.
+   the genre.  And the Background tab: the description and the notes
+   (decided 2026-11-06).
 8. **Weapon Attacks.** The dialog: subject, level, Abilities and
    Disabilities with counts and details, primary; damage and cost
    following each change.
@@ -1415,7 +1506,7 @@ from the user's PDF at test time and keep none of it.
    left for later.
 7. ~~The window's tabs~~ (A5).  Decided: a layout is drafted from
    ova_cg_po's tabs when Part B reaches the window, and brought to the
-   user then.
+   user then.  Brought, and approved as drafted (2026-11-06): A5.
 8. ~~`besm2_calc_po`'s name~~, and `--fill` without `-o`.  Decided:
    the name stays; without `-o`, `--fill` and `--upgrade` write to
    standard output, so a file is never rewritten unasked.

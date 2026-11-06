@@ -59,7 +59,7 @@ PROGSRC := $(wildcard src/*.Mod src/*.c)
 # modules): TESTS need no display, GUITESTS do.  More come
 # with the modules of PLAN.md, Part B.
 TESTSUPPORT := test/Check.Mod
-TESTS       := TestRules TestCalc TestOut TestSpawn TestViewer
+TESTS       := TestRules TestCalc TestOut TestSpawn TestViewer TestPaths TestWarnings
 GUITESTS    := TestWindow
 TESTBINS    := $(TESTS:%=$(OBJ)/%)
 GUITESTBINS := $(GUITESTS:%=$(OBJ)/%)
