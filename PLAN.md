@@ -1766,6 +1766,23 @@ saved YAML holds names as the formatters expect them, without pages.
     valgrind errors).
 12. **Finish.** READMEs, valgrind clean on Xvfb and sway (and the
     command-line program with no display), `make install`.
+    *Done 2026-11-06.*  `README.md` rewritten for the finished
+    programs: usage, the menus, each tab, the Creation dialog, campaign
+    files, building and testing.  New target `make valgrind-calc`:
+    with `DISPLAY` and `WAYLAND_DISPLAY` unset, the tests needing no
+    display, then `besm2_calc_po` under valgrind on copies (in
+    `obj/valgrind-data`) of every fixture, this repository's and
+    pobesm2_fmt2's, with no option, `-t`, `-m`, `-H`, `--check`,
+    `--fill` and `--upgrade` (294 runs, about 3 minutes).  Only a memory
+    error fails it, since the bad fixtures exit 1 by design.  Decided
+    with the user: the target writes only under `obj/`, runs only on
+    copies of another repository's files, and removes nothing (the
+    copies are overwritten).  `make valgrind-calc`, `valgrind-headless`
+    and `valgrind-sway` report no errors.  `make install` and `make
+    uninstall` were checked staged (`DESTDIR=obj/stage`); the binaries
+    depend on no file of the build tree.  `make test` and
+    `test-headless` pass after the last change (a stale comment in
+    `Besm2Window.Build`).
 
 ### Testing
 
@@ -1776,7 +1793,9 @@ saved YAML holds names as the formatters expect them, without pages.
   or a headless sway, never on the user's desktop.
 - `make test-viewers`: the real viewers on a private sway and D-Bus.
 - `make check-pages`: the tables against the PDF (needs the PDF).
-- `make valgrind-headless` / `valgrind-sway`.
+- `make valgrind-headless` / `valgrind-sway`; `make valgrind-calc`
+  (no display: the tests needing none, and `besm2_calc_po` on copies
+  of every fixture).
 - Oracles: the fixture characters for calculations; pobesm2_fmt2 and
   the Ada besm2_fmt for files and formatting.
 - Every new test is shown to fail with a planted bug before it is

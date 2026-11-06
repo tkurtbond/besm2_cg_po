@@ -1164,7 +1164,6 @@ BEGIN
   entityChoice.SetTooltip("the character or mecha shown, of the file's");
   NEW(tabs); FlLayout.OpenTabs(tabs, 0, BarHeight, Width, Height - BarHeight, "");
   BuildCharacterTab;
-  (* Filled in by later steps of PLAN.md, Part B. *)
   BuildLists;
   Tab(mechaTab, "Mecha");
   Besm2MechaPanel.tell := PanelTell; Besm2MechaPanel.askText := PanelAskText;

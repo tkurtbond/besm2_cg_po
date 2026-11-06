@@ -74,7 +74,7 @@ ifneq ($(if $(MAKECMDGOALS),$(filter-out clean uninstall print-%,$(MAKECMDGOALS)
 $(foreach l,$(SHAREDLIBS),$(if $(wildcard $(POCLIBDIR)/*/OC/$(l).library),,$(error the $(l) library is not in $(POCLIBDIR); install it from its repo (AGENTS.md))))
 endif
 
-.PHONY: all tests test check-pages test-viewers test-gui test-headless test-sway valgrind valgrind-headless valgrind-sway \
+.PHONY: all tests test check-pages test-viewers test-gui test-headless test-sway valgrind valgrind-headless valgrind-sway valgrind-calc \
   display install uninstall clean
 .NOTPARALLEL:
 
@@ -195,6 +195,37 @@ valgrind: tests display
 	  grep -E 'ERROR SUMMARY' $(OBJ)/$$t.vg; \
 	  $(POFLTK)/test/vg-check.sh $(OBJ)/$$t.vg || { echo "FAIL - $$t: memory pofltk allocated was not freed"; status=1; }; \
 	done; \
+	if [ $$status -eq 0 ]; then echo "All checks passed."; else exit 1; fi
+
+# What needs no display, under valgrind with none (DISPLAY and
+# WAYLAND_DISPLAY unset): the unit tests, then besm2_calc_po on copies,
+# in obj/valgrind-data, of every fixture, this repository's and
+# pobesm2_fmt2's, in each format and with --check, --fill and
+# --upgrade, all output to obj/.  Nothing outside obj/ is written, and
+# nothing is removed: the copies are overwritten each run.  A bad
+# fixture's exit status of 1 is expected; only a memory error (status
+# 99) fails.
+CALCRUNS := "" -t -m -H --check --fill --upgrade
+valgrind-calc: $(PROGRAMS) $(TESTBINS)
+	@unset DISPLAY WAYLAND_DISPLAY; status=0; \
+	for t in $(TESTS); do \
+	  echo "== valgrind $$t"; \
+	  (cd test && $(VALGRIND) --log-file=../$(OBJ)/$$t.vg ../$(OBJ)/$$t) || status=1; \
+	  grep -E 'ERROR SUMMARY' $(OBJ)/$$t.vg; \
+	done; \
+	mkdir -p obj/valgrind-data/own obj/valgrind-data/fmt; \
+	cp test/data/*.yaml obj/valgrind-data/own/; \
+	cp $(POBESM2_FMT2)/test/data/*.yaml obj/valgrind-data/fmt/; \
+	echo "== valgrind $(CALC)"; n=0; \
+	for f in obj/valgrind-data/*/*.yaml; do \
+	  for o in $(CALCRUNS); do \
+	    n=$$((n + 1)); \
+	    $(VALGRIND) --log-file=obj/calc.vg ./$(CALC) $$o "$$f" >obj/calc.out 2>&1; \
+	    if [ $$? -eq 99 ]; then echo "FAIL - $(CALC) $$o $$f: memory errors"; status=1; \
+	      grep -E 'ERROR SUMMARY' obj/calc.vg; fi; \
+	  done; \
+	done; \
+	echo "$(CALC) ran $$n times under valgrind"; \
 	if [ $$status -eq 0 ]; then echo "All checks passed."; else exit 1; fi
 
 valgrind-headless: tests
