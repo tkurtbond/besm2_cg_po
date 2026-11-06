@@ -446,9 +446,12 @@ and `errata.tsv`.  Phase B turns them into `Besm2Rules`.
    Unskilled (p. 117); 1-3 Background Points (p. 130).
 3. **Derived values** (pp. 129-130): ACV = (Body + Mind + Soul) div 3;
    DCV = ACV - 2; HP = (Body + Soul) x 5; EP = (Mind + Soul) x 5;
-   SV = HP div 5.  Changed by Combat Mastery (ACV and DCV +1 a
+   SV = HP / 5, rounded up (p. 130; corrected 2026-11-06 in step 2,
+   was "div 5").  Changed by Combat Mastery (ACV and DCV +1 a
    Level, p. 130's example), Damn Healthy! and Toughness (HP), Energy
-   Bonus and Place of Power (EP), Not So Tough and Diminutive (HP).
+   Bonus (EP), Not So Tough and Diminutive (HP).  Place of Power's
+   Energy Points are a pool of its own, not added to EP (corrected
+   2026-11-06 in step 2).
    **The fixtures by hand:** Enyon Boase comes out exactly (stats 20
    + attributes 18 - defects 3 = 35; ACV 6 + 3 = 9, DCV 7, HP 70,
    EP 60, SV 14); the FV2021 Coleopteran too (Own a Big Mecha 2 =
@@ -482,7 +485,7 @@ and `errata.tsv`.  Phase B turns them into `Besm2Rules`.
 5. **Weapon Attack** (pp. 81-92): 4 points a Level; damage 15 x
    (Level - Ability slots + Disability slots), at least 15 unless No
    Damage; a secondary attack 2 points at the primary's Level, 1 at a
-   lower Level (p. 82); a Different Gunner +5 Mecha Points (p. 83); as
+   lower Level (p. 82); a Different Gunner +5 Mecha Points (p. 82); as
    Personal Gear, 5 damage a Level.  34 Abilities (pp. 83-89), 21
    Disabilities (pp. 89-92; 33 and 22 here before A2.11 counted the
    headings), with their slots (most 1; Aura 2,
@@ -770,7 +773,7 @@ another meaning, so `subject` it is.)
 computed from it. Formatters keep printing the Bonus Points from
 `points`, so `level` changes nothing they print.
 
-#### Weapon Attacks: `damage`, `abilities`, `disabilities`, `primary`
+#### Weapon Attacks: `damage`, `abilities`, `disabilities`, `primary`, `different-gunner`
 
 ```yaml
 - name: Weapon Attack
@@ -805,6 +808,11 @@ computed from it. Formatters keep printing the Bonus Points from
   primary, which is also the cheapest choice, so the key is needed only
   when the user wants otherwise. It is computed and written only when
   an entity has more than one Weapon Attack.
+- `different-gunner: true` (2026-11-06, open question 15): a mecha's
+  weapon fired by a gunner of its own, 5 Mecha Points more (p. 82,
+  PDF 84); left out, false.  `--check` warns about it on a
+  character.  Formatters print "Different Gunner" after the
+  Disabilities.
 - Formatters print these as the book records an attack (p. 92):
   the Abilities, then the Disabilities, a repeat as `×2` (`x2` in
   ASCII mode) and a detail in brackets, then the damage, then
@@ -1108,6 +1116,51 @@ saved YAML holds names as the formatters expect them, without pages.
    and hand-made cases for each rule, each Weapon Ability and
    Disability, primary and secondary attacks, each limit, and
    overrides feeding what depends on them.
+   *Done 2026-11-06.* `src/Besm2Calc.Mod` and `test/TestCalc.Mod`
+   (269 checks):
+   - **What it holds.** An `Entity` (a character or a mecha) of
+     Stats, Attributes (Weapon Attacks with their Abilities and
+     Disabilities), Defects and Skills, its `Creation`, and every
+     number as a `Number`: the computed value, and an override if the
+     user typed one (A4, `overrides`).  `Compute` fills in every
+     number and the warnings, each naming what it is about; a
+     character's Own a Big Mecha gives its linked mecha its Mecha
+     Points, and the mecha is computed with its owner's `Creation`
+     (genre, `auto-fire-slots`).  What uses a number uses its
+     override: an ACV override feeds DCV, an HP override SV, an item's
+     points the totals.
+   - **The oracles** (built by hand from their files; step 4's
+     `TestFiles` loads the files): Enyon Boase and Cador Trewartha,
+     each with the FV2021 Coleopteran, and the WT-34 Bogatyr with an
+     owner of Own a Big Mecha 3, and the KA-99 Archangel's two
+     weapons.  Every number agrees with the files as corrected to the
+     book's slots: Auto-Fire 3 and Melee 2 (open questions 12, 13 and
+     14).
+   - **The hand-made cases:** each rule of A2 and each warning; every
+     Weapon Ability and Disability alone at Level 6 (its damage, as
+     Personal Gear, Mecha Only on a character and not on a mecha);
+     every pair of them, warned exactly when Besm2Rules excludes them
+     (19 pairs); primary and secondary attacks; overrides.
+   - **15 planted bugs** were each caught (1 to 17 failures each): ACV
+     div 2, no Inept clamp, DCV ignoring an ACV override, SV rounding
+     down, Diminutive 2 as 1, a lower secondary at 2, a Different
+     Gunner at 4, less powerful at 4, 9 Defects allowed, every
+     specialisation charged, `auto-fire-slots` ignored, no least cost,
+     negative damage, Personal Gear at full damage, Toughness at 10.
+   - **Decisions** (2026-11-06, Claude's, within the rules):
+     - SV is HP / 5 rounded up (p. 130, PDF 132), so HP 14 gives 3.
+     - Place of Power (p. 63, PDF 65) is its own pool of Energy Points.
+     - Diminutive (p. 103, PDF 105) divides HP by 5 at rank 1 and 20 at
+       rank 2, rounded down.
+     - Inept Combat (p. 105, PDF 107) lowers ACV 1 a rank, never below
+       1 (and never raises an ACV already below 1).
+     - Optimized armour counts like any other armour in AR (Heavy
+       Armour, p. 40, PDF 42; Light Armour, p. 48, PDF 50).
+     - A weapon's damage is never below 0: with more Ability slots than
+       Levels it is 0, warned as under 15.
+     - The primary attack is the one marked `primary`, else the first
+       of the highest Level that isn't Personal Gear.  A Different
+       Gunner on a character's weapon is warned (it is for mecha).
 3. **The YAML extensions** (A4, "Rolling it out") in the formatters,
    before either program writes them.
 4. **Files and `besm2_calc_po`.** First `ToRope`/`TakeRope` in
@@ -1294,6 +1347,67 @@ from the user's PDF at test time and keep none of it.
     today they would ignore them.  So `counts-as` is the slots an
     Ability or Disability counts as (A4, Weapon Attacks): left out,
     it is the book's slots times one.
+    Changed (2026-11-06, by the user, with question 14): the Rocket
+    Pod takes the book's 3 slots too, not `counts-as: 1`: 15 × (2 − 4
+    + 3) = 15 damage.  The switch and `counts-as` stay for anyone who
+    wants the examples' pricing; no campaign file uses them.
+13. **Melee: 2 slots or 1** (step 2, 2026-11-06): Melee is a 2-slot
+    Disability (p. 91, PDF 93), but the campaign prices it as 1: the
+    Coleopteran's Plasma Fist (Level 2, Melee and Limited Shots, 60
+    damage), the Bogatyr's Plasma Sword (Level 3, Melee, 60) and the
+    Archangel's Harmonic Knife (Level 1, Melee, 30).  With 2 slots they
+    would be 75, 75 and 45.  Proposed, as question 12: Melee keeps its
+    2 slots, and those three weapons say `{name: Melee, counts-as: 1}`
+    when they get the Weapon Attack keys, so their files' damage stays
+    as it is and computed.  `TestCalc` builds them that way.
+    Decided (2026-11-06, by the user): Melee is **2 slots**, as the
+    rulebook says, and the weapons are corrected to it: the Plasma
+    Fist and the Plasma Sword are Damage ACV+75, the Harmonic Knife
+    ACV+45.  Their points don't change.  Changed in the campaign's
+    mecha and in the fixtures and goldens of besm2_fmt, obesm2_fmt,
+    obesm2_fmt2, pobesm2_fmt2 and the Scheme programs ("ACV+60" became
+    "ACV+75", the same width, so no output reflowed), and in the
+    campaign's .rst files; every test passes.  `TestCalc` expects 75.
+14. **The Gatling Gun and the Auto-Laser** (step 2, 2026-11-06): the
+    Bogatyr's Gatling Gun (Level 3: Accurate, Auto-Fire, Limited Shots,
+    Unreliable) and the Archangel's Auto-Laser (Level 1: Auto-Fire,
+    Limited Shots, Unreliable) both say 30 damage.  The rules give the
+    Gatling Gun 15 with Auto-Fire at 3 slots and 45 at 1, and the
+    Auto-Laser 0 (below 15, warned) at 3 and 45 at 1; no choice of
+    slots gives 30 for either.  Their points (2 each, secondary
+    attacks) and the mecha's totals are right either way.  Proposed:
+    give them `counts-as: 1` like the Rocket Pod and change their
+    damage to 45, or keep 30 as an override (A4, `overrides`), which
+    `--check` will then list.
+    Decided (2026-11-06, by the user): Auto-Fire is **3 slots**, as
+    both BESM2ER and Retro say, for every campaign weapon: the Rocket
+    Pod and the Gatling Gun are Damage 15, and the Auto-Laser takes
+    Limited Shots ×2 (3 shots), so 15 × (1 − 3 + 3) = 15, at the same
+    2 points.  No points or totals change.  Changed in the campaign's
+    mecha and its two .rst files, and the Rocket Pod in the fixtures,
+    goldens and `TestEntities` of besm2_fmt, obesm2_fmt, obesm2_fmt2,
+    pobesm2_fmt2 and the Scheme programs ("ACV+45" became "ACV+15",
+    the same width; each changed only where the nearest weapon name
+    before it is the Rocket Pod, so the Railgun's ACV+45 stays: 547
+    of each).  Every test passes.
+15. **A YAML key for a Different Gunner** (step 2, 2026-11-06): a mecha
+    weapon with a gunner of its own costs 5 Mecha Points more (p. 82,
+    PDF 84), and Besm2Calc prices it, but A4 has no key for it.
+    Proposed: `different-gunner: true` on a Weapon Attack, beside
+    `primary`, printed after the Disabilities as "Different Gunner";
+    left out, false.  No file has one yet.
+    Decided (2026-11-06, by the user): as proposed (A4, Weapon
+    Attacks).
+16. **Arkady Varenkov's mecha** (step 2, 2026-11-06): his Own a Big
+    Mecha's subject is "WT-34 Bogatry"
+    (`Red-Planet-Blue-Helmets/2ER/Entities/NPCs/arkady-varenkov.yaml`,
+    line 42, and `red-planet-blue-helmets.rst`, line 154), but the
+    mecha is "WT-34 Bogatyr", so A4's link by name would not find it.
+    Proposed: correct the spelling in both (a campaign commit, with
+    the user's go-ahead).  His Own a Big Mecha 3 (12 points, 60 Mecha
+    Points) matches the Bogatyr's 60.
+    Done (2026-11-06, by the user's decision): corrected there and in
+    `notes.hmm`, campaign commit 85debd2.
 
 Decided (2026-11-06, by the user unless it says otherwise; questions
 1-8 and 10 by the user taking Claude's suggestions):
