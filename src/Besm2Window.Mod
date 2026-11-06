@@ -35,7 +35,7 @@ MODULE Besm2Window; (* besm2_cg_po's main window: the menu bar, the Character ta
 
 IMPORT Fl, FlBrowsers, FlDialogs, FlInputs, FlLayout, FlMenus, FlPreferences, FlValuators,
   C := Besm2Calc, Ch := Besm2Character, R := Besm2Rules, Besm2Layout, Besm2Paths, Besm2Save, Besm2Text,
-  Besm2Background, Besm2Creation, Besm2ItemPanel, Besm2MechaPanel, Besm2Viewer, Besm2Warnings, Besm2WeaponDialog, Besm2Widgets, FlButtons, Ropes;
+  Besm2Background, Besm2Creation, Besm2ItemPanel, Besm2MechaPanel, Besm2Preview, Besm2Viewer, Besm2Warnings, Besm2WeaponDialog, Besm2Widgets, FlButtons, Ropes;
 
 CONST
   Title* = "BESM2ER Character Generator";
@@ -356,9 +356,38 @@ PROCEDURE Count(): INTEGER;
 BEGIN RETURN SHORT(LEN(entities^))
 END Count;
 
+(* What Preview's Save... suggests: the file's name without .yaml or
+   .yml, or the entity's name for a file not yet saved (NIL: none). *)
+PROCEDURE PreviewBase(): Rope;
+  VAR n: Rope; len: LONGINT;
+BEGIN
+  IF path = NIL THEN RETURN entity.name END;
+  n := FileName(); len := Ropes.Length(n);
+  IF (len > 5) & Ropes.Equal(Ropes.Substring(n, len - 5, 5), Rp(".yaml")) THEN n := Ropes.Substring(n, 0, len - 5)
+  ELSIF (len > 4) & Ropes.Equal(Ropes.Substring(n, len - 4, 4), Rp(".yml")) THEN n := Ropes.Substring(n, 0, len - 4)
+  END;
+  RETURN n
+END PreviewBase;
+
+(* The Preview tab shown again, if it is the tab shown: it is made
+   only when it can be seen, as the formatters make it, from the whole
+   file. *)
+PROCEDURE ShowPreview;
+BEGIN
+  IF (tabs # NIL) & (previewTab # NIL) & (tabs.Value() = previewTab) & (entities # NIL) THEN
+    Besm2Preview.Show(entities, PreviewBase())
+  END
+END ShowPreview;
+
+PROCEDURE TabsAction(w: Fl.Widget);
+BEGIN ShowPreview
+END TabsAction;
+
+(* The title shown again, and the preview; every change ends here. *)
 PROCEDURE ShowTitle;
   VAR t: Rope; s: Besm2Text.String;
 BEGIN
+  ShowPreview;
   t := Rp(Title);
   IF path # NIL THEN Besm2Text.Add(t, " - "); t := Ropes.Cat(t, FileName()) END;
   IF Count() > 1 THEN
@@ -1147,7 +1176,11 @@ BEGIN
   Besm2Background.tell := PanelTell; Besm2Background.changed := BackgroundChanged;
   Besm2Background.Build(LeftX, Top, ColumnW, Height - Top - 10);
   backgroundTab.End;
-  Tab(previewTab, "Preview"); previewTab.End;
+  Tab(previewTab, "Preview");
+  Besm2Preview.tell := PanelTell;
+  Besm2Preview.Build(LeftX, Top, ColumnW, Height - Top - 10);
+  previewTab.End;
+  tabs.action := TabsAction;
   tabs.SetResizable(characterTab);
   tabs.End;
   window.SetResizable(tabs);
@@ -1177,7 +1210,7 @@ BEGIN
   END;
   Besm2ItemPanel.Close(attrPanel); Besm2ItemPanel.Close(defectPanel); Besm2ItemPanel.Close(skillPanel);
   attrPanel := NIL; defectPanel := NIL; skillPanel := NIL; weaponButton := NIL;
-  Besm2Background.Close; Besm2MechaPanel.Close
+  Besm2Background.Close; Besm2MechaPanel.Close; Besm2Preview.Close
 END Close;
 
 BEGIN

@@ -159,6 +159,7 @@ test-gui: tests display
 	status=0; for t in $(GUITESTS); do \
 	  echo "== $$t"; (cd test && timeout $(TIMEOUT) ../$(OBJ)/$$t) || status=1; \
 	done; \
+	echo "== preview.sh"; test/preview.sh ./$(CALC) $(POBESM2_FMT2)/pobesm2_fmt2 || status=1; \
 	echo "== $(PROGRAM) (must still be running after $(RUNTIME) s)"; \
 	timeout $(RUNTIME) ./$(PROGRAM); st=$$?; \
 	if [ $$st -eq 124 ]; then echo "ok   - $(PROGRAM) started and ran"; \

@@ -18,14 +18,16 @@ MODULE TestWindow; (* Besm2Window: the Character tab, driven as a user would, an
    entities' Choice, then the file of several saved and loaded again.
    Step 10: Character > Creation..., each of its controls, its Cancel,
    OK and Copy from, a mecha's owner's, and Add Character's copy of the
-   creation; Close while it is open.  Runs
-   in test/: its files are data/*.yaml, and what it saves goes in
+   creation; Close while it is open.  Step 11: the Preview tab, made
+   only while it is shown, in each format, its Copy and Save...; the
+   previews it saves in ../obj test/preview.sh compares with the
+   formatters'.  Runs in test/: its files are data/*.yaml, and what it saves goes in
    ../obj; it opens copies of the data/*.yaml it changes there, so a
    File > Save gone wrong can't change it.  poc drops a string literal
    inside an array index (a[F("x")]), so none is written there. *)
 
 IMPORT Check, Fl, FlBrowsers, FlMenus, FlText, FlValuators, C := Besm2Calc, Ch := Besm2Character, R := Besm2Rules, Besm2Background,
-  Besm2ItemPanel, MP := Besm2MechaPanel, Besm2Save, Besm2Text, Besm2Viewer, Besm2Widgets, D := Besm2WeaponDialog, Cr := Besm2Creation, W := Besm2Window, Out, Ropes;
+  Besm2ItemPanel, MP := Besm2MechaPanel, Besm2Save, Besm2Text, Besm2Viewer, Besm2Widgets, D := Besm2WeaponDialog, Cr := Besm2Creation, Pv := Besm2Preview, W := Besm2Window, Out, Ropes;
 
 CONST
   SavePath = "../obj/window-test.yaml";
@@ -36,6 +38,7 @@ CONST
   SeveralPath = "../obj/window-several.yaml";  (* data/window.yaml, copied *)
   CreationPath = "../obj/window-creation.yaml";  (* data/window.yaml, copied *)
   CampaignPath = "../obj/window-campaign.yaml";
+  PreviewPath = "../obj/preview.yaml";  (* data/window.yaml, copied; test/preview.sh formats it *)
 
 TYPE Rope = Ropes.Rope;
 
@@ -45,6 +48,7 @@ VAR
   answer, asked: INTEGER;   (* what ask answers, and how often it was asked *)
   question: Rope;           (* what ask asked last *)
   chosen: Rope;             (* what choosePath and choosePdf answer; NIL: cancelled *)
+  suggestedName: Rope;      (* what Preview's file chooser was told to suggest *)
   typed: Rope;              (* what askText answers; NIL: cancelled *)
   prompted: Rope;           (* what askText was shown last *)
   confirmed: BOOLEAN;       (* what confirm answers *)
@@ -75,6 +79,11 @@ END ChoosePath;
 PROCEDURE ChoosePdf(VAR p: Rope): BOOLEAN;
 BEGIN p := chosen; RETURN chosen # NIL
 END ChoosePdf;
+
+(* Preview's file chooser: chosen, and what it suggested kept. *)
+PROCEDURE ChoosePreview(suggested: Rope; VAR p: Rope): BOOLEAN;
+BEGIN suggestedName := suggested; p := chosen; RETURN chosen # NIL
+END ChoosePreview;
 
 PROCEDURE AskText(prompt: Rope; VAR text: Rope): BOOLEAN;
 BEGIN prompted := prompt; IF typed # NIL THEN text := typed END; RETURN typed # NIL
@@ -991,6 +1000,80 @@ BEGIN
   Check.Check(W.entity.creation.statPointsCeiling = 0, "no campaign: no limits")
 END NewFromCampaign;
 
+(* Whether r contains s. *)
+PROCEDURE Contains(r: Rope; s: ARRAY OF CHAR): BOOLEAN;
+BEGIN RETURN (r # NIL) & (Ropes.Find(r, s, 0) >= 0)
+END Contains;
+
+(* Whether the preview's display shows its text. *)
+PROCEDURE Displayed(): BOOLEAN;
+  VAR b: FlText.TextBuffer; s: Besm2Text.String; t: Besm2Text.String;
+BEGIN
+  b := Pv.display.Buffer(); NEW(s, b.Length() + 1); b.GetText(s^); t := Besm2Text.Chars(Pv.text);
+  RETURN s^ = t^
+END Displayed;
+
+(* Shows tab g, as a click on it does. *)
+PROCEDURE ShowTab(g: Fl.Group);
+BEGIN W.tabs.SetValue(g); W.tabs.DoCallback
+END ShowTab;
+
+(* The Preview tab (step 11).  It saves the file and the preview in
+   each format in ../obj, which test/preview.sh then compares with
+   besm2_calc_po's and pobesm2_fmt2's output for that file. *)
+PROCEDURE Preview;
+  VAR before: Rope; label: ARRAY 64 OF CHAR;
+BEGIN
+  answer := W.Discard; Pick(W.newItem);
+  Check.Check(Pv.text = NIL, "Preview: nothing made before the tab is shown");
+  ShowTab(W.previewTab);
+  Check.Check((Pv.text # NIL) & Displayed(), "shown: made, and displayed");
+  Pv.format.ItemLabel(0, label);
+  Check.Check((Pv.format.Value() = Pv.Grid) & (label = "reST grid tables") & Pv.format.IsItem(3) & ~Pv.format.IsItem(4),
+    "four formats, grid tables first");
+  chosen := NIL; suggestedName := Rp("x"); Pv.Save;
+  Check.Check(suggestedName = NIL, "Save... for a new character without a name or file: nothing suggested");
+
+  Copy("data/window.yaml", PreviewPath);
+  chosen := Rp(PreviewPath); Pick(W.openItem);
+  Check.Check(Contains(Pv.text, "Pilot") & Contains(Pv.text, "Walker") & Displayed(), "a file opened: all its entities, shown");
+  W.nameIn.SetValue("Test Pilot"); W.nameIn.DoCallback;
+  Check.Check(Contains(Pv.text, "Test Pilot") & Displayed(), "the name typed: the preview follows");
+  W.taglineIn.SetValue("Previewed"); W.taglineIn.DoCallback;
+  Check.Check(Contains(Pv.text, "Previewed"), "the tagline too");
+  chosen := Rp(PreviewPath); Pick(W.saveItem);
+
+  chosen := NIL; Pv.Save;
+  Check.Check(Is(suggestedName, "preview.rst"), "Save...: the file's name, .rst");
+  chosen := Rp("../obj/preview-grid.rst"); Pv.Save;
+  before := Pv.text;
+  Pv.SetFormat(Pv.Terse);
+  Check.Check((Pv.text # NIL) & ~Ropes.Equal(Pv.text, before) & Contains(Pv.text, "Test Pilot") & Displayed(), "terse: another text");
+  chosen := Rp("../obj/preview-terse.rst"); Pv.Save;
+  Pv.SetFormat(Pv.RawMs);
+  Check.Check(Contains(Pv.text, ".. raw:: ms") & Displayed(), "raw ms: a raw ms block");
+  chosen := Rp("../obj/preview-rawms.rst"); Pv.Save;
+  Pv.SetFormat(Pv.Hmm);
+  chosen := NIL; Pv.Save;
+  Check.Check(Contains(Pv.text, "Test Pilot") & Is(suggestedName, "preview.hmm") & Displayed(), "h-m-m: suggested as .hmm");
+  chosen := Rp("../obj/preview.hmm"); Pv.Save;
+
+  before := Pv.text;
+  ShowTab(W.characterTab);
+  W.nameIn.SetValue("Hidden Pilot"); W.nameIn.DoCallback;
+  Check.Check(Pv.text = before, "the tab not shown: not made again");
+  ShowTab(W.previewTab);
+  Check.Check(Contains(Pv.text, "Hidden Pilot"), "shown again: made again");
+
+  Pv.Copy;
+  Check.Check(Fl.ClipboardHasText(), "Copy: text on the clipboard");
+  before := Pv.text; i := tells;
+  chosen := Rp("../obj/no-such-dir/preview.rst"); Pv.Save;
+  Check.Check((tells = i + 1) & Is(told, "can't write ../obj/no-such-dir/preview.rst: No such file or directory"),
+    "Save... where it can't: said so");
+  Pv.SetFormat(Pv.Grid); ShowTab(W.characterTab)
+END Preview;
+
 PROCEDURE Weapons;
   VAR p: Besm2ItemPanel.AttrPanel; wa: R.Item; a, a2: Ch.Attr; m: Ch.Mod; was: BOOLEAN; es: Ch.Entities;
     label: ARRAY 128 OF CHAR;
@@ -1082,7 +1165,7 @@ BEGIN
 END Weapons;
 
 BEGIN
-  W.tell := Tell; W.ask := Ask; W.confirm := Confirm; confirmed := FALSE; confirms := 0; W.choosePath := ChoosePath; W.choosePdf := ChoosePdf; W.chooseCampaign := ChoosePath; W.askText := AskText;
+  W.tell := Tell; W.ask := Ask; W.confirm := Confirm; confirmed := FALSE; confirms := 0; W.choosePath := ChoosePath; W.choosePdf := ChoosePdf; W.chooseCampaign := ChoosePath; Pv.choosePath := ChoosePreview; Pv.tell := Tell; W.askText := AskText;
   tells := 0; asked := 0; answer := W.Cancel; chosen := NIL; typed := NIL;
   Basics;
   NewCharacter;
@@ -1100,6 +1183,7 @@ BEGIN
   Several;
   Creation;
   NewFromCampaign;
+  Preview;
   Weapons;
   Pick(W.creationItem); Cr.SetCharacterPoints(TRUE, 77);
   W.Close;

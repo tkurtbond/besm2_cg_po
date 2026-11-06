@@ -1729,6 +1729,41 @@ saved YAML holds names as the formatters expect them, without pages.
     `test-sway` and `valgrind-headless` pass (no valgrind errors).
 11. **Preview tab.** The formatters' output of the character as it
     stands; Copy and Save.
+    *Decided 2026-11-06:* the tab shows the whole file's entities, in
+    order, as the formatters print the file the window would save:
+    the entities are saved in memory by `Besm2Save`, loaded again by
+    `Besm2Entities` and printed by pobesm2_fmt2's formatters with its
+    default options, as `besm2_calc_po` does, so the text is the same
+    as `besm2_calc_po`'s or any formatter's for the saved file.  A
+    Choice picks the format: reST grid tables (the default), terse
+    reST, groff tbl in a raw ms block, or an h-m-m outline.  The
+    text is made only while the tab is shown, when it is switched to
+    and after each change (`Besm2Window.ShowPreview`, from
+    `ShowTitle`).  Copy puts all of it on the clipboard.  Save...
+    suggests the file's name without `.yaml` or `.yml`, or, with no
+    file, the entity's name (nothing if it has none), with `.rst`
+    (raw ms is a reST directive too) or `.hmm`, and says so if it
+    can't write the file.
+    *Done 2026-11-06:* `src/Besm2Preview.Mod`; the Preview tab in
+    `Besm2Window`.  Tests: TestWindow's Preview (nothing made before
+    the tab is shown, or while another tab is; made on switching to it
+    and displayed; the four formats; what Save... suggests with no
+    file, and for `.rst` and `.hmm`; a file's entities all shown; the
+    name and tagline typed followed; Copy; a Save... that can't write
+    told), and `test/preview.sh`, run by test-gui after TestWindow,
+    which compares the preview TestWindow saves in each format with
+    `besm2_calc_po`'s and pobesm2_fmt2's output for the same saved
+    file, byte for byte.  Planted bugs, each caught: the preview made
+    while its tab is hidden; switching tabs not making it; terse and
+    raw ms swapped; Save... always suggesting `.rst`; `.yaml` kept in
+    the suggestion; Copy doing nothing; a failed write not told; only
+    the first entity printed; changing the format not making it again;
+    the display not set; the file written one byte short.  One planted
+    bug can't be caught: passing every entity the number 1 changes
+    nothing with the default options, as the number only chooses the
+    subunderliner, which is off by default.  `make test`,
+    `test-headless`, `test-sway` and `valgrind-headless` pass (no
+    valgrind errors).
 12. **Finish.** READMEs, valgrind clean on Xvfb and sway (and the
     command-line program with no display), `make install`.
 
