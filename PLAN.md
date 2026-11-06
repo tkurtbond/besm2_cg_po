@@ -152,6 +152,199 @@ which program is right where they disagree.
 6. Measure how the formatters are built to grow: what it took to add
    the last key to all of them (git history), as evidence for A3.
 
+#### A1 results (done, 2026-11-06)
+
+Read from the sources and docs, and checked by running every program on
+small test files (kept only in the scratchpad). Line numbers are
+`besm2-rst.scm` (rst), `besm-entities.scm` (ent) and
+`besm2_fmt/src/besm2_fmt-entities.adb` (adb).
+
+**A1.4, the baseline.** Every compare and test target passes on the
+programs as they are: the Scheme `make compare-fyaml compare-treefyaml
+compare-entity compare-entitytree`, 290 matches; besm2_fmt `make test`,
+441 ok; obesm2_fmt 554 ok; obesm2_fmt2 1732 ok and pobesm2_fmt2 2874 ok,
+each with 1160 compare runs against obesm2_fmt; no `not ok` anywhere,
+no working tree changed.
+
+**A1.1, what the Scheme programs read.** A document is a sequence of
+entity mappings. Entity keys, all optional: `name`, `tagline`,
+`description`, `size`, `mecha`, and the sequences `stats`, `derived`
+(kept in order), `attributes`, `defects`, `skills` (sorted by name,
+ignoring case).
+
+| Item | Required | Optional |
+|---|---|---|
+| stat | `name`, `value`, `points` | |
+| derived | `name`, `value` | `alternatives` (strings) |
+| attribute | `name`, `level`, `points` | `details`, `effective`, `elements`, `enhancements`, `limiters` |
+| defect | `name`, `points` | `details` |
+| skill | `name`, `level`, `points` | `specialisations` |
+
+- An enhancement or limiter is `Name` (counts as 1), `[name, n]` or
+  `[name, n, applies-to...]`. The sign shows which list it is in: −
+  for an enhancement, + for a limiter. The `details` text is joined with
+  `; ` from three parts in order: the sorted elements, the sorted
+  enhancements and limiters together, then `details` (rst:320-346).
+- Derived names ACV, DCV, DM, HP, EP, SV, AR are written out in full in
+  grid and raw ms, and printed as abbreviations in terse and h-m-m.
+- The four variants are the same program apart from YAML access; `-e`
+  and `-f-e` load into records first (ent), which changes no output.
+  They differ only in how the two YAML libraries type values, in error
+  text, and in which documents of a multi-document file they read (the
+  README's account, confirmed). How the libraries type values:
+  - yaml egg (rst, `-e`): YAML 1.1. A quoted `"6"` is not a number, but
+    `6.5` is accepted. `mecha` is true for anything but `false`/`no`,
+    even a quoted `"false"`, which was confirmed by running it.
+    `enhancements: Area` written as a scalar is silently dropped.
+  - slibfyaml (`-f`, `-f-e`): `points` must be an integer, and `mecha`
+    must be `true` or `false`.
+
+**A1.2, the departures** (besm2-rst against besm2_fmt; the Oberon
+ports follow besm2_fmt). The new programs copy pobesm2_fmt2's
+modules, so they take **besm2_fmt's side** on all of them. That is the
+proposal in open question 1.
+
+| Departure | besm2-rst | besm2_fmt | Recorded in |
+|---|---|---|---|
+| Header underline | characters | bytes (a UTF-8 name underlines too long; a defect the ports copy) | obesm2_fmt ADA-DIFFERENCES §2.2 |
+| Case-insensitive sort | Unicode | ASCII/Latin-1 bytes, stable | §2.1, §1.4 |
+| Minus | ASCII; `-n` gives U+2212 | U+2212; `-n` gives ASCII | §4.1 (besm2_fmt PLAN.md §8 still says the old default) |
+| `effective: ""` | `1 ()` | nothing | §4.2 |
+| Before `(effective)` | no-break space | space | §4.3 |
+| Multi-document files | last (yaml egg), first (`-f` flag), all (fyaml) | all, entity numbers running on | §4.4 |
+| Empty lists or details | `()` or a stray `.` | left out | §4.10 |
+| Integer overflow, real numbers, non-boolean `mecha` | accepted | errors | §4.7 |
+| A file with no documents | error, status 1 | nothing, status 0 | §4.8 |
+| `-d` | traces | accepted, does nothing | §4.6 |
+| Error wording | Chicken's | its own; the Oberon ports add `FILE:LINE:COL` and a node path | §4.9, §3.1-3.5 |
+
+The quirks fixed in all of them (besm2_fmt QUIRKS.md; ADA-DIFFERENCES
+§5.1) now behave the same everywhere. Two departures between the Ada
+and the Oberon ports are **in no document** (both confirmed by running
+them):
+
+- **YAML aliases.** besm2_fmt doesn't resolve them: `points: *p` gives
+  `not a valid integer: "p"`, `name: *n` prints `n`, and `- *h` gives
+  `not a mapping`. The three Oberon ports resolve them.
+- **Overflow in a total.** `points: 2147483647` plus another stat:
+  besm2_fmt dies with `raised CONSTRAINT_ERROR ... overflow check
+  failed` (status 1, nothing printed for that file). The Oberon ports
+  wrap and print `Hero (2147483647 BP)`, status 0.
+
+Decided by the user (2026-11-06; open question 9): neither is
+fixed in the formatters. Real Character, Bonus and Skill Point values
+stay far below 32 bits (under 500, likely), so overflow takes a
+mistyped file. Both are recorded in obesm2_fmt's ADA-DIFFERENCES.md
+as known departures, and the new programs catch them (A3, `--check`).
+
+**A1.3, the schema and unknown keys.** besm2_fmt accepts what the
+Scheme table above shows, with these types:
+
+- `str` is a required scalar.
+- `int` is a 32-bit integer. Decimal, `+N`, quoted, `0x`/`0o`/`0b` and
+  `_` are accepted. A real number, an empty value or one out of range is
+  an error.
+- `bool` (only `mecha`) is `true`/`false` in any case. `yes` is an
+  error.
+- A sequence key present with no value (`stats:`) is an error.
+- A defect has no `level`. `specialisations` is British only.
+- An error in an entity skips that entity, the run goes on, and the
+  exit status is 1. A YAML syntax error ends its file.
+
+What all eight programs do with keys:
+
+- **They ignore unknown keys.** Every key of A4 (`subject`, `creation`,
+  `overrides`, a defect's `level`, `abilities`, `damage`, and a stat's
+  `base` and so on) gave output identical to the file without them,
+  status 0, in all of them.
+- **A known key of the wrong shape** gives status 1 and the same
+  stdout from the four Ada and Oberon programs; only the wording
+  differs.
+
+So a file with A4's keys can be given to any formatter today. The
+formatters don't fail on it, they just don't print the new keys.
+
+That makes the order of the rollout matter. Once `subject` is split out
+of `name`, a formatter not yet taught `subject` prints "Own a Big
+Mecha" without its mecha. So the generator and `--upgrade` write the
+split form only after all the formatters print `subject` (Part B,
+phase 3). Until then they keep the packed `name: subject` in `name`.
+
+**What they compute: sums of the written `points`, nothing else.**
+
+- The entity total is stats + attributes + defects. Skills are
+  totalled apart and never added in (rst:506; entities.ads:109).
+- Nothing is derived or checked: not the derived values, not points
+  against levels, not budgets.
+- "BP" is just the label of a negative number in terse and h-m-m:
+  `abs(n)`, then BP if n < 0, else CP. A stat of −8 prints `8 BP`.
+- A defect with positive `points` prints as `−2` in grid but adds +2 to
+  TOTAL. Nothing catches it.
+
+So everything A2 finds is new code in `Besm2Calc`, and `--check`
+reports a positive defect, a negative stat and the like.
+
+**Mecha labels** (answers A4's question): with `mecha: true`, terse
+and h-m-m say `MP`/`MBP` for CP/BP, and the headings become "Mecha
+Sub-Attributes" and "Mecha Defects". Grid and raw ms show nothing
+different. That is what a mecha needs, so no change.
+
+**What the saved files must be like**, so that all eight programs read
+them alike (from A1.1-A1.3):
+
+- one YAML document per file;
+- no aliases;
+- numbers as plain unquoted decimal integers in 32-bit range;
+- `mecha: true` or `false` exactly;
+- no empty lists or empty strings (the key left out instead);
+- defects with negative `points`.
+
+`Besm2Save` does this and `TestSave` checks it.
+
+**A1.5, what can be copied** from pobesm2_fmt2 (2400 lines):
+
+| Module | Lines | Copy? |
+|---|---|---|
+| `Besm2Text` (rope helpers) | 214 | unchanged |
+| `Besm2Config` (the settings, exported VARs) | 66 | unchanged; the window sets the VARs, as `OvaMarkdown` sets `OvaConfig.format` |
+| `Besm2Out` | 112 | **not yet**: it has no `ToRope`/`TakeRope`. First port ova_fmt_po f6eaa1c ("Keep output in a rope", +66/−5 with a `TestOut`) into pobesm2_fmt2, then copy |
+| `Besm2Layout` | 224 | unchanged |
+| `Besm2Entities` | 439 | unchanged |
+| `Besm2Grid`, `Besm2Terse`, `Besm2Hmm`, `Besm2RawMs` | 252, 207, 223, 290 | unchanged; each exports only `ProcessEntity` |
+| `Besm2Cli`, `Besm2Fmt` | 205, 168 | no: pobesm2_fmt2's command line and main. The new programs have their own, under names none of the copied modules has |
+
+- `Besm2Entities` can't hold the generator's model. Its fields are
+  read-only, its only entry is `Load(node, ...)` (line 403), levels are
+  ropes, and enhancements and limiters are already flattened into
+  signed `details` text.
+- So, as ova_cg_po does (`OvaSave.ToEntity`, OvaSave.Mod:424-436), the
+  generator emits the character as YAML and `Load`s it back to print
+  it. `Besm2Character` is the model, and `Besm2Entities` stays an
+  unchanged copy.
+- ova_cg_po's six copies are byte-identical to ova_fmt_po's. Its rule
+  (ova_cg_po AGENTS.md) is to change them upstream, then copy again,
+  never editing the copies. `make test` enforces it by formatting every
+  saved fixture with the real ova_fmt_po and comparing. besm2_cg_po
+  does the same with pobesm2_fmt2.
+
+**A1.6, what a change costs** (git history):
+
+- No YAML key has been added to the BESM programs since `elements`
+  (BESM bcf603f, 2023-02-01).
+- A change to the output, e.g. "skill total only under `-s`", takes a
+  commit in each repository: Scheme 3ff684d (5 `.scm` files, no golden
+  files); besm2_fmt bd00d5f; obesm2_fmt f088195 and obesm2_fmt2 c24442f
+  (97 golden files each); pobesm2_fmt2 later inherited it. Changing the
+  source is a few lines; most of the work is regenerating the golden
+  files (366 of them from 58 cases).
+- OVA's generator keys took ova_fmt 5334a80 (13 files) and ova_fmt_po
+  546192b (73, 60 of them golden), then a re-copy in ova_cg_po.
+
+So **a key the formatters ignore costs them nothing, and one they print
+costs 5 repositories and roughly 80-100 golden files in each Ada and
+Oberon one.** A4 already prints only `subject` and the Weapon Attack
+keys; A1 confirms keeping it to those.
+
 ### A2. The rules
 
 Goal: every rule the programs compute, each with its page, and every
@@ -259,7 +452,14 @@ this repository:
   by hand or by other tools:
   - `--check`: compare every number in the file with the computed
     one; list the differences (with item, printed and PDF page) on
-    standard error; exit status 1 if there are any;
+    standard error; exit status 1 if there are any. It also
+    reports as errors, naming entity, item and value, every `points`
+    or `value` outside −999..999 (e.g. `Hero: stats/Body: points
+    2147483647 is outside -999..999`), which catches the overflow the
+    formatters don't, and as a warning every YAML anchor or alias,
+    which besm2_fmt and the Oberon ports read differently (A1
+    results). The generator applies the same range to what is typed
+    and never writes an alias;
   - `--fill` (`-o FILE`, or in place with a backup): write the file
     back with every number computed, keeping a listed override
     (`overrides:`); the same `Besm2Save` the generator uses, so the
@@ -386,8 +586,9 @@ entity (with `mecha: true`) in the same file, so the programs find it,
 compute its Mecha Points from the owner's level, and check its spending
 against them. A `subject` with no such entity is a notice, not an
 error (the mecha may be in another file). Attributes of a mecha keep
-`points` as today; whether the formatters should say `MP` rather than
-`CP` for a mecha is A1's to find.
+`points` as today. The formatters already say `MP`/`MBP` and "Mecha
+Sub-Attributes" for a mecha in terse and h-m-m (A1 results), so
+nothing changes there.
 
 #### Character creation: `creation`
 
@@ -454,7 +655,7 @@ in each of its formats.
 
 ### Findings
 
-(Filled in by A1-A5, with dates.)
+(Filled in by A1-A5, with dates. A1's are in "A1 results".)
 
 - Page offset: PDF = printed + 2 at PDF pages 5, 20, 82-94, 100
   (2026-11-06). No page labels.
@@ -564,7 +765,9 @@ saved YAML holds names as the formatters expect them, without pages.
    overrides feeding what depends on them.
 3. **The YAML extensions** (A4, "Rolling it out") in the formatters,
    before either program writes them.
-4. **Files and `besm2_calc_po`.** `Besm2Entities` copied;
+4. **Files and `besm2_calc_po`.** First `ToRope`/`TakeRope` in
+   pobesm2_fmt2's `Besm2Out` (open question 10); then `Besm2Entities`,
+   `Besm2Out` and the other modules of A1.5 copied;
    `Besm2Character.Load`/`LoadAll`; `Besm2Save`; `Besm2Upgrade`;
    `--check`, `--fill`, `--upgrade`, and formatting. `TestFiles`: each
    fixture loads, saves and formats through pobesm2_fmt2 the same as
@@ -644,6 +847,11 @@ from the user's PDF at test time and keep none of it.
 7. **The window's tabs** (A5).
 8. **`besm2_calc_po`'s name**, and whether `--fill` without `-o`
    rewrites in place.
+9. ~~The two undocumented Ada/Oberon departures~~: decided, see
+   below.
+10. **Port `OvaOut.ToRope`/`TakeRope` into pobesm2_fmt2's `Besm2Out`**
+    (with a `TestOut`), committed in pobesm2_fmt2, before besm2_cg_po
+    copies its modules (A1.5). Proposed: yes, in Phase 4.
 
 Decided (2026-11-06, by the user unless it says otherwise):
 
@@ -656,3 +864,8 @@ Decided (2026-11-06, by the user unless it says otherwise):
   `level`, the Weapon Attack keys, the mecha link through `subject`,
   `creation`, `overrides` (A4; decided by Claude at the user's
   request, the printing still open in question 2).
+- ~~YAML aliases and overflow in a total~~ (question 9): not fixed in
+  the formatters; recorded in obesm2_fmt's ADA-DIFFERENCES.md (a
+  commit there, with the user's go-ahead); `--check` reports a number
+  outside −999..999 as an error and an alias as a warning; the
+  generator never writes either (A1 results, A3).
