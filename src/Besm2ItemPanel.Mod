@@ -362,8 +362,12 @@ BEGIN
 END Remove;
 
 (* Lists e's Attributes; nothing selected. *)
+(* Shows e's Attributes; a mecha is offered the Mecha Attributes
+   first (step 9). *)
 PROCEDURE (p: AttrPanel) Show*(e: Ch.Entity);
-BEGIN p.entity := e; p.Refresh(0); p.Blank
+BEGIN
+  IF e.isMecha THEN p.Offer(R.MechaAttribute, R.Attribute) ELSE p.Offer(R.Attribute, R.MechaAttribute) END;
+  p.entity := e; p.Refresh(0); p.Blank
 END Show;
 
 PROCEDURE OptionButtonAt(p: AttrPanel; x, y, step: INTEGER; label: ARRAY OF CHAR): OptionButton;
@@ -468,8 +472,11 @@ BEGIN
   RETURN TRUE
 END Remove;
 
+(* Shows e's Defects; a mecha is offered the Mecha Defects first. *)
 PROCEDURE (p: DefectPanel) Show*(e: Ch.Entity);
-BEGIN p.entity := e; p.Refresh(0); p.Blank
+BEGIN
+  IF e.isMecha THEN p.Offer(R.MechaDefect, R.Defect) ELSE p.Offer(R.Defect, R.MechaDefect) END;
+  p.entity := e; p.Refresh(0); p.Blank
 END Show;
 
 PROCEDURE OpenDefectPanel*(p: DefectPanel; x, y, w, h: INTEGER);

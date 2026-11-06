@@ -1,10 +1,11 @@
 MODULE TestModel; (* Besm2Character's editing: what the Attributes, Defects and Skills tabs do to an entity *)
 
-(* PLAN.md, Part B, steps 7 and 8.  The window's lists change an entity only
+(* PLAN.md, Part B, steps 7, 8 and 9.  The window's lists change an entity only
    through Besm2Character's NewAttr, InsertAttr, ChangeAttr, RemoveAttr,
    the same for Defects and Skills, SetGenre and Relink, and the Weapon
    Attack dialog through NewMod, InsertMod, ChangeMod, RemoveMod,
-   CopyMods and SetPrimary; here each is
+   CopyMods and SetPrimary; step 9's New Mecha and Duplicate through
+   NewMecha, ReadText and Besm2Save.Copy; here each is
    checked on an entity built by hand, then what they made is saved and
    loaded again.  Needs no display.  What it saves goes in ../obj. *)
 
@@ -137,6 +138,36 @@ BEGIN
   Check.Check(a.mecha = NIL, "renamed: unlinked")
 END Mecha;
 
+(* Step 9: a new mecha, a file read from text, and an entity copied. *)
+PROCEDURE Several;
+  VAR c, w, cm: Ch.Entity; ces, rs: Ch.Entities; oa: Ch.Attr; results: Ch.Result; text: Rope;
+BEGIN
+  w := Ch.NewMecha(Rp("Walker"));
+  Check.Check(w.isMecha & w.hasMechaKey & Is(w.name, "Walker") & w.hasName & (w.owner = NIL) & (w.available = 0)
+    & (w.attrs = NIL), "NewMecha: a mecha, named, with no owner and no Mecha Points");
+  c := Ch.New(); c.name := Rp("Pilot"); c.hasName := TRUE;
+  oa := Ch.NewAttr(R.Find("Own a Big Mecha"), 2, Rp("Walker"), NIL); Ch.InsertAttr(c, oa);
+  Ch.InsertAttr(w, Ch.NewAttr(R.Find("Heavy Armour"), 1, NIL, NIL));
+  NEW(ces, 2); ces[0] := c; ces[1] := w; Ch.Relink(ces); Ch.ComputeAll(ces);
+  Check.Check((oa.mecha = w) & (w.owner = c) & (C.MechaPoints(oa) = 40) & (w.available = 40) & (w.spent = 4),
+    "Own a Big Mecha 2 names it: 40 Mecha Points (p. 59), 4 spent");
+
+  text := Besm2Save.ToText(ces);
+  Ch.ReadText(text, results, rs);
+  Check.Check((rs # NIL) & (LEN(rs^) = 2) & Is(rs[0].name, "Pilot") & rs[1].isMecha & Is(rs[1].name, "Walker")
+    & (rs[0].attrs.mecha = rs[1]) & (rs[1].owner = rs[0]) & (rs[1].available = 40), "ReadText: the entities saved, linked, priced");
+  Ch.ReadText(Rp("- name: [bad"), results, rs);
+  Check.Check((rs = NIL) OR (LEN(rs^) = 0), "and of text that isn't YAML, none");
+
+  cm := Besm2Save.Copy(ces, 1);
+  Check.Check((cm # NIL) & (cm # w) & cm.isMecha & Is(cm.name, "Walker") & (cm.attrs # NIL) & (cm.attrs # w.attrs)
+    & (C.Value(cm.attrs.points) = 4) & ~cm.attrs.points.overridden, "Copy: a mecha's copy, priced as its owner prices it, no override");
+  cm := Besm2Save.Copy(ces, 0);
+  Check.Check((cm # NIL) & (cm # c) & Is(cm.name, "Pilot") & (cm.attrs # oa) & Is(cm.attrs(Ch.Attr).subject, "Walker")
+    & (C.Value(cm.attrs.points) = C.Value(oa.points)), "a character's: its Own a Big Mecha still names the mecha");
+  Check.Check((oa.mecha = w) & (w.owner = c), "the entities copied unchanged")
+END Several;
+
 PROCEDURE Weapons;
   VAR we: Ch.Entity; wes, wback: Ch.Entities; w, w2, bw: Ch.Attr; acc, area, melee, auto: Ch.Mod; copy: C.Mod;
 BEGIN
@@ -229,6 +260,7 @@ BEGIN
   Defects;
   Skills;
   Mecha;
+  Several;
   Weapons;
   SaveLoad;
   Check.Summary

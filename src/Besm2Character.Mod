@@ -832,6 +832,18 @@ BEGIN
   RETURN e
 END New;
 
+(* A new mecha (PLAN.md, Part B, step 9), named name (NIL: none):
+   Besm2Save writes `mecha: true`, and its derived values. *)
+PROCEDURE NewMecha*(name: Rope): Entity;
+  VAR e: Entity;
+BEGIN
+  e := New(); C.InitEntity(e, TRUE); e.hasMechaKey := TRUE;
+  e.name := name; e.hasName := name # NIL;
+  e.label := Ropes.FromString("the mecha");
+  C.Compute(e);
+  RETURN e
+END NewMecha;
+
 (* The new entities: e alone. *)
 PROCEDURE One*(e: Entity): Entities;
   VAR es: Entities;
@@ -1386,25 +1398,15 @@ BEGIN
   last := r
 END AddResult;
 
-(* Reads the file at path, or standard input if stdin, as pobesm2_fmt2
-   reads it: every entity of every document, each read by
-   Besm2Entities, then here; a document whose top level isn't a
-   sequence is a problem, and the file goes on; a YAML error ends the
-   file.  results: each entity read, or problem, in order; es: the
-   entities, linked, computed and with the file's numbers (notices,
-   for all of them, each naming its entity).  Besm2Config.unicodeMinus
-   is Besm2Entities', so parse the command line first. *)
-PROCEDURE Read*(path: ARRAY OF CHAR; stdin: BOOLEAN; VAR results: Result; VAR es: Entities);
-  VAR s: FyamlStreams.Stream; d: Fyaml.Document; err, yerr: Fyaml.Error; root, item: Fyaml.Node;
+(* Read's, from stream s (NIL: it couldn't be opened, err says why),
+   naming it name in messages. *)
+PROCEDURE ReadStream(s: FyamlStreams.Stream; err: Fyaml.Error; name: ARRAY OF CHAR;
+                     VAR results: Result; VAR es: Entities);
+  VAR d: Fyaml.Document; yerr: Fyaml.Error; root, item: Fyaml.Node;
     it: Fyaml.ItemIter; x: Besm2Entities.Entity; e: Entity; last, r: Result; msg: Rope;
     n, i: INTEGER; resolved: BOOLEAN;
 BEGIN
   results := NIL; last := NIL; es := NIL; ClearNotices;
-  (* Read unresolved, so that Besm2Check can see the aliases, then
-     resolved, as pobesm2_fmt2 reads. *)
-  IF stdin THEN s := FyamlStreams.OpenStdinWith({Fyaml.NoResolve}, err)
-  ELSE s := FyamlStreams.OpenFileWith(path, {Fyaml.NoResolve}, err)
-  END;
   IF s = NIL THEN AddResult(results, last, NIL, err, NIL); RETURN END;
   n := 0; i := 0;
   d := s.Next(err);
@@ -1414,8 +1416,7 @@ BEGIN
     IF resolved THEN root := d.Root() END;
     IF ~resolved THEN AddResult(results, last, NIL, yerr, NIL)
     ELSIF (root = NIL) OR ~root.IsSequence() THEN
-      msg := Ropes.FromString("expected a top-level YAML sequence of entities in ");
-      IF stdin THEN Besm2Text.Add(msg, Fyaml.stdinName) ELSE Besm2Text.Add(msg, path) END;
+      msg := Ropes.FromString("expected a top-level YAML sequence of entities in "); Besm2Text.Add(msg, name);
       AddResult(results, last, NIL, NIL, msg)
     ELSE
       root.Items(it);
@@ -1444,7 +1445,35 @@ BEGIN
     WHILE r # NIL DO IF r.entity # NIL THEN es[i] := r.entity; INC(i) END; r := r.next END;
     Finish(es)
   END
+END ReadStream;
+
+(* Reads the file at path, or standard input if stdin, as pobesm2_fmt2
+   reads it: every entity of every document, each read by
+   Besm2Entities, then here; a document whose top level isn't a
+   sequence is a problem, and the file goes on; a YAML error ends the
+   file.  results: each entity read, or problem, in order; es: the
+   entities, linked, computed and with the file's numbers (notices,
+   for all of them, each naming its entity).  Besm2Config.unicodeMinus
+   is Besm2Entities', so parse the command line first. *)
+PROCEDURE Read*(path: ARRAY OF CHAR; stdin: BOOLEAN; VAR results: Result; VAR es: Entities);
+  VAR s: FyamlStreams.Stream; err: Fyaml.Error;
+BEGIN
+  (* Read unresolved, so that Besm2Check can see the aliases, then
+     resolved, as pobesm2_fmt2 reads. *)
+  IF stdin THEN
+    s := FyamlStreams.OpenStdinWith({Fyaml.NoResolve}, err); ReadStream(s, err, Fyaml.stdinName, results, es)
+  ELSE s := FyamlStreams.OpenFileWith(path, {Fyaml.NoResolve}, err); ReadStream(s, err, path, results, es)
+  END
 END Read;
+
+(* The entities of YAML text, as Read reads a file: for Besm2Save.Copy. *)
+PROCEDURE ReadText*(text: Rope; VAR results: Result; VAR es: Entities);
+  VAR s: FyamlStreams.Stream; err: Fyaml.Error; t: Besm2Text.String;
+BEGIN
+  t := Besm2Text.Chars(text);
+  s := FyamlStreams.OpenStringWith(t^, {Fyaml.NoResolve}, err);
+  ReadStream(s, err, Fyaml.stringName, results, es)
+END ReadText;
 
 (* The text of problem r, for a message: polibfyaml's, or "PATH: MSG". *)
 PROCEDURE Problem*(r: Result; path: ARRAY OF CHAR): Rope;

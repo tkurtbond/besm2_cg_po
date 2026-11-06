@@ -1557,6 +1557,50 @@ saved YAML holds names as the formatters expect them, without pages.
    owner's Own a Big Mecha, its Mecha Points checked; several entities
    in a file (Add, Duplicate, Remove, Move, Next/Previous), as
    ova_cg_po's Phase 13.
+   *Done 2026-11-06.*  New module `src/Besm2MechaPanel.Mod`: the
+   **Mecha** tab.  On a character it lists each Own a Big Mecha
+   (p. 59, PDF 61) with its Mecha Points (20 a Level) and what its
+   mecha spends of them ("Walker spends 18 of 20", ": over" past
+   them, "not counted", "no mecha of that name in the file", "no
+   subject: no mecha"); on a mecha, each character's Own a Big Mecha
+   naming it.  **?** buttons open Own a Big Mecha and Mecha
+   Attributes.  **Show Mecha** / **Show Owner** goes to the other
+   entity; **New Mecha** adds a mecha named by the subject (asking for
+   the name, and setting the subject, when there is none).
+   The window gained a **Character** menu (Add Character, Add Mecha,
+   Duplicate, Remove..., Move Up, Move Down, Next on Ctrl+PgDn,
+   Previous on Ctrl+PgUp) and a Choice of the file's entities at the
+   menu bar's right ("2. Walker (mecha)", `&` doubled); the title ends
+   "(i of n)" when the file has more than one.
+   `src/Besm2Character.Mod` gained `ReadText` and `NewMecha`,
+   `src/Besm2Save.Mod` `Copy` (the entity written and read again),
+   `src/Besm2Widgets.Mod` `Panel.Offer`.
+   Decided while building it (2026-11-06):
+   - **Two characters naming one mecha**: the last in the file prices
+     it (as `Besm2Calc.Compute` already did); the other's line says
+     "not counted: X owns it".
+   - **Renaming a mecha** carries the new name to the subject of every
+     Own a Big Mecha tied to it, so the tie survives.
+   - **Duplicate keeps the name**, so a duplicated mecha is unowned
+     (Link ties the first mecha of a name) until it is renamed; Move
+     can change which one is tied, and the tab shows which.
+   - **Remove asks first** and is greyed for the only entity; the one
+     after is shown, or the one before when the last was removed.
+   - **On a mecha**, the Attributes and Defects tabs offer the Mecha
+     Attributes and Mecha Defects first.
+   Found while building it: a mecha whose owner was removed or renamed
+   kept its old Mecha Points, since `Besm2Calc.Totals` set them only
+   when it had an owner.  An unowned mecha now has 0 (shown "(no owner
+   in the file)").
+   Tests: `test/TestModel.Mod`'s Several (NewMecha, ToText and
+   ReadText, Copy of a mecha and a character) and
+   `test/TestWindow.Mod`'s Several (the menu and Choice, the Mecha tab
+   on both sides, rename, New Mecha, Duplicate, Move, Remove cancelled
+   and done, Next/Previous, Save and loaded again, File > New).
+   Planted bugs caught: no rename of the subjects; Next not greyed on
+   the last; `&` not doubled; Remove showing the first; no "not
+   counted"; New Mecha not setting the subject.  `make test`, `make
+   test-headless`, `make test-sway` and `make valgrind-headless` pass.
 10. **Options and limits.** Character > Creation...: the campaign's
     Character Points, Background Points, genre, Skill Points, Staged
     Stat Cost, the GM's ceilings.

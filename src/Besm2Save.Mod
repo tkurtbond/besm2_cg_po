@@ -455,6 +455,19 @@ BEGIN
   RETURN r
 END ToText;
 
+(* A copy of es[i], sharing nothing with it: es written as YAML and
+   read back, so that it holds just what a save would, and is priced as
+   es prices it (a mecha by its owner); NIL if that fails. *)
+PROCEDURE Copy*(es: Ch.Entities; i: INTEGER): Ch.Entity;
+  VAR text: Rope; results: Ch.Result; copies: Ch.Entities;
+BEGIN
+  text := ToText(es);
+  IF text = NIL THEN RETURN NIL END;
+  Ch.ReadText(text, results, copies);
+  IF (copies = NIL) OR (LEN(copies^) # LEN(es^)) THEN RETURN NIL END;
+  RETURN copies[i]
+END Copy;
+
 (* Writes the entities es to the file at path, through path.tmp, which
    replaces it only once written.  FALSE, with msg, if it couldn't be,
    the old file left as it was. *)

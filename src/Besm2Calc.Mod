@@ -724,7 +724,7 @@ END ComputeDerived;
 (* ---- Mecha ---- *)
 
 (* The Mecha Points one Own a Big Mecha gives (p. 59). *)
-PROCEDURE MechaPoints(a: Attr): INTEGER;
+PROCEDURE MechaPoints*(a: Attr): INTEGER;
   VAR less: INTEGER;
 BEGIN
   less := 0; WHILE ~R.SameName(a.item.option[less].label, "less powerful, 5 fewer MP") DO INC(less) END;
@@ -735,6 +735,9 @@ PROCEDURE Totals(e: Entity);
 BEGIN
   e.spent := e.statTotal + e.attrTotal - e.bonusPoints;
   IF e.isMecha THEN
+    (* No owner gives none: not the Mecha Points of one it had, gone
+       since (removed, or its Own a Big Mecha renamed). *)
+    IF e.owner = NIL THEN e.available := 0 END;
     IF (e.owner # NIL) & (e.spent > e.available) THEN Warn(e, OverMechaPoints, NIL, NIL, NIL, NIL, -1) END
   ELSE
     IF e.creation.characterPoints > 0 THEN e.available := e.creation.characterPoints + e.creation.backgroundPoints

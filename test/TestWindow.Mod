@@ -14,14 +14,16 @@ MODULE TestWindow; (* Besm2Window: the Character tab, driven as a user would, an
    PDF... and Viewer....  Step 7: the Attributes, Defects, Skills and
    Background tabs, then what they made saved and loaded again.  Step
    8: the Weapon Attack dialog, its Cancel and OK, and Close while it
-   is open.  Runs
+   is open.  Step 9: the Mecha tab, the Character menu and the
+   entities' Choice, then the file of several saved and loaded again.
+   Runs
    in test/: its files are data/*.yaml, and what it saves goes in
    ../obj; it opens copies of the data/*.yaml it changes there, so a
    File > Save gone wrong can't change it.  poc drops a string literal
    inside an array index (a[F("x")]), so none is written there. *)
 
 IMPORT Check, Fl, FlBrowsers, FlMenus, FlText, C := Besm2Calc, Ch := Besm2Character, R := Besm2Rules, Besm2Background,
-  Besm2ItemPanel, Besm2Save, Besm2Text, Besm2Viewer, Besm2Widgets, D := Besm2WeaponDialog, W := Besm2Window, Out, Ropes;
+  Besm2ItemPanel, MP := Besm2MechaPanel, Besm2Save, Besm2Text, Besm2Viewer, Besm2Widgets, D := Besm2WeaponDialog, W := Besm2Window, Out, Ropes;
 
 CONST
   SavePath = "../obj/window-test.yaml";
@@ -29,6 +31,7 @@ CONST
   OpenPath = "../obj/window.yaml";  (* data/window.yaml, copied *)
   BarePath = "../obj/bare.yaml";  (* data/bare.yaml, copied *)
   WeaponPath = "../obj/window-weapon.yaml";
+  SeveralPath = "../obj/window-several.yaml";  (* data/window.yaml, copied *)
 
 TYPE Rope = Ropes.Rope;
 
@@ -40,6 +43,8 @@ VAR
   chosen: Rope;             (* what choosePath and choosePdf answer; NIL: cancelled *)
   typed: Rope;              (* what askText answers; NIL: cancelled *)
   prompted: Rope;           (* what askText was shown last *)
+  confirmed: BOOLEAN;       (* what confirm answers *)
+  confirms: INTEGER;        (* how often it was asked *)
   es: Ch.Entities;
   e: Ch.Entity;
   msg: Rope;
@@ -70,6 +75,10 @@ END ChoosePdf;
 PROCEDURE AskText(prompt: Rope; VAR text: Rope): BOOLEAN;
 BEGIN prompted := prompt; IF typed # NIL THEN text := typed END; RETURN typed # NIL
 END AskText;
+
+PROCEDURE Confirm(q, yes: Rope): BOOLEAN;
+BEGIN INC(confirms); question := q; RETURN confirmed
+END Confirm;
 
 (* ---- Driving and looking ---- *)
 
@@ -368,7 +377,7 @@ BEGIN
   Check.Check((LEN(W.entities^) = 2) & (W.current = 1) & Is(e.name, "Pilot") & W.entities[0].isMecha,
     "File > Open: every entity, the first character shown, after the mecha");
   Check.Check((tells = before) & ~W.modified, "a file the rules agree with: nothing said, unchanged");
-  Check.Check(TitleIs(" - window.yaml"), "the title names the file");
+  Check.Check(TitleIs(" - window.yaml (2 of 2)"), "the title names the file, and which of its entities is shown");
   Check.Check(Is(W.path, OpenPath), "and the path is kept");
   W.nameIn.Value(label);
   Check.Check(label = "Pilot", "the name is shown");
@@ -389,7 +398,7 @@ BEGIN
   chosen := Rp(SavePath2);
   Pick(W.saveAsItem);
   Check.Check(Is(W.path, SavePath2) & ~W.modified, "File > Save As: saved, to the file now shown");
-  Check.Check(TitleIs(" - window-two.yaml"), "and the title names it");
+  Check.Check(TitleIs(" - window-two.yaml (2 of 2)"), "and the title names it");
   es := Reload(SavePath2);
   Check.Check((es # NIL) & (LEN(es^) = 2) & Is(es[0].name, "Walker") & es[0].isMecha & Is(es[1].name, "Pilot")
     & (es[1].stat[C.Body] = 6) & (C.Value(es[1].statPoints[C.Body]) = 6),
@@ -651,6 +660,139 @@ BEGIN
 END Rulebook;
 
 (* The last line of the dialog's warnings holding text; 0 if none. *)
+(* ---- Mecha and several entities (step 9) ---- *)
+
+(* Whether menu item i is inactive. *)
+PROCEDURE Inactive(i: INTEGER): BOOLEAN;
+BEGIN RETURN FlMenus.MenuInactive * W.bar.ItemFlags(i) # {}
+END Inactive;
+
+(* Whether the Choice's item i reads want. *)
+PROCEDURE ChoiceIs(i: INTEGER; want: ARRAY OF CHAR): BOOLEAN;
+  VAR label: ARRAY 128 OF CHAR;
+BEGIN
+  W.entityChoice.ItemLabel(i, label);
+  IF label # want THEN Out.String("    choice: "); Out.String(label); Out.Ln END;
+  RETURN label = want
+END ChoiceIs;
+
+PROCEDURE Choose(i: INTEGER);
+BEGIN IF W.entityChoice.SetValue(i) THEN END; W.entityChoice.DoCallback
+END Choose;
+
+(* The Attr of e tied to m; NIL for none. *)
+PROCEDURE TiedTo(e, m: Ch.Entity): Ch.Attr;
+  VAR a: C.Attr;
+BEGIN
+  a := e.attrs; WHILE (a # NIL) & (a.mecha # m) DO a := a.next END;
+  IF a = NIL THEN RETURN NIL ELSE RETURN a(Ch.Attr) END
+END TiedTo;
+
+PROCEDURE Several;
+  VAR pilot, walker, hopper, copy: Ch.Entity; p: Besm2ItemPanel.AttrPanel; a: Ch.Attr; label: ARRAY 128 OF CHAR;
+BEGIN
+  Check.Check(Item("&Character/&Next", W.nextItem, Fl.KeyPageDown, Fl.Command)
+    & Item("&Character/&Previous", W.previousItem, Fl.KeyPageUp, Fl.Command)
+    & Item("&Character/&Remove...", W.removeItem, 0, {}), "the Character menu, Next and Previous on Ctrl+PgDn and PgUp");
+  Copy("data/window.yaml", SeveralPath);
+  chosen := Rp(SeveralPath); answer := W.Discard; Pick(W.openItem);
+  walker := W.entities[0]; pilot := W.entities[1]; p := W.attrPanel;
+  Check.Check((W.current = 1) & TitleIs(" - window-several.yaml (2 of 2)") & (W.entityChoice.Length() = 3)
+    & ChoiceIs(0, "1. Walker (mecha)") & ChoiceIs(1, "2. Pilot") & (W.entityChoice.Value() = 1),
+    "two entities: the title says which, the Choice lists them");
+  Check.Check(~Inactive(W.removeItem) & ~Inactive(W.moveUpItem) & ~Inactive(W.previousItem) & Inactive(W.moveDownItem)
+    & Inactive(W.nextItem), "the last: Move Down and Next off");
+
+  Check.Check((MP.n = 1) & Holds(MP.list, 1, "1 Own a Big Mecha: Walker") & Holds(MP.list, 1, "20 MP")
+    & Holds(MP.list, 1, "Walker spends 4 of 20") & (MP.list.Count() = 1) & MP.showButton.Active() & MP.newButton.Active()
+    & TabLine(W.MechaList, W.CharacterPoints) & TabWarnings(),
+    "Mecha tab: the character's Own a Big Mecha, its Mecha Points, its mecha's; the totals");
+  MP.showButton.DoCallback;
+  Check.Check((W.current = 0) & (W.entity = walker) & TitleIs(" - window-several.yaml (1 of 2)")
+    & Inactive(W.moveUpItem) & Inactive(W.previousItem) & ~Inactive(W.nextItem), "Show Mecha, the only line: the mecha shown");
+  Check.Check((MP.n = 1) & Holds(MP.list, 1, "Pilot: 1 Own a Big Mecha: Walker") & Holds(MP.list, 1, "20 MP")
+    & ~MP.newButton.Active() & Line(W.CharacterPoints, "Mecha Points: Attributes 4 - Bonus Points 0 = 4 of 20", FALSE),
+    "on the mecha: its owner, and its Mecha Points of what that gives");
+  Check.Check((p.kind = R.MechaAttribute) & (p.second = R.Attribute) & (W.defectPanel.kind = R.MechaDefect),
+    "a mecha's lists offer the Mecha Attributes and Defects first");
+  W.nameIn.SetValue("Strider"); W.nameIn.DoCallback;
+  Check.Check(Is(pilot.attrs(Ch.Attr).subject, "Strider") & (pilot.attrs.mecha = walker) & ChoiceIs(0, "1. Strider (mecha)")
+    & W.modified, "the mecha renamed: its owner's Own a Big Mecha follows, still tied; the Choice too");
+  MP.showButton.DoCallback;
+  Check.Check((W.entity = pilot) & (p.kind = R.Attribute) & (p.second = R.MechaAttribute)
+    & Holds(MP.list, 1, "1 Own a Big Mecha: Strider"), "Show Owner: the character, its lists the character's again");
+
+  p.Blank; ChooseItem(p, R.Find("Own a Big Mecha")); p.text.SetValue(""); p.spinner.SetValue(1); p.add.DoCallback;
+  Check.Check((MP.n = 2) & Holds(MP.list, 2, "no subject"), "an Own a Big Mecha with no subject: no mecha");
+  before := tells; MP.newButton.DoCallback;
+  Check.Check((tells = before + 1) & Is(told, "Choose an Own a Big Mecha first.") & (LEN(W.entities^) = 2),
+    "New Mecha, two lines, none chosen: said so");
+  Select(MP.list, 1); before := tells; MP.newButton.DoCallback;
+  Check.Check((tells = before + 1) & (LEN(W.entities^) = 2), "New Mecha on one with its mecha: said so");
+  Select(MP.list, 2); typed := Rp("  Hopper "); MP.newButton.DoCallback; typed := NIL;
+  hopper := W.entity; a := TiedTo(pilot, hopper);
+  Check.Check((LEN(W.entities^) = 3) & (W.current = 2) & hopper.isMecha & Is(hopper.name, "Hopper") & (a # NIL)
+    & Is(a.subject, "Hopper") & (hopper.owner = pilot) & (hopper.available = 20) & TitleIs(" - window-several.yaml (3 of 3) *"),
+    "New Mecha, the name asked: the subject given it, the mecha last, shown, tied");
+  W.nameIn.SetValue("Hop & Skip"); W.nameIn.DoCallback;
+  Check.Check(ChoiceIs(2, "3. Hop && Skip (mecha)") & Is(a.subject, "Hop & Skip") & (a.mecha = hopper),
+    "the Choice doubles an &");
+
+  Pick(W.duplicateItem); copy := W.entity;
+  Check.Check((LEN(W.entities^) = 4) & (W.current = 3) & (copy # hopper) & Is(copy.name, "Hop & Skip") & (copy.owner = NIL)
+    & (copy.attrs = NIL)
+    & Line(W.CharacterPoints, "Mecha Points: Attributes 0 - Bonus Points 0 = 0 (no owner in the file)", FALSE)
+    & (MP.n = 0) & Holds(MP.list, 1, "No character in the file owns this mecha") & ~MP.showButton.Active(),
+    "Duplicate: the copy last, shown; a mecha of a name already tied, so no owner");
+  Pick(W.moveUpItem);
+  Check.Check((W.current = 2) & (W.entities[2] = copy) & (W.entities[3] = hopper) & (a.mecha = copy) & (hopper.owner = NIL)
+    & ChoiceIs(2, "3. Hop && Skip (mecha)"), "Move Up: swapped, still shown; the first of the name is the one tied");
+  confirmed := FALSE; before := confirms; Pick(W.removeItem);
+  Check.Check((confirms = before + 1) & Is(question, "Remove Hop & Skip from the file?") & (LEN(W.entities^) = 4),
+    "Remove..., cancelled: asked, nothing removed");
+  confirmed := TRUE; Pick(W.removeItem);
+  Check.Check((LEN(W.entities^) = 3) & (W.current = 2) & (W.entity = hopper) & (a.mecha = hopper) & (hopper.owner = pilot),
+    "Remove: gone, the one after shown, the other tied again");
+
+  Pick(W.addMechaItem);
+  Check.Check((LEN(W.entities^) = 4) & (W.current = 3) & W.entity.isMecha & ~W.entity.hasName & ChoiceIs(3, "4. (no name) (mecha)")
+    & Holds(MP.list, 1, "No character in the file owns this mecha"), "Add Mecha: a new mecha, last");
+  Pick(W.nextItem);
+  Check.Check(W.current = 3, "Next at the last: nothing");
+  Pick(W.previousItem);
+  Check.Check(W.entity = hopper, "Previous");
+  Pick(W.nextItem);
+  Check.Check(W.current = 3, "Next");
+  Choose(1);
+  Check.Check(W.entity = pilot, "the Choice shows the one chosen");
+  Pick(W.addCharacterItem);
+  Check.Check((LEN(W.entities^) = 5) & (W.current = 4) & ~W.entity.isMecha & (MP.n = 0)
+    & Holds(MP.list, 1, "add it on the Attributes tab") & ~MP.showButton.Active(), "Add Character: a new one, last");
+  before := tells; MP.newButton.DoCallback;
+  Check.Check((tells = before + 1) & (LEN(W.entities^) = 5), "New Mecha with no Own a Big Mecha: said so");
+
+  Choose(1); Pick(W.duplicateItem); copy := W.entity;
+  Check.Check((LEN(W.entities^) = 6) & Is(copy.name, "Pilot") & (walker.owner = copy) & Holds(MP.list, 1, "Strider spends 4 of 20"),
+    "a character duplicated: its copy, last, prices their mecha");
+  Choose(1);
+  Check.Check(Holds(MP.list, 1, "Strider is Pilot's: not counted"), "and the first says its doesn't count");
+  Choose(0);
+  Check.Check((MP.n = 2) & Holds(MP.list, 1, "not counted: Pilot owns it") & ~Holds(MP.list, 2, "not counted"),
+    "the mecha lists both, and which counts");
+  Choose(5); Pick(W.removeItem);
+  Check.Check((LEN(W.entities^) = 5) & (W.current = 4) & (walker.owner = pilot), "the copy removed, the last: the one before shown");
+
+  chosen := Rp(SeveralPath); Pick(W.saveItem);
+  es := Reload(SeveralPath);
+  Check.Check((es # NIL) & (LEN(es^) = 5) & Is(es[0].name, "Strider") & Is(es[1].name, "Pilot") & Is(es[2].name, "Hop & Skip")
+    & es[3].isMecha & ~es[3].hasName & ~es[4].isMecha & (TiedTo(es[1], es[0]) # NIL) & (TiedTo(es[1], es[2]) # NIL)
+    & (es[2].available = 20), "saved and loaded again: in order, tied, priced");
+
+  answer := W.Discard; Pick(W.saveItem); Pick(W.newItem);
+  Check.Check((LEN(W.entities^) = 1) & Inactive(W.removeItem) & Inactive(W.nextItem) & Inactive(W.previousItem)
+    & TitleIs("") & ChoiceIs(0, "1. (no name)"), "File > New: one, Remove off, the title without a count")
+END Several;
+
 PROCEDURE DialogWarning(text: ARRAY OF CHAR): INTEGER;
   VAR i: INTEGER; line: ARRAY 256 OF CHAR;
 BEGIN
@@ -754,7 +896,7 @@ BEGIN
 END Weapons;
 
 BEGIN
-  W.tell := Tell; W.ask := Ask; W.choosePath := ChoosePath; W.choosePdf := ChoosePdf; W.askText := AskText;
+  W.tell := Tell; W.ask := Ask; W.confirm := Confirm; confirmed := FALSE; confirms := 0; W.choosePath := ChoosePath; W.choosePdf := ChoosePdf; W.askText := AskText;
   tells := 0; asked := 0; answer := W.Cancel; chosen := NIL; typed := NIL;
   Basics;
   NewCharacter;
@@ -769,6 +911,7 @@ BEGIN
   Defects;
   Skills;
   Background;
+  Several;
   Weapons;
   W.Close;
   Check.Check(W.window = NIL, "Close deletes it");

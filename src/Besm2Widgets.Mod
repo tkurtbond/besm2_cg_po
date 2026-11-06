@@ -292,6 +292,15 @@ BEGIN
   p.ChooseIndex(-1)
 END Refill;
 
+(* The Choice offers kind's names, then second's (-1: none), from now
+   on: filled again, with nothing chosen, if that changes it. *)
+PROCEDURE (p: Panel) Offer*(kind, second: INTEGER);
+BEGIN
+  IF (kind # p.kind) OR (second # p.second) THEN
+    p.kind := kind; p.second := second; p.Refill
+  END
+END Offer;
+
 (* The browser filled again, its line line selected (0: none) and the
    controls loaded from it. *)
 PROCEDURE (p: Panel) Refresh*(line: INTEGER);

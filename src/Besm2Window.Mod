@@ -11,8 +11,14 @@ MODULE Besm2Window; (* besm2_cg_po's main window: the menu bar, the Character ta
    others are empty until their steps.
 
    A file holds one entity or several (characters and mecha).  All are
-   kept, in order, and saved back; the one shown is the first that
-   isn't a mecha, or the first if all are (step 9 adds the switching).
+   kept, in order, and saved back; the one shown first is the first
+   that isn't a mecha, or the first if all are.  Step 9, after
+   ova_cg_po's Phase 13: the Choice at the menu bar's right shows
+   another, and the Character menu adds, copies, removes and moves
+   them.  The Mecha tab (Besm2MechaPanel) ties a character's Own a Big
+   Mecha to its mecha, and a mecha to its owners; renaming a mecha
+   renames the subject of each Own a Big Mecha tied to it, so they stay
+   tied.
 
    Every change a widget makes goes into the entity, then they are all
    computed again (Besm2Character.ComputeAll, since a character prices
@@ -29,11 +35,12 @@ MODULE Besm2Window; (* besm2_cg_po's main window: the menu bar, the Character ta
 
 IMPORT Fl, FlBrowsers, FlDialogs, FlInputs, FlLayout, FlMenus, FlPreferences, FlValuators,
   C := Besm2Calc, Ch := Besm2Character, R := Besm2Rules, Besm2Layout, Besm2Paths, Besm2Save, Besm2Text,
-  Besm2Background, Besm2ItemPanel, Besm2Viewer, Besm2Warnings, Besm2WeaponDialog, Besm2Widgets, FlButtons, Ropes;
+  Besm2Background, Besm2ItemPanel, Besm2MechaPanel, Besm2Viewer, Besm2Warnings, Besm2WeaponDialog, Besm2Widgets, FlButtons, Ropes;
 
 CONST
   Title* = "BESM2ER Character Generator";
   Width = 640; Height = 800; BarHeight = 25; TabHeight = 25;
+  ChoiceW = 250;  (* the entities' Choice, at the menu bar's right *)
   Row = 25;
   LeftX = 10; ColumnW = 620;
   Top = BarHeight + TabHeight + 10;
@@ -47,7 +54,7 @@ CONST
   CharacterPoints* = 0; BonusPoints* = 1; SkillPoints* = 2; NPointLines = 3;
 
   (* tabPoints and tabWarnings: the list tabs' *)
-  AttributesList* = 0; DefectsList* = 1; SkillsList* = 2; NLists* = 3;
+  AttributesList* = 0; DefectsList* = 1; SkillsList* = 2; MechaList* = 3; NLists* = 4;
   ListBottom = Height - 220;  (* where a list tab's panel ends, and its points begin *)
 
 TYPE
@@ -66,6 +73,9 @@ VAR
   characterTab-, attributesTab-, defectsTab-, skillsTab-, mechaTab-, backgroundTab-, previewTab-: Fl.Group;
   newItem-, openItem-, saveItem-, saveAsItem-, quitItem-: INTEGER;
   rulebookItem-, choosePdfItem-, viewerItem-: INTEGER;
+  addCharacterItem-, addMechaItem-, duplicateItem-, removeItem-, moveUpItem-, moveDownItem-,
+  nextItem-, previousItem-: INTEGER;
+  entityChoice-: FlMenus.Choice;  (* the entities, by number and name; current chosen *)
 
   (* The file's entities, in order, and the one shown, entities[current];
      the file they came from or were saved to (NIL: none), and whether
@@ -96,6 +106,9 @@ VAR
      showing text as it is. *)
   tell*: PROCEDURE (text: Rope);
   ask*: PROCEDURE (question: Rope): INTEGER;
+  (* confirm asks whether to do what question says, as yes, which names
+     it ("Remove"); FALSE is Cancel. *)
+  confirm*: PROCEDURE (question, yes: Rope): BOOLEAN;
   choosePath*: PROCEDURE (save: BOOLEAN; VAR path: Rope): BOOLEAN;
   choosePdf*: PROCEDURE (VAR path: Rope): BOOLEAN;
   askText*: PROCEDURE (prompt: Rope; VAR text: Rope): BOOLEAN;
@@ -150,6 +163,14 @@ BEGIN
   IF (r < 0) OR (r > 2) THEN r := Cancel END;
   RETURN r
 END DialogAsk;
+
+(* Cancel is the default, pushed by Enter. *)
+PROCEDURE DialogConfirm(question, yes: Rope): BOOLEAN;
+  VAR q, y: Besm2Text.String;
+BEGIN
+  q := Besm2Text.Chars(question); y := Besm2Text.Chars(yes);
+  RETURN FlDialogs.Choice(q^, y^, "Cancel", "") = 0
+END DialogConfirm;
 
 PROCEDURE DialogPath(save: BOOLEAN; VAR p: Rope): BOOLEAN;
   VAR c: FlDialogs.NativeFileChooser; name: ARRAY 4096 OF CHAR; filter: ARRAY 32 OF CHAR; ok: BOOLEAN;
@@ -290,11 +311,20 @@ BEGIN
   RETURN Ropes.Substring(path, slash + 1, Ropes.Length(path) - slash - 1)
 END FileName;
 
+(* How many entities the file has. *)
+PROCEDURE Count(): INTEGER;
+BEGIN RETURN SHORT(LEN(entities^))
+END Count;
+
 PROCEDURE ShowTitle;
   VAR t: Rope; s: Besm2Text.String;
 BEGIN
   t := Rp(Title);
   IF path # NIL THEN Besm2Text.Add(t, " - "); t := Ropes.Cat(t, FileName()) END;
+  IF Count() > 1 THEN
+    Besm2Text.Add(t, " ("); Besm2Text.AddInt(t, current + 1);
+    Besm2Text.Add(t, " of "); Besm2Text.AddInt(t, Count()); Besm2Text.Add(t, ")")
+  END;
   IF modified THEN Besm2Text.Add(t, " *") END;
   s := Besm2Text.Chars(t); window.SetLabel(s^)
 END ShowTitle;
@@ -344,6 +374,7 @@ BEGIN
   Besm2Text.Add(r, " - Bonus Points "); Besm2Text.AddInt(r, e.bonusPoints);
   Besm2Text.Add(r, " = "); Besm2Text.AddInt(r, e.spent);
   IF e.available > 0 THEN Besm2Text.Add(r, " of "); Besm2Text.AddInt(r, e.available)
+  ELSIF e.isMecha & (e.owner = NIL) THEN Besm2Text.Add(r, " (no owner in the file)")
   ELSE Besm2Text.Add(r, " (no limit set)")
   END;
   SetLines(CharacterPoints, r,
@@ -376,7 +407,8 @@ BEGIN
   END;
   IF e.hasAR OR e.ar.overridden THEN derived[Ch.AR].Show ELSE derived[Ch.AR].Hide END;
   ShowPoints;
-  ShowWarnings
+  ShowWarnings;
+  Besm2MechaPanel.Refresh
 END ShowNumbers;
 
 (* After any change to an entity: computed again and shown. *)
@@ -462,7 +494,177 @@ BEGIN
   Changed
 END StatAction;
 
+(* ---- The file's entities ---- *)
+
+(* Entity i's label in the Choice: its number and name, " (mecha)" for
+   a mecha, any "&" doubled so that FLTK shows it. *)
+PROCEDURE EntityLabel(i: INTEGER): Rope;
+  VAR r, name: Rope; k: LONGINT; ch: CHAR;
+BEGIN
+  r := Besm2Text.Int(i + 1); Besm2Text.Add(r, ". ");
+  name := Besm2Text.Trim(entities[i].name);
+  IF name = NIL THEN Besm2Text.Add(r, "(no name)")
+  ELSE
+    FOR k := 0 TO Ropes.Length(name) - 1 DO
+      ch := Ropes.Fetch(name, k);
+      IF ch = "&" THEN r := Ropes.AppendChar(r, "&") END;
+      r := Ropes.AppendChar(r, ch)
+    END
+  END;
+  IF entities[i].isMecha THEN Besm2Text.Add(r, " (mecha)") END;
+  RETURN r
+END EntityLabel;
+
+(* Item i of the menu bar active if on. *)
+PROCEDURE Activate(i: INTEGER; on: BOOLEAN);
+  VAR f: SET;
+BEGIN
+  f := bar.ItemFlags(i);
+  IF on THEN f := f - FlMenus.MenuInactive ELSE f := f + FlMenus.MenuInactive END;
+  bar.SetItemFlags(i, f)
+END Activate;
+
+(* The Choice lists the entities again, current chosen, and the
+   Character menu's items are active where they can do something. *)
+PROCEDURE ShowEntities;
+  VAR i, n: INTEGER; s: Besm2Text.String;
+BEGIN
+  n := Count();
+  entityChoice.Clear;
+  FOR i := 0 TO n - 1 DO
+    IF entityChoice.Add("-", 0, {}, NIL, {}) >= 0 THEN END;
+    s := Besm2Text.Chars(EntityLabel(i)); entityChoice.SetItemLabel(i, s^)
+  END;
+  IF entityChoice.SetValue(current) THEN END;
+  Activate(removeItem, n > 1);
+  Activate(moveUpItem, current > 0); Activate(previousItem, current > 0);
+  Activate(moveDownItem, current < n - 1); Activate(nextItem, current < n - 1)
+END ShowEntities;
+
+(* Shows entity i. *)
+PROCEDURE ShowEntity(i: INTEGER);
+BEGIN
+  current := i; entity := entities[i];
+  Ch.Relink(entities); Ch.ComputeAll(entities);
+  ShowAll
+END ShowEntity;
+
+(* Shows e, one of the entities (the Mecha tab's Show). *)
+PROCEDURE ShowOne(e: Ch.Entity);
+  VAR i: INTEGER;
+BEGIN
+  i := 0; WHILE (i < Count()) & (entities[i] # e) DO INC(i) END;
+  IF i < Count() THEN ShowEntity(i) END
+END ShowOne;
+
+PROCEDURE EntityChoiceAction(w: Fl.Widget);
+  VAR i: INTEGER;
+BEGIN
+  i := entityChoice.Value();
+  IF (i >= 0) & (i < Count()) & (i # current) THEN ShowEntity(i) END
+END EntityChoiceAction;
+
+(* Adds e after the last entity, and shows it. *)
+PROCEDURE Append(e: Ch.Entity);
+  VAR es: Ch.Entities; i: INTEGER;
+BEGIN
+  NEW(es, Count() + 1);
+  FOR i := 0 TO Count() - 1 DO es[i] := entities[i] END;
+  es[Count()] := e;
+  entities := es;
+  modified := TRUE;
+  ShowEntity(Count() - 1)
+END Append;
+
+(* Character > Add Character, Add Mecha: a new one, last. *)
+PROCEDURE AddCharacterAction(w: Fl.Widget);
+BEGIN Append(Ch.New())
+END AddCharacterAction;
+
+PROCEDURE AddMechaAction(w: Fl.Widget);
+BEGIN Append(Ch.NewMecha(NIL))
+END AddMechaAction;
+
+(* Character > Duplicate: a copy of the one shown, last.  A mecha's
+   copy has its name, so is tied to no one until renamed (the first
+   mecha of a name is the one tied, Besm2Character.Link). *)
+PROCEDURE DuplicateAction(w: Fl.Widget);
+  VAR e: Ch.Entity;
+BEGIN
+  e := Besm2Save.Copy(entities, current);
+  IF e = NIL THEN tell(Rp("It couldn't be copied.")) ELSE Append(e) END
+END DuplicateAction;
+
+(* Character > Remove...: the one shown, once the user says so; not
+   the only one, since a file holds at least one.  The one after it is
+   shown, or the one before if it was last. *)
+PROCEDURE RemoveAction(w: Fl.Widget);
+  VAR es: Ch.Entities; i, j: INTEGER; q: Rope;
+BEGIN
+  IF Count() > 1 THEN
+    q := Rp("Remove ");
+    IF Besm2Text.Trim(entity.name) # NIL THEN q := Ropes.Cat(q, Besm2Text.Trim(entity.name))
+    ELSIF entity.isMecha THEN Besm2Text.Add(q, "this mecha")
+    ELSE Besm2Text.Add(q, "this character")
+    END;
+    Besm2Text.Add(q, " from the file?");
+    IF confirm(q, Rp("Remove")) THEN
+      NEW(es, Count() - 1); j := 0;
+      FOR i := 0 TO Count() - 1 DO
+        IF i # current THEN es[j] := entities[i]; INC(j) END
+      END;
+      entities := es;
+      modified := TRUE;
+      IF current = Count() THEN ShowEntity(current - 1) ELSE ShowEntity(current) END
+    END
+  END
+END RemoveAction;
+
+(* The one shown swapped with the one d after it, and still shown.  The
+   order can change which character prices a mecha two name. *)
+PROCEDURE Move(d: INTEGER);
+  VAR e: Ch.Entity;
+BEGIN
+  IF (current + d >= 0) & (current + d < Count()) THEN
+    e := entities[current + d]; entities[current + d] := entity; entities[current] := e;
+    current := current + d;
+    modified := TRUE;
+    ShowEntity(current)
+  END
+END Move;
+
+PROCEDURE MoveUpAction(w: Fl.Widget);
+BEGIN Move(-1)
+END MoveUpAction;
+
+PROCEDURE MoveDownAction(w: Fl.Widget);
+BEGIN Move(1)
+END MoveDownAction;
+
+PROCEDURE NextAction(w: Fl.Widget);
+BEGIN IF current < Count() - 1 THEN ShowEntity(current + 1) END
+END NextAction;
+
+PROCEDURE PreviousAction(w: Fl.Widget);
+BEGIN IF current > 0 THEN ShowEntity(current - 1) END
+END PreviousAction;
+
 (* ---- Text ---- *)
+
+(* A mecha's new name, name, given to the subject of each Own a Big
+   Mecha tied to it, so they stay tied; not a blank one. *)
+PROCEDURE Rename(m: Ch.Entity; name: Rope);
+  VAR i: INTEGER; a: C.Attr;
+BEGIN
+  IF name = NIL THEN RETURN END;
+  FOR i := 0 TO Count() - 1 DO
+    a := entities[i].attrs;
+    WHILE a # NIL DO
+      IF a.mecha = m THEN a(Ch.Attr).subject := name; a(Ch.Attr).hasSubject := TRUE END;
+      a := a.next
+    END
+  END
+END Rename;
 
 (* has and r set from text: an entity keeps a key it had, even emptied. *)
 PROCEDURE SetText(VAR has: BOOLEAN; VAR r: Rope; text: Rope);
@@ -474,7 +676,11 @@ PROCEDURE TextAction(w: Fl.Widget);
 BEGIN
   IF showing THEN RETURN END;
   e := entity;
-  IF w = nameIn THEN SetText(e.hasName, e.name, Besm2Text.Trim(InputText(nameIn)))
+  IF w = nameIn THEN
+    SetText(e.hasName, e.name, Besm2Text.Trim(InputText(nameIn)));
+    IF e.isMecha THEN Rename(e, e.name) END;
+    Changed;  (* the Mecha tab, and the ties *)
+    ShowEntities
   ELSIF w = taglineIn THEN SetText(e.hasTagline, e.tagline, Besm2Text.Trim(InputText(taglineIn)))
   ELSIF w = sizeIn THEN SetText(e.hasSize, e.size, Besm2Text.Trim(InputText(sizeIn)))
   END;
@@ -495,7 +701,9 @@ BEGIN
   SetInput(nameIn, entity.name); SetInput(taglineIn, entity.tagline); SetInput(sizeIn, entity.size);
   attrPanel.Show(entity); defectPanel.Show(entity); skillPanel.Show(entity);
   Besm2Background.Show(entity);
+  Besm2MechaPanel.Show(entities, entity);
   ShowNumbers;
+  ShowEntities;
   ShowTitle;
   showing := FALSE
 END ShowAll;
@@ -730,6 +938,10 @@ PROCEDURE PanelTell(text: Rope);
 BEGIN tell(text)
 END PanelTell;
 
+PROCEDURE PanelAskText(prompt: Rope; VAR text: Rope): BOOLEAN;
+BEGIN RETURN askText(prompt, text)
+END PanelAskText;
+
 PROCEDURE PanelChanged(p: Besm2ItemPanel.ItemPanel);
 BEGIN Changed
 END PanelChanged;
@@ -794,20 +1006,36 @@ PROCEDURE Build*;
   VAR main: MainWindow;
 BEGIN
   NEW(main); window := main; Fl.OpenDoubleWindow(window, Width, Height, Title);
-  NEW(bar); FlMenus.OpenMenuBar(bar, 0, 0, Width, BarHeight, "");
+  NEW(bar); FlMenus.OpenMenuBar(bar, 0, 0, Width - ChoiceW, BarHeight, "");
   newItem := bar.Add("&File/&New", ORD("n"), Fl.Command, NewAction, {});
   openItem := bar.Add("&File/&Open...", ORD("o"), Fl.Command, OpenAction, {});
   saveItem := bar.Add("&File/&Save", ORD("s"), Fl.Command, SaveAction, {});
   saveAsItem := bar.Add("&File/Save &As...", ORD("s"), Fl.Command + Fl.Shift, SaveAsAction, FlMenus.MenuDivider);
   quitItem := bar.Add("&File/&Quit", ORD("q"), Fl.Command, Quit, {});
+  addCharacterItem := bar.Add("&Character/&Add Character", 0, {}, AddCharacterAction, {});
+  addMechaItem := bar.Add("&Character/Add &Mecha", 0, {}, AddMechaAction, {});
+  duplicateItem := bar.Add("&Character/&Duplicate", 0, {}, DuplicateAction, {});
+  removeItem := bar.Add("&Character/&Remove...", 0, {}, RemoveAction, FlMenus.MenuDivider);
+  moveUpItem := bar.Add("&Character/Move &Up", 0, {}, MoveUpAction, {});
+  moveDownItem := bar.Add("&Character/Move Do&wn", 0, {}, MoveDownAction, FlMenus.MenuDivider);
+  nextItem := bar.Add("&Character/&Next", Fl.KeyPageDown, Fl.Command, NextAction, {});
+  previousItem := bar.Add("&Character/&Previous", Fl.KeyPageUp, Fl.Command, PreviousAction, {});
   rulebookItem := bar.Add("&Rulebook/&Open", 0, {}, RulebookAction, FlMenus.MenuDivider);
   choosePdfItem := bar.Add("&Rulebook/&Choose PDF...", 0, {}, ChoosePdfAction, {});
   viewerItem := bar.Add("&Rulebook/&Viewer...", 0, {}, ViewerAction, {});
+  NEW(entityChoice); FlMenus.OpenChoice(entityChoice, Width - ChoiceW, 0, ChoiceW, BarHeight, "");
+  entityChoice.action := EntityChoiceAction;
+  entityChoice.SetTooltip("the character or mecha shown, of the file's");
   NEW(tabs); FlLayout.OpenTabs(tabs, 0, BarHeight, Width, Height - BarHeight, "");
   BuildCharacterTab;
   (* Filled in by later steps of PLAN.md, Part B. *)
   BuildLists;
-  Tab(mechaTab, "Mecha"); mechaTab.End;
+  Tab(mechaTab, "Mecha");
+  Besm2MechaPanel.tell := PanelTell; Besm2MechaPanel.askText := PanelAskText;
+  Besm2MechaPanel.show := ShowOne; Besm2MechaPanel.add := Append;
+  Besm2MechaPanel.Build(LeftX, Top, ColumnW, ListBottom - Top - 2 * Row - 10);
+  BuildTotals(MechaList, ListBottom);
+  mechaTab.End;
   Tab(backgroundTab, "Background");
   Besm2Background.tell := PanelTell; Besm2Background.changed := BackgroundChanged;
   Besm2Background.Build(LeftX, Top, ColumnW, Height - Top - 10);
@@ -828,7 +1056,7 @@ PROCEDURE Close*;
 BEGIN
   IF Besm2WeaponDialog.dialog # NIL THEN Besm2WeaponDialog.Cancel END;
   window.Delete;
-  window := NIL; bar := NIL; tabs := NIL;
+  window := NIL; bar := NIL; entityChoice := NIL; tabs := NIL;
   characterTab := NIL; attributesTab := NIL; defectsTab := NIL; skillsTab := NIL; mechaTab := NIL;
   backgroundTab := NIL; previewTab := NIL;
   nameIn := NIL; taglineIn := NIL; sizeIn := NIL; warnings := NIL;
@@ -841,11 +1069,11 @@ BEGIN
   END;
   Besm2ItemPanel.Close(attrPanel); Besm2ItemPanel.Close(defectPanel); Besm2ItemPanel.Close(skillPanel);
   attrPanel := NIL; defectPanel := NIL; skillPanel := NIL; weaponButton := NIL;
-  Besm2Background.Close
+  Besm2Background.Close; Besm2MechaPanel.Close
 END Close;
 
 BEGIN
-  tell := DialogTell; ask := DialogAsk; choosePath := DialogPath; choosePdf := DialogPdf; askText := DialogText;
+  tell := DialogTell; ask := DialogAsk; confirm := DialogConfirm; choosePath := DialogPath; choosePdf := DialogPdf; askText := DialogText;
   Besm2Widgets.openPage := OpenPage;
   Besm2WeaponDialog.tell := PanelTell; Besm2WeaponDialog.changed := WeaponChanged; weaponLine := 0;
   rulebookOption := NIL; savedRulebook := NIL; preferences := NIL;
