@@ -11,12 +11,15 @@ MODULE TestWindow; (* Besm2Window: the Character tab, driven as a user would, an
    PLAN.md, Part B, step 6: the Stats, the derived values and their
    overrides, the points and their red, the warnings; File New, Open,
    Save, Save As and the save-first question; Rulebook > Open, Choose
-   PDF... and Viewer....  Runs in test/: its files are data/*.yaml, and
-   what it saves goes in ../obj; it opens copies of the data/*.yaml
-   it changes there, so a File > Save gone wrong can't change it. *)
+   PDF... and Viewer....  Step 7: the Attributes, Defects, Skills and
+   Background tabs, then what they made saved and loaded again.  Runs
+   in test/: its files are data/*.yaml, and what it saves goes in
+   ../obj; it opens copies of the data/*.yaml it changes there, so a
+   File > Save gone wrong can't change it.  poc drops a string literal
+   inside an array index (a[F("x")]), so none is written there. *)
 
-IMPORT Check, Fl, FlMenus, C := Besm2Calc, Ch := Besm2Character, Besm2Save, Besm2Text, Besm2Viewer, Besm2Widgets,
-  W := Besm2Window, Out, Ropes;
+IMPORT Check, Fl, FlBrowsers, FlMenus, FlText, C := Besm2Calc, Ch := Besm2Character, R := Besm2Rules, Besm2Background,
+  Besm2ItemPanel, Besm2Save, Besm2Text, Besm2Viewer, Besm2Widgets, W := Besm2Window, Out, Ropes;
 
 CONST
   SavePath = "../obj/window-test.yaml";
@@ -180,6 +183,59 @@ BEGIN
   es := Reload(from); ASSERT(es # NIL);
   IF ~Besm2Save.SaveAll(es, to, msg) THEN HALT(98) END
 END Copy;
+
+(* ---- The lists (step 7) ---- *)
+
+(* Whether tab t's points line i reads as the Character tab's, which
+   Line checks. *)
+PROCEDURE TabLine(t, i: INTEGER): BOOLEAN;
+  VAR s, want: ARRAY 256 OF CHAR;
+BEGIN
+  W.tabPoints[t][i].GetLabel(s); W.points[i].GetLabel(want);
+  RETURN (s = want) & (W.tabPoints[t][i].LabelColor() = W.points[i].LabelColor())
+END TabLine;
+
+(* Whether every tab's warnings are the Character tab's. *)
+PROCEDURE TabWarnings(): BOOLEAN;
+  VAR t, i: INTEGER; a, b: ARRAY 256 OF CHAR; ok: BOOLEAN;
+BEGIN
+  ok := TRUE;
+  FOR t := 0 TO W.NLists - 1 DO
+    ok := ok & (W.tabWarnings[t].Count() = W.warnings.Count());
+    IF ok THEN
+      FOR i := 1 TO W.warnings.Count() DO W.warnings.GetText(i, a); W.tabWarnings[t].GetText(i, b); ok := ok & (a = b) END
+    END
+  END;
+  RETURN ok
+END TabWarnings;
+
+(* Whether line line of browser b holds s. *)
+PROCEDURE Holds(b: FlBrowsers.Browser; line: INTEGER; s: ARRAY OF CHAR): BOOLEAN;
+  VAR text: ARRAY 256 OF CHAR;
+BEGIN
+  IF (line < 1) OR (line > b.Count()) THEN RETURN FALSE END;
+  b.GetText(line, text);
+  IF Ropes.Find(Rp(text), s, 0) < 0 THEN Out.String("    line: "); Out.String(text); Out.Ln END;
+  RETURN Ropes.Find(Rp(text), s, 0) >= 0
+END Holds;
+
+(* Selects line line of browser b, as a click does. *)
+PROCEDURE Select(b: FlBrowsers.Browser; line: INTEGER);
+BEGIN IF b.Select(line, TRUE) THEN END; b.DoCallback
+END Select;
+
+(* Chooses it in p's Choice, as the user does. *)
+PROCEDURE ChooseItem(p: Besm2Widgets.Panel; it: R.Item);
+BEGIN p.Choose(it); p.choice.DoCallback
+END ChooseItem;
+
+(* The line of option label of it (from 1). *)
+PROCEDURE OptLine(it: R.Item; label: ARRAY OF CHAR): INTEGER;
+  VAR i: INTEGER;
+BEGIN
+  i := 0; WHILE (i < it.nOptions) & ~R.SameName(it.option[i].label, label) DO INC(i) END;
+  ASSERT(i < it.nOptions); RETURN i + 1
+END OptLine;
 
 (* ---- The checks ---- *)
 
@@ -409,6 +465,153 @@ BEGIN
   Check.Check(Ropes.Find(Rp(label), "Mecha Points: Attributes 0 - Bonus Points 0 = ", 0) = 0, "and Mecha Points")
 END Mecha;
 
+PROCEDURE Attributes;
+  CONST ListsPath = "../obj/lists.yaml";
+  VAR p: Besm2ItemPanel.AttrPanel; flight: R.Item; a, keep: Ch.Attr; label: ARRAY 128 OF CHAR; n, line: INTEGER;
+BEGIN
+  Copy("data/window.yaml", ListsPath);
+  chosen := Rp(ListsPath); answer := W.Discard; Pick(W.openItem);
+  e := W.entity; p := W.attrPanel;
+  Check.Check((p.browser.Count() = 2) & Holds(p.browser, 1, "1 Own a Big Mecha: Walker")
+    & Holds(p.browser, 1, "4 pts") & Holds(p.browser, 1, "p. 59, PDF 61") & Holds(p.browser, 2, "1 Heavy Armour"),
+    "Attributes: the character's listed, level, name: subject, points and both pages");
+  Check.Check(TabLine(W.AttributesList, W.CharacterPoints) & TabLine(W.SkillsList, W.SkillPoints) & TabWarnings(),
+    "the lists' tabs show the Character tab's points and warnings");
+
+  before := tells; n := p.browser.Count(); p.Blank; p.add.DoCallback;
+  Check.Check((tells = before + 1) & Is(told, "Choose a name first.") & (p.browser.Count() = n) & ~W.modified,
+    "Add with no name chosen: said so, nothing added");
+
+  flight := R.Find("Flight");
+  ChooseItem(p, flight);
+  p.choice.ItemLabel(p.choice.Value(), label);
+  Check.Check((label = "Flight (p. 33, PDF 35)") & (p.help.page = 33), "a name chosen: shown with both pages; ? turns to its page");
+  Check.Check(p.options.Active() & (p.options.Count() = flight.nOptions) & Holds(p.options, 1, "(x) ")
+    & Holds(p.options, OptLine(flight, "cannot hover"), "( ) cannot hover"), "its options, the first of a choice counted");
+  before := tells; p.plus.DoCallback;
+  Check.Check((tells = before + 1) & Is(told, "Choose an option first."), "+ with no option: said so");
+  line := OptLine(flight, "cannot hover"); Select(p.options, line); p.plus.DoCallback;
+  Select(p.options, 1); p.plus.DoCallback;
+  Check.Check(Holds(p.options, 1, "(x) ") & Holds(p.options, line, "( ) cannot hover"), "+ on another of a choice: it, not the one before");
+  Select(p.options, line); p.plus.DoCallback;
+  line := OptLine(flight, "skimmer or hovercraft"); Select(p.options, line); p.plus.DoCallback;
+  Check.Check(Holds(p.options, 1, "( ) ") & Holds(p.options, OptLine(flight, "cannot hover"), "(x) cannot hover")
+    & Holds(p.options, line, "[x] skimmer"), "+: one of a choice, the others not; an option alone taken");
+  p.spinner.SetValue(2); p.details.SetValue("  wings ");
+  p.add.DoCallback;
+  a := e.attrs.next.next(Ch.Attr);
+  Check.Check((p.browser.Count() = 3) & (p.browser.Value() = 3) & (a.item = flight) & (a.level = 2) & Is(a.details, "wings")
+    & (C.Value(a.points) = 5) & W.modified, "Add: last, selected, at its Level, its options, 5 points");
+  Check.Check(Line(W.CharacterPoints, "Character Points: Stats 13 + Attributes 13 - Bonus Points 1 = 25 of 20", TRUE)
+    & TabLine(W.AttributesList, W.CharacterPoints) & TabLine(W.DefectsList, W.CharacterPoints)
+    & (Warning("Character Points") > 0) & TabWarnings(), "the totals and warnings, here and on every tab, as you go");
+
+  keep := a; p.Blank; Select(p.browser, 3);
+  Check.Check((p.choice.Value() >= 0) & (p.Item() = flight) & (ENTIER(p.spinner.Value() + 0.5) = 2)
+    & Holds(p.options, OptLine(flight, "cannot hover"), "(x) cannot hover"), "a line selected: its name, Level and options loaded");
+  p.spinner.SetValue(3); p.change.DoCallback;
+  a := e.attrs.next.next(Ch.Attr);
+  Check.Check((a = keep) & (a.level = 3) & (C.Value(a.points) = 8) & (p.browser.Value() = 3) & Holds(p.browser, 3, "3 Flight (wings)"),
+    "Change: the same Attribute, at its new Level");
+  Select(p.browser, 1); p.text.SetValue("Nobody"); p.change.DoCallback;
+  Check.Check((e.attrs(Ch.Attr).mecha = NIL) & Is(e.attrs(Ch.Attr).subject, "Nobody"), "Own a Big Mecha's subject changed: unlinked");
+  Select(p.browser, 1); p.text.SetValue("Walker"); p.change.DoCallback;
+  Check.Check(e.attrs(Ch.Attr).mecha = W.entities[0], "and named again: linked to its mecha");
+  Select(p.browser, 3); p.remove.DoCallback;
+  Check.Check((p.browser.Count() = 2) & (p.browser.Value() = 0) & (p.choice.Value() < 0)
+    & Line(W.CharacterPoints, "Character Points: Stats 13 + Attributes 8 - Bonus Points 1 = 20 of 20", FALSE)
+    & TabLine(W.AttributesList, W.CharacterPoints), "Remove: gone, nothing selected, the totals back");
+  before := tells; p.change.DoCallback; p.remove.DoCallback;
+  Check.Check((tells = before) & (p.browser.Count() = 2), "Change and Remove with no line: nothing")
+END Attributes;
+
+PROCEDURE Defects;
+  VAR p: Besm2ItemPanel.DefectPanel; d: Ch.Defect;
+BEGIN
+  p := W.defectPanel;
+  Check.Check((p.browser.Count() = 1) & Holds(p.browser, 1, "1 Unique Character Defect: Stubborn") & Holds(p.browser, 1, "1 BP"),
+    "Defects: listed, rank, name: subject, Bonus Points");
+  ChooseItem(p, R.Find("Easily Distracted"));
+  Check.Check(p.help.page = 104, "? at its page");
+  p.spinner.SetValue(2); p.details.SetValue("cats"); p.add.DoCallback;
+  d := e.defects.next(Ch.Defect);
+  Check.Check((d # NIL) & (d.rank = 2) & Is(d.details, "cats") & Holds(p.browser, 2, "2 Easily Distracted (cats)")
+    & Holds(p.browser, 2, "2 BP") & (e.bonusPoints = 3), "Add: its rank, and its Bonus Points");
+  Check.Check(Line(W.CharacterPoints, "Character Points: Stats 13 + Attributes 8 - Bonus Points 3 = 18 of 20", FALSE)
+    & TabLine(W.DefectsList, W.CharacterPoints) & TabLine(W.DefectsList, W.BonusPoints), "and the totals");
+  Select(p.browser, 2); p.spinner.SetValue(1); p.change.DoCallback;
+  Check.Check((e.defects.next = d) & (d.rank = 1) & (e.bonusPoints = 2), "Change: its rank");
+  Select(p.browser, 2); p.remove.DoCallback;
+  Check.Check((e.defects.next = NIL) & (e.bonusPoints = 1), "Remove")
+END Defects;
+
+PROCEDURE Skills;
+  VAR p: Besm2ItemPanel.SkillPanel; s: Ch.Skill; h: Ch.HouseSkill; label: ARRAY 128 OF CHAR;
+BEGIN
+  p := W.skillPanel;
+  Check.Check((p.genre.Value() = R.ModernMilitary + 1) & (p.browser.Count() = 1) & Holds(p.browser, 1, "2 Driving")
+    & Holds(p.browser, 1, "8 SP") & Holds(p.browser, 1, "p. 122, PDF 124"), "Skills: the genre, and the Skill at its cost");
+  Check.Check(p.genreHelp.page = R.SkillCostsPage, "the genre's ? at Table 2-4");
+  Pick(W.saveItem);
+  IF p.genre.SetValue(R.Cyberpunk + 1) THEN END; p.genre.DoCallback;
+  Check.Check((e.creation.genre = R.Cyberpunk) & (C.Value(e.skills.points) = 6) & Holds(p.browser, 1, "6 SP") & W.modified
+    & Line(W.SkillPoints, "Skill Points: 6 of 20", FALSE) & TabLine(W.SkillsList, W.SkillPoints),
+    "another genre: every Skill priced again (p. 119)");
+  Select(p.browser, 1); p.text.SetValue(" Cars, , Trucks "); p.change.DoCallback;
+  s := e.skills(Ch.Skill);
+  Check.Check((s.specs = 2) & Is(s.specialisations.items[1], "Trucks") & Holds(p.browser, 1, "2 Driving (Cars, Trucks)")
+    & (C.Value(s.points) = 7), "specialisations: split at commas, trimmed, blanks dropped; the second 1 SP");
+  p.text.SetValue(""); Select(p.browser, 1); p.text.Value(label);
+  Check.Check(label = "Cars, Trucks", "selected: its specialisations loaded, joined by commas");
+
+  NEW(h); C.InitHouseSkill(h); h.name := Rp("Mecha Piloting"); h.cost[R.Cyberpunk] := 5;
+  h.hasStat := FALSE; h.hasSpecializations := FALSE; Besm2Text.Clear(h.specializations);
+  C.AddHouseSkill(e.creation, h);
+  p.Show(e);
+  p.ChooseIndex(p.Offered()); p.choice.DoCallback;
+  p.choice.ItemLabel(p.Offered(), label);
+  Check.Check((label = "Mecha Piloting (house rule)") & (p.House() = h) & (p.help.page = 0), "a house Skill offered after the rulebook's");
+  p.spinner.SetValue(1); p.add.DoCallback;
+  Check.Check((e.skills.next # NIL) & (e.skills.next(Ch.Skill).house = h) & Holds(p.browser, 2, "5 SP")
+    & Holds(p.browser, 2, "house rule") & (e.skillSpent = 12), "Add: priced at its genre's cost");
+  Select(p.browser, 2); p.remove.DoCallback;
+  Check.Check((e.skills.next = NIL) & (e.skillSpent = 7), "Remove")
+END Skills;
+
+PROCEDURE Background;
+  VAR es: Ch.Entities; b: Ch.Entity; glider: INTEGER; buffer: FlText.TextBuffer;
+BEGIN
+  Pick(W.saveItem);
+  buffer := Besm2Background.description.Buffer(); buffer.Insert(0, "  A test pilot.  ");
+  Check.Check(Is(e.description, "A test pilot.") & e.hasDescription & W.modified, "Background: the description, as typed, trimmed");
+  before := tells; Besm2Background.noteIn.SetValue("  "); Besm2Background.addNote.DoCallback;
+  Check.Check((tells = before + 1) & Is(told, "Type the note first.") & (e.notes.n = 0), "a blank note: said so");
+  Besm2Background.noteIn.SetValue(" first "); Besm2Background.addNote.DoCallback;
+  Besm2Background.noteIn.SetValue("second"); Besm2Background.addNote.DoCallback;
+  Check.Check((e.notes.n = 2) & Is(e.notes.items[0], "first") & e.hasNotes & (Besm2Background.notes.Count() = 2)
+    & (Besm2Background.notes.Value() = 2), "notes added, last, trimmed");
+  before := tells; IF Besm2Background.notes.Select(2, FALSE) THEN END; Besm2Background.removeNote.DoCallback;
+  Check.Check((tells = before + 1) & Is(told, "Choose a note first."), "Remove with none selected: said so");
+  Select(Besm2Background.notes, 1); Besm2Background.noteIn.SetValue("one"); Besm2Background.changeNote.DoCallback;
+  Check.Check((e.notes.n = 2) & Is(e.notes.items[0], "one") & Is(e.notes.items[1], "second"), "Change: in place");
+  Select(Besm2Background.notes, 2); Besm2Background.removeNote.DoCallback;
+  Check.Check((e.notes.n = 1) & (Besm2Background.notes.Count() = 1), "Remove");
+
+  ChooseItem(W.attrPanel, R.Find("Flight"));
+  glider := OptLine(R.Find("Flight"), "glider"); Select(W.attrPanel.options, glider); W.attrPanel.plus.DoCallback;
+  W.attrPanel.add.DoCallback;
+  Pick(W.saveItem);
+  es := Reload("../obj/lists.yaml");
+  Check.Check(~W.modified & (es # NIL) & (LEN(es^) = 2), "File > Save");
+  IF es # NIL THEN
+    b := es[1];
+    Check.Check((b.creation.genre = R.Cyberpunk) & (b.skills.specs = 2) & Is(b.description, "A test pilot.")
+      & (b.notes.n = 1) & Is(b.notes.items[0], "one"), "and loaded again: the genre, the specialisations, the description, the notes");
+    Check.Check((b.attrs.next.next # NIL) & (b.attrs.next.next(Ch.Attr).times[glider - 1] = 1)
+      & ~b.attrs.next.next(Ch.Attr).points.overridden & (b.attrs(Ch.Attr).mecha = es[0]), "the option, priced the same; the mecha linked")
+  END
+END Background;
+
 PROCEDURE Rulebook;
   VAR pdf: Rope;
 BEGIN
@@ -456,6 +659,10 @@ BEGIN
   Notices;
   Mecha;
   Rulebook;
+  Attributes;
+  Defects;
+  Skills;
+  Background;
   W.Close;
   Check.Check(W.window = NIL, "Close deletes it");
   Check.Summary

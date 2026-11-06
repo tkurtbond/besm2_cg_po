@@ -1070,6 +1070,7 @@ with no display, and the command-line program is built from it alone:
 | `Besm2Viewer`, `Besm2Spawn` (+ `.c`) | window | ova_cg_po's `OvaViewer` and `OvaSpawn`, adapted: no page labels, so always the PDF page |
 | `Besm2Paths`, `Besm2Settings` | window | as ova_cg_po's |
 | `Besm2Widgets` | window | `NumberBox` (computed number and its override box), `HelpButton` (**?**), `Panel` (a list and its editor) |
+| `Besm2ItemPanel`, `Besm2Background` | window | the Attributes, Defects and Skills lists; the Background tab (step 7) |
 | `Besm2Window`, `Besm2WeaponDialog`, `Besm2MechaPanel`, `Besm2Preview`, ... | window | the window, from A5 |
 
 Names that clash with pobesm2_fmt2's own (`Besm2Cli`, `Besm2Fmt`) are
@@ -1436,6 +1437,77 @@ saved YAML holds names as the formatters expect them, without pages.
    totals and warnings update as you go; Skills' specialisations and
    the genre.  And the Background tab: the description and the notes
    (decided 2026-11-06).
+
+   *Done 2026-11-06.*  New modules:
+   - `src/Besm2ItemPanel.Mod`: `AttrPanel`, `DefectPanel` and
+     `SkillPanel`, each a `Besm2Widgets.Panel` (the list, the Choice of
+     names with both pages, its **?**, the Level spinner, a text field,
+     Add / Change / Remove) over one entity.  Each list line is the
+     Level (or rank), the name, `: subject`, ` (details)`, then the
+     points ("4 pts", "1 BP", "8 SP") and both pages, in columns.
+   - `src/Besm2Background.Mod`: the Background tab, after ova_cg_po's
+     OvaBackground: the description in a text editor and the notes in
+     a list with an input and Add / Change / Remove.  Each change goes
+     into the entity as it is made.
+   - `src/Besm2Character.Mod` gained the edits the panels make:
+     `NewAttr`, `InsertAttr`, `ChangeAttr`, `RemoveAttr`, the same for
+     Defects and Skills, `SetGenre` and `Relink`.
+   Decided while building it (2026-11-06):
+   - **Add puts an item last**, selected; Change keeps its place;
+     Remove leaves nothing selected.  Change with the same name keeps
+     the record (and its options, and keys the window doesn't show);
+     with another name a new record takes its place.  Change with no
+     name chosen keeps the old name, so a name the rules don't have
+     can still be re-levelled.
+   - **Options** (an Attribute's choices, A2) are listed under the
+     Attribute: `(x)`/`( )` for one of a required choice (the first
+     counts until another is taken), `[x]`/`[ ]` for one that is taken
+     or not, `N x` for one taken several times, then the amount.
+     **+** and **-** take the selected one once more or once less.
+   - **The genre** is chosen on the Skills tab (Table 2-4's **?**, p.
+     119, PDF 121), since it sets every Skill's cost; choosing it adds
+     `creation: genre`.  Step 10's Creation... will show it too.
+   - **Specialisations** are typed separated by commas, trimmed, blanks
+     dropped; the first is free and each other 1 SP (p. 118).
+   - **House Skills** (`creation: skills`) are offered after the
+     rulebook's, marked "(house rule)", their **?** blank.
+   - **The totals and warnings** of the Character tab are repeated
+     under each list, so they update in view as you go.
+   - **Own a Big Mecha's mecha** is linked again (`Relink`, which
+     doesn't add notices) after every change, so a subject typed or
+     changed links or unlinks it.
+   - On a mecha the Attributes list still offers Attributes first,
+     then the Mecha-only ones; step 9 may turn that round.
+   - Known: a Skill loaded from a file with no genre keeps its points
+     as an override (they can't be checked), even after a genre is
+     chosen; clearing the override is step 10's Creation... question.
+   - **A poc bug**, found here: a string literal inside an array index
+     (`a[F("x")]`) is never emitted, and the link fails ("use of
+     undefined value '@.str...'").  The tests compute such an index
+     first.  Not yet reported to Peaseblossom.
+   Tests:
+   - `test/TestModel.Mod` (in `TESTS`, no display): the edits on an
+     entity built by hand: options kept or dropped by ChangeAttr,
+     ranks and Bonus Points, specialisations trimmed, the genre's
+     costs, a house Skill, Relink, and saving and loading all of it
+     again.
+   - `test/TestWindow.Mod`: the Attributes, Defects, Skills and
+     Background tabs driven as a user would on a copy of
+     `data/window.yaml`: names with both pages, **?**'s page, "Choose
+     a name first.", the options and **+** / **-**, Add / Change /
+     Remove, the points and warnings on every tab, a mecha unlinked
+     and linked again, the genre, specialisations, a house Skill, the
+     description and notes, then File > Save and loaded again.
+   Planted bugs caught: ChangeAttr always replacing (3 failures);
+   specialisations untrimmed (6); SetGenre not marking `creation`;
+   the first of a choice not counted; **+** leaving the others of a
+   choice taken (5, once a check going back within a choice was
+   added); options not taken on Add (5); a genre change not priced;
+   the tabs' points not set (2); a note's Change appending; the
+   description untrimmed (2); Remove keeping its selection; no Relink
+   at all (the window relinks twice, so removing one is not seen).
+   `make test`, `make test-headless`, `make test-sway` and `make
+   valgrind-headless` pass.
 8. **Weapon Attacks.** The dialog: subject, level, Abilities and
    Disabilities with counts and details, primary; damage and cost
    following each change.

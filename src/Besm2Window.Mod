@@ -3,9 +3,12 @@ MODULE Besm2Window; (* besm2_cg_po's main window: the menu bar, the Character ta
 (* PLAN.md, Part B, step 6, and A5 (the layout, decided 2026-11-06),
    after ova_cg_po's OvaWindow.  One window, narrow enough to sit beside
    the rulebook's viewer: a menu bar (File, Character, Rulebook) and
-   the tabs, of which this step fills the first, Character: the name,
-   tagline and size; the Stats; the derived values; the points; and
-   the warnings.  The others are empty until their steps.
+   the tabs.  Character (step 6): the name, tagline and size; the
+   Stats; the derived values; the points; and the warnings.
+   Attributes, Defects and Skills (step 7): each a Besm2ItemPanel, and
+   under it the points and the warnings again, so a choice's effect is
+   seen where it is made.  Background (step 7): Besm2Background.  The
+   others are empty until their steps.
 
    A file holds one entity or several (characters and mecha).  All are
    kept, in order, and saved back; the one shown is the first that
@@ -26,7 +29,7 @@ MODULE Besm2Window; (* besm2_cg_po's main window: the menu bar, the Character ta
 
 IMPORT Fl, FlBrowsers, FlDialogs, FlInputs, FlLayout, FlMenus, FlPreferences, FlValuators,
   C := Besm2Calc, Ch := Besm2Character, R := Besm2Rules, Besm2Layout, Besm2Paths, Besm2Save, Besm2Text,
-  Besm2Viewer, Besm2Warnings, Besm2Widgets, Ropes;
+  Besm2Background, Besm2ItemPanel, Besm2Viewer, Besm2Warnings, Besm2Widgets, Ropes;
 
 CONST
   Title* = "BESM2ER Character Generator";
@@ -42,6 +45,10 @@ CONST
 
   (* points: the summary's lines *)
   CharacterPoints* = 0; BonusPoints* = 1; SkillPoints* = 2; NPointLines = 3;
+
+  (* tabPoints and tabWarnings: the list tabs' *)
+  AttributesList* = 0; DefectsList* = 1; SkillsList* = 2; NLists* = 3;
+  ListBottom = Height - 220;  (* where a list tab's panel ends, and its points begin *)
 
 TYPE
   Rope = Ropes.Rope;
@@ -75,6 +82,11 @@ VAR
   derived-: ARRAY Ch.AR + 1 OF Besm2Widgets.NumberBox;  (* by slot *)
   points-: ARRAY NPointLines OF Fl.Box;
   warnings-: FlBrowsers.Browser;
+  attrPanel-: Besm2ItemPanel.AttrPanel;
+  defectPanel-: Besm2ItemPanel.DefectPanel;
+  skillPanel-: Besm2ItemPanel.SkillPanel;
+  tabPoints-: ARRAY NLists, NPointLines OF Fl.Box;
+  tabWarnings-: ARRAY NLists OF FlBrowsers.Browser;
 
   (* What would wait for the user; a test sets its own.  tell shows a
      message; ask asks whether to save first (SaveFirst, Discard,
@@ -284,13 +296,16 @@ BEGIN
   s := Besm2Text.Chars(t); window.SetLabel(s^)
 END ShowTitle;
 
+(* The warnings, on the Character tab and each list tab. *)
 PROCEDURE ShowWarnings;
-  VAR w: C.Warning; s: Besm2Text.String;
+  VAR w: C.Warning; s: Besm2Text.String; t: INTEGER;
 BEGIN
   warnings.Clear;
+  FOR t := 0 TO NLists - 1 DO tabWarnings[t].Clear END;
   w := entity.warnings;
   WHILE w # NIL DO
     s := Besm2Text.Chars(Besm2Warnings.Text(entity, w)); warnings.Add(s^);
+    FOR t := 0 TO NLists - 1 DO tabWarnings[t].Add(s^) END;
     w := w.next
   END
 END ShowWarnings;
@@ -302,6 +317,14 @@ BEGIN
   IF red THEN b.SetLabelColor(Fl.Red) ELSE b.SetLabelColor(Fl.ForegroundColor) END;
   b.Redraw
 END SetLine;
+
+(* Points line i, r, on the Character tab and each list tab. *)
+PROCEDURE SetLines(i: INTEGER; r: Rope; red: BOOLEAN);
+  VAR t: INTEGER;
+BEGIN
+  SetLine(points[i], r, red);
+  FOR t := 0 TO NLists - 1 DO SetLine(tabPoints[t][i], r, red) END
+END SetLines;
 
 (* The points: "Character Points: Stats 15 + Attributes 22 - Bonus
    Points 4 = 33 of 35" (Mecha Points for a mecha, without Stats),
@@ -320,15 +343,15 @@ BEGIN
   IF e.available > 0 THEN Besm2Text.Add(r, " of "); Besm2Text.AddInt(r, e.available)
   ELSE Besm2Text.Add(r, " (no limit set)")
   END;
-  SetLine(points[CharacterPoints], r,
+  SetLines(CharacterPoints, r,
     C.HasWarning(e, C.OverCharacterPoints, NIL) OR C.HasWarning(e, C.OverMechaPoints, NIL));
   r := Rp("Bonus Points: "); Besm2Text.AddInt(r, e.bonusPoints); Besm2Text.Add(r, " (ceiling: ");
   IF e.creation.bonusCeiling > 0 THEN Besm2Text.AddInt(r, e.creation.bonusCeiling) ELSE Besm2Text.Add(r, "none") END;
   Besm2Text.Add(r, ")");
-  SetLine(points[BonusPoints], r, C.HasWarning(e, C.OverBonusCeiling, NIL));
+  SetLines(BonusPoints, r, C.HasWarning(e, C.OverBonusCeiling, NIL));
   r := Rp("Skill Points: "); Besm2Text.AddInt(r, e.skillSpent); Besm2Text.Add(r, " of ");
   Besm2Text.AddInt(r, e.skillPoints);
-  SetLine(points[SkillPoints], r, C.HasWarning(e, C.OverSkillPoints, NIL))
+  SetLines(SkillPoints, r, C.HasWarning(e, C.OverSkillPoints, NIL))
 END ShowPoints;
 
 (* Every number shown again: the Stats only on a character, a mecha
@@ -356,6 +379,7 @@ END ShowNumbers;
 (* After any change to an entity: computed again and shown. *)
 PROCEDURE Changed;
 BEGIN
+  Ch.Relink(entities);  (* an edit may have named a mecha *)
   Ch.ComputeAll(entities);
   modified := TRUE;
   ShowTitle;
@@ -466,6 +490,8 @@ PROCEDURE ShowAll;
 BEGIN
   showing := TRUE;
   SetInput(nameIn, entity.name); SetInput(taglineIn, entity.tagline); SetInput(sizeIn, entity.size);
+  attrPanel.Show(entity); defectPanel.Show(entity); skillPanel.Show(entity);
+  Besm2Background.Show(entity);
   ShowNumbers;
   ShowTitle;
   showing := FALSE
@@ -677,6 +703,63 @@ BEGIN
   characterTab.End
 END BuildCharacterTab;
 
+(* The points and the warnings, from y down, on list tab t. *)
+PROCEDURE BuildTotals(t, y: INTEGER);
+  VAR i: INTEGER; b: FlBrowsers.Browser;
+BEGIN
+  FOR i := 0 TO NPointLines - 1 DO
+    NEW(tabPoints[t][i]); Fl.OpenBox(tabPoints[t][i], LeftX, y, ColumnW, Row, "");
+    tabPoints[t][i].SetAlign(Fl.AlignLeft + Fl.AlignInside);
+    y := y + Row
+  END;
+  y := y + 25;
+  NEW(b); FlBrowsers.OpenBrowser(b, LeftX, y, ColumnW, Height - y - 10, "Warnings");
+  b.SetAlign(Fl.AlignTopLeft); b.SetFormatChar(0X);
+  tabWarnings[t] := b
+END BuildTotals;
+
+(* What the list tabs need of the window. *)
+PROCEDURE Compute;
+BEGIN Ch.Relink(entities); Ch.ComputeAll(entities)
+END Compute;
+
+PROCEDURE PanelTell(text: Rope);
+BEGIN tell(text)
+END PanelTell;
+
+PROCEDURE PanelChanged(p: Besm2ItemPanel.ItemPanel);
+BEGIN Changed
+END PanelChanged;
+
+PROCEDURE BuildLists;
+  CONST ExtraBottom = 120;  (* a panel's rows under its browser, but for the extension's *)
+  VAR h: INTEGER;
+BEGIN
+  Besm2ItemPanel.tell := PanelTell; Besm2ItemPanel.compute := Compute;
+  Tab(attributesTab, "Attributes");
+  (* Its details and options: 5 rows more than the others' 1. *)
+  h := ListBottom - 10 - Top - ExtraBottom - 4 * (Row + 5);
+  NEW(attrPanel); Besm2ItemPanel.OpenAttrPanel(attrPanel, LeftX, Top, ColumnW, h);
+  attrPanel.changed := PanelChanged;
+  BuildTotals(AttributesList, ListBottom);
+  attributesTab.End;
+  h := ListBottom - 10 - Top - ExtraBottom;
+  Tab(defectsTab, "Defects");
+  NEW(defectPanel); Besm2ItemPanel.OpenDefectPanel(defectPanel, LeftX, Top, ColumnW, h);
+  defectPanel.changed := PanelChanged;
+  BuildTotals(DefectsList, ListBottom);
+  defectsTab.End;
+  Tab(skillsTab, "Skills");
+  NEW(skillPanel); Besm2ItemPanel.OpenSkillPanel(skillPanel, LeftX, Top, ColumnW, h);
+  skillPanel.changed := PanelChanged;
+  BuildTotals(SkillsList, ListBottom);
+  skillsTab.End
+END BuildLists;
+
+PROCEDURE BackgroundChanged;
+BEGIN modified := TRUE; ShowTitle
+END BackgroundChanged;
+
 (* Opens the window, not yet shown, with a new character. *)
 PROCEDURE Build*;
   VAR main: MainWindow;
@@ -694,11 +777,12 @@ BEGIN
   NEW(tabs); FlLayout.OpenTabs(tabs, 0, BarHeight, Width, Height - BarHeight, "");
   BuildCharacterTab;
   (* Filled in by later steps of PLAN.md, Part B. *)
-  Tab(attributesTab, "Attributes"); attributesTab.End;
-  Tab(defectsTab, "Defects"); defectsTab.End;
-  Tab(skillsTab, "Skills"); skillsTab.End;
+  BuildLists;
   Tab(mechaTab, "Mecha"); mechaTab.End;
-  Tab(backgroundTab, "Background"); backgroundTab.End;
+  Tab(backgroundTab, "Background");
+  Besm2Background.tell := PanelTell; Besm2Background.changed := BackgroundChanged;
+  Besm2Background.Build(LeftX, Top, ColumnW, Height - Top - 10);
+  backgroundTab.End;
   Tab(previewTab, "Preview"); previewTab.End;
   tabs.SetResizable(characterTab);
   tabs.End;
@@ -711,7 +795,7 @@ END Build;
 
 (* Deletes the window and everything in it, for tests. *)
 PROCEDURE Close*;
-  VAR i: INTEGER;
+  VAR i, t: INTEGER;
 BEGIN
   window.Delete;
   window := NIL; bar := NIL; tabs := NIL;
@@ -720,7 +804,14 @@ BEGIN
   nameIn := NIL; taglineIn := NIL; sizeIn := NIL; warnings := NIL;
   FOR i := 0 TO C.NStats - 1 DO statValue[i] := NIL; statPoints[i] := NIL END;
   FOR i := Ch.ACV TO Ch.AR DO derived[i] := NIL END;
-  FOR i := 0 TO NPointLines - 1 DO points[i] := NIL END
+  FOR i := 0 TO NPointLines - 1 DO points[i] := NIL END;
+  FOR t := 0 TO NLists - 1 DO
+    tabWarnings[t] := NIL;
+    FOR i := 0 TO NPointLines - 1 DO tabPoints[t][i] := NIL END
+  END;
+  Besm2ItemPanel.Close(attrPanel); Besm2ItemPanel.Close(defectPanel); Besm2ItemPanel.Close(skillPanel);
+  attrPanel := NIL; defectPanel := NIL; skillPanel := NIL;
+  Besm2Background.Close
 END Close;
 
 BEGIN

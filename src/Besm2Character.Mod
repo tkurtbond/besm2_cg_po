@@ -945,13 +945,14 @@ END StatPage;
 
 (* Ties each Own a Big Mecha to the mecha its subject names, of the
    entities es; a subject no mecha has is a notice (the mecha may be
-   in another file, A4). *)
-PROCEDURE Link(es: Entities);
+   in another file, A4), unless quiet. *)
+PROCEDURE Link(es: Entities; quiet: BOOLEAN);
   VAR i, j: LONGINT; a: C.Attr; r: Rope;
 BEGIN
   FOR i := 0 TO LEN(es^) - 1 DO
     a := es[i].attrs;
     WHILE a # NIL DO
+      a.mecha := NIL;
       IF (a.item = ownABigMecha) & a(Attr).hasSubject THEN
         j := 0;
         WHILE (j < LEN(es^))
@@ -960,7 +961,7 @@ BEGIN
           INC(j)
         END;
         IF j < LEN(es^) THEN a.mecha := es[j]
-        ELSE
+        ELSIF ~quiet THEN
           r := Within(es[i].label, a(Attr).name, a(Attr).subject, TRUE, PageOf(a.item));
           Besm2Text.Add(r, ": no mecha of that name in the file");
           Note(Warning, r)
@@ -970,6 +971,189 @@ BEGIN
     END
   END
 END Link;
+
+(* Ties each Own a Big Mecha of es to the mecha its subject names
+   again, after the user changed one, or a mecha's name: quietly, as
+   the window shows what isn't found in its warnings. *)
+PROCEDURE Relink*(es: Entities);
+BEGIN IF es # NIL THEN Link(es, TRUE) END
+END Relink;
+
+(* ---- Editing: the window's (PLAN.md, Part B, step 7) ---- *)
+
+(* has and r set from text, trimmed: blank is absent. *)
+PROCEDURE SetOptional(VAR has: BOOLEAN; VAR r: Rope; text: Rope);
+BEGIN r := Besm2Text.Trim(text); has := r # NIL
+END SetOptional;
+
+(* A name for a new item: it's, or "" for NIL. *)
+PROCEDURE ItemName(it: R.Item): Rope;
+BEGIN IF it = NIL THEN RETURN NIL ELSE RETURN Ropes.FromString(it.name) END
+END ItemName;
+
+(* A new Attribute of it at level, about subject, with details (NIL:
+   none), with no options taken; not yet e's (InsertAttr).  A Weapon
+   Attack is structured, so its damage is saved. *)
+PROCEDURE NewAttr*(it: R.Item; level: INTEGER; subject, details: Rope): Attr;
+  VAR a: Attr;
+BEGIN
+  NEW(a); C.InitAttr(a, it, level);
+  a.name := ItemName(it); SetOptional(a.hasSubject, a.subject, subject); a.packed := FALSE;
+  a.levelIsText := FALSE; a.levelText := NIL;
+  a.hasEffective := FALSE; a.effective := NIL;
+  SetOptional(a.hasDetails, a.details, details);
+  a.hasElements := FALSE; Besm2Text.Clear(a.elements);
+  a.hasChoices := FALSE; a.choices := NIL;
+  a.structured := a.weapon; a.hasAbilities := FALSE; a.hasDisabilities := FALSE; a.hasDamage := a.weapon;
+  a.enhancements := NIL; a.limiters := NIL; a.extra := NIL;
+  a.fPoints := 0; a.fDamage := 0; a.listedPoints := FALSE; a.listedDamage := FALSE; a.damageInFile := FALSE;
+  RETURN a
+END NewAttr;
+
+(* a, last of e's Attributes. *)
+PROCEDURE InsertAttr*(e: Entity; a: Attr);
+BEGIN a.next := NIL; C.AddAttr(e, a); e.hasAttributes := TRUE
+END InsertAttr;
+
+(* a, one of e's, made it at level, about subject, with details: the
+   same record if it is a's item, so what else it has stays (a Weapon
+   Attack's Abilities, its options, the keys the file had); else a new
+   one in its place, keeping only the file's unknown keys.  a is the
+   record now in the list.  Its level is a number now. *)
+PROCEDURE ChangeAttr*(e: Entity; VAR a: Attr; it: R.Item; level: INTEGER; subject, details: Rope);
+  VAR b: Attr; p: C.Attr;
+BEGIN
+  IF it = a.item THEN
+    a.level := level; a.levelIsText := FALSE; a.levelText := NIL;
+    SetOptional(a.hasSubject, a.subject, subject); a.packed := a.packed & a.hasSubject;
+    SetOptional(a.hasDetails, a.details, details)
+  ELSE
+    b := NewAttr(it, level, subject, details); b.extra := a.extra;
+    b.next := a.next;
+    IF e.attrs = a THEN e.attrs := b
+    ELSE p := e.attrs; WHILE p.next # a DO p := p.next END; p.next := b
+    END;
+    a := b
+  END
+END ChangeAttr;
+
+PROCEDURE RemoveAttr*(e: Entity; a: Attr);
+  VAR p: C.Attr;
+BEGIN
+  IF e.attrs = a THEN e.attrs := a.next
+  ELSE p := e.attrs; WHILE (p # NIL) & (p.next # a) DO p := p.next END; IF p # NIL THEN p.next := a.next END
+  END;
+  a.next := NIL
+END RemoveAttr;
+
+(* A new Defect of it at rank, about subject, with details; its rank
+   is saved as `level` (A4). *)
+PROCEDURE NewDefect*(it: R.Item; rank: INTEGER; subject, details: Rope): Defect;
+  VAR d: Defect;
+BEGIN
+  NEW(d); C.InitDefect(d, it, rank);
+  d.name := ItemName(it); SetOptional(d.hasSubject, d.subject, subject); d.packed := FALSE;
+  d.hasLevel := TRUE; SetOptional(d.hasDetails, d.details, details);
+  d.extra := NIL; d.fPoints := 0; d.listed := FALSE;
+  RETURN d
+END NewDefect;
+
+PROCEDURE InsertDefect*(e: Entity; d: Defect);
+BEGIN d.next := NIL; C.AddDefect(e, d); e.hasDefects := TRUE
+END InsertDefect;
+
+(* As ChangeAttr.  A Defect's rank is saved from now on. *)
+PROCEDURE ChangeDefect*(e: Entity; VAR d: Defect; it: R.Item; rank: INTEGER; subject, details: Rope);
+  VAR b: Defect; p: C.Defect;
+BEGIN
+  IF it = d.item THEN
+    d.rank := rank; d.hasLevel := TRUE;
+    SetOptional(d.hasSubject, d.subject, subject); d.packed := d.packed & d.hasSubject;
+    SetOptional(d.hasDetails, d.details, details)
+  ELSE
+    b := NewDefect(it, rank, subject, details); b.extra := d.extra;
+    b.next := d.next;
+    IF e.defects = d THEN e.defects := b
+    ELSE p := e.defects; WHILE p.next # d DO p := p.next END; p.next := b
+    END;
+    d := b
+  END
+END ChangeDefect;
+
+PROCEDURE RemoveDefect*(e: Entity; d: Defect);
+  VAR p: C.Defect;
+BEGIN
+  IF e.defects = d THEN e.defects := d.next
+  ELSE p := e.defects; WHILE (p # NIL) & (p.next # d) DO p := p.next END; IF p # NIL THEN p.next := d.next END
+  END;
+  d.next := NIL
+END RemoveDefect;
+
+(* The specialisations of a Skill set from specs, each trimmed, blanks
+   dropped; the key is saved if it was, or if there are any. *)
+PROCEDURE SetSpecs(s: Skill; specs: Besm2Text.List);
+  VAR i: INTEGER; r: Rope;
+BEGIN
+  Besm2Text.Clear(s.specialisations);
+  FOR i := 0 TO specs.n - 1 DO
+    r := Besm2Text.Trim(specs.items[i]);
+    IF r # NIL THEN Besm2Text.Append(s.specialisations, r) END
+  END;
+  s.specs := s.specialisations.n;
+  s.hasSpecialisations := s.hasSpecialisations OR (s.specs > 0)
+END SetSpecs;
+
+(* A new Skill: the rulebook's it, or e's house Skill h (whose costs
+   win, as the loader's), at level, with specs. *)
+PROCEDURE NewSkill*(it: R.Item; h: C.HouseSkill; level: INTEGER; specs: Besm2Text.List): Skill;
+  VAR s: Skill;
+BEGIN
+  NEW(s);
+  IF h # NIL THEN
+    C.InitSkill(s, Lookup(R.Skill, -1, h(HouseSkill).name), h, level, 0); s.name := h(HouseSkill).name
+  ELSE C.InitSkill(s, it, NIL, level, 0); s.name := ItemName(it)
+  END;
+  s.levelIsText := FALSE; s.levelText := NIL;
+  s.hasSpecialisations := FALSE; SetSpecs(s, specs);
+  s.extra := NIL; s.fPoints := 0; s.listed := FALSE;
+  RETURN s
+END NewSkill;
+
+PROCEDURE InsertSkill*(e: Entity; s: Skill);
+BEGIN s.next := NIL; C.AddSkill(e, s); e.hasSkills := TRUE
+END InsertSkill;
+
+(* As ChangeAttr: the same record if it is the same Skill. *)
+PROCEDURE ChangeSkill*(e: Entity; VAR s: Skill; it: R.Item; h: C.HouseSkill; level: INTEGER; specs: Besm2Text.List);
+  VAR b: Skill; p: C.Skill;
+BEGIN
+  IF (h = s.house) & ((h # NIL) OR (it = s.item)) THEN
+    s.level := level; s.levelIsText := FALSE; s.levelText := NIL; SetSpecs(s, specs)
+  ELSE
+    b := NewSkill(it, h, level, specs); b.extra := s.extra;
+    b.next := s.next;
+    IF e.skills = s THEN e.skills := b
+    ELSE p := e.skills; WHILE p.next # s DO p := p.next END; p.next := b
+    END;
+    s := b
+  END
+END ChangeSkill;
+
+PROCEDURE RemoveSkill*(e: Entity; s: Skill);
+  VAR p: C.Skill;
+BEGIN
+  IF e.skills = s THEN e.skills := s.next
+  ELSE p := e.skills; WHILE (p # NIL) & (p.next # s) DO p := p.next END; IF p # NIL THEN p.next := s.next END
+  END;
+  s.next := NIL
+END RemoveSkill;
+
+(* e's genre set to g (C.NoGenre: none); it is saved in `creation`. *)
+PROCEDURE SetGenre*(e: Entity; g: INTEGER);
+BEGIN
+  e.creation.genre := g;
+  IF g # C.NoGenre THEN INCL(e.creationKeys, GenreKey); e.hasCreation := TRUE END
+END SetGenre;
 
 (* The file's number for n: an override if listed, or if it differs
    from the computed number, with a notice. *)
@@ -1115,7 +1299,7 @@ END AdoptItems;
 PROCEDURE Finish(es: Entities);
   VAR i: LONGINT;
 BEGIN
-  Link(es);
+  Link(es, FALSE);
   ComputeAll(es);
   FOR i := 0 TO LEN(es^) - 1 DO AdoptItems(es[i]) END;
   ComputeAll(es);
