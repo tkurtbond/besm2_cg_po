@@ -59,7 +59,7 @@ PROGSRC := $(wildcard src/*.Mod src/*.c)
 # modules): TESTS need no display, GUITESTS do.  More come
 # with the modules of PLAN.md, Part B.
 TESTSUPPORT := test/Check.Mod
-TESTS       :=
+TESTS       := TestRules
 GUITESTS    := TestWindow
 TESTBINS    := $(TESTS:%=$(OBJ)/%)
 GUITESTBINS := $(GUITESTS:%=$(OBJ)/%)
@@ -68,9 +68,9 @@ GUITESTBINS := $(GUITESTS:%=$(OBJ)/%)
 TIMEOUT  ?= 60
 RUNTIME  ?= 3
 
-# Only building needs the libraries, so the cleaning targets and
-# check-pages don't check for them.
-ifneq ($(if $(MAKECMDGOALS),$(filter-out clean uninstall check-pages print-%,$(MAKECMDGOALS)),all),)
+# Only building needs the libraries, so the cleaning targets don't
+# check for them.
+ifneq ($(if $(MAKECMDGOALS),$(filter-out clean uninstall print-%,$(MAKECMDGOALS)),all),)
 $(foreach l,$(SHAREDLIBS),$(if $(wildcard $(POCLIBDIR)/*/OC/$(l).library),,$(error the $(l) library is not in $(POCLIBDIR); install it from its repo (AGENTS.md))))
 endif
 
@@ -94,12 +94,22 @@ $(CALC): src/$(CALCMAIN).Mod $(PROGSRC) $(SHAREDLIBMANIFESTS) | $(OBJ)
 $(OBJ)/Test%: test/Test%.Mod $(TESTSUPPORT) $(PROGSRC) $(SHAREDLIBMANIFESTS) | $(OBJ)
 	$(POC) $(POCFLAGS) $(IMPORTS) -import-path test -output-dir $(OBJ) $(LINK) -o $@ $<
 
-# What needs no display: the unit tests, then test/cli.sh; fail at the
-# end if any failed.
-test: $(PROGRAMS) $(TESTBINS)
+# Besm2Rules' tables as text, for tools/check-rules.py and
+# tools/check-pages.py.
+$(OBJ)/ListRules: test/ListRules.Mod $(PROGSRC) $(SHAREDLIBMANIFESTS) | $(OBJ)
+	$(POC) $(POCFLAGS) $(IMPORTS) -import-path test -output-dir $(OBJ) -o $@ $<
+
+$(OBJ)/rules.txt: $(OBJ)/ListRules
+	$(OBJ)/ListRules > $@
+
+# What needs no display: the unit tests, Besm2Rules against rules/
+# (tools/check-rules.py), then test/cli.sh; fail at the end if any
+# failed.
+test: $(PROGRAMS) $(TESTBINS) $(OBJ)/rules.txt
 	@status=0; for t in $(TESTS); do \
 	  echo "== $$t"; (cd test && timeout $(TIMEOUT) ../$(OBJ)/$$t) || status=1; \
 	done; \
+	echo "== check-rules.py"; tools/check-rules.py $(OBJ)/rules.txt rules || status=1; \
 	echo "== cli.sh"; test/cli.sh ./$(PROGRAM) ./$(CALC) || status=1; \
 	exit $$status
 
@@ -109,11 +119,12 @@ test: $(PROGRAMS) $(TESTBINS)
 RULEBOOK ?= $(HOME)/Reference/RPG/Dyskami/BESM/2E/BESM2ER.pdf
 BOOKMARKED ?= $(HOME)/Reference/RPG/Dyskami/BESM/2E/BESM2ER_bookmarked.pdf
 
-# Every page of the tables in rules/ against the rulebook's headings by
-# font (PLAN.md, A2.11).  Not part of make test: it needs the PDFs and
-# mutool.  A bookmark that disagrees is a note, not a failure.
-check-pages:
-	@tools/check-pages.py $(RULEBOOK) $(BOOKMARKED) rules
+# Every page of the tables in rules/, and of Besm2Rules, against the
+# rulebook's headings by font (PLAN.md, A2.11).  Not part of make test:
+# it needs the PDFs and mutool.  A bookmark that disagrees is a note,
+# not a failure.
+check-pages: $(OBJ)/rules.txt
+	@tools/check-pages.py $(RULEBOOK) $(BOOKMARKED) rules $(OBJ)/rules.txt
 
 # FLTK needs a display even for windows never shown.  An agent never
 # runs these on the user's desktop (AGENTS.md): use test-headless or

@@ -1050,6 +1050,59 @@ saved YAML holds names as the formatters expect them, without pages.
    costs as the reference section gives them, the label format; `make
    check-pages` against the PDF's headings by font. Shown to fail with
    planted bugs.
+   *Done 2026-11-06.* `src/Besm2Rules.Mod`, after `OvaRules`:
+   - **The tables:**
+     - 3 Stats (p. 15);
+     - 76 Attributes (pp. 20-81) and 13 Mecha Attributes (pp. 93-99);
+     - 38 Defects (pp. 101-113) and 10 Mecha-Only Defects (pp. 114-116);
+     - 52 Skills (pp. 120-128) with Table 2-4's costs (p. 117);
+     - 34 Weapon Attack Abilities (pp. 83-89) and 21 Disabilities
+       (pp. 89-92), with their slots, the second number some have, how
+       often each may be taken, and the 19 pairs that exclude each other;
+     - 18 aliases: the headings' full names, Table 2-2's "Magic (or
+       Psionics)", and question 11's old names;
+     - the pages of the rules themselves (Step 3, ... Table 4-7);
+     - the Staged Stat Cost (Table 4-7, p. 166).
+
+     Unique Defect Sample — Weak Point (p. 112) is an example of Unique
+     Character Defect, not an item.
+   - **Stealth** is both an Attribute (p. 73) and a Skill (p. 125).
+     `Find` gives the Attribute, and `FindKind` gives either.
+   - **Attribute options:** an Attribute's cost options are labelled
+     with short names of the choices, never the book's words.
+     - A required choice sets the cost a Level (Flight, Force Field, ...).
+     - Other options add or take points a Level or on the total.
+     - Some are exclusive (an optional group).
+     - Some can be taken more than once (an extra aperture, form, sense).
+     - Heavy Armour, Light Armour and Own a Big Mecha cost at least 1
+       (pp. 40, 48, 59).
+   - **Decided from the text (2026-11-06):**
+     - Shape Change's "1 point less" for a single type of change is −1
+       a Level (p. 66; its heading reads "2-3 points/level").
+     - Magic's Focus, Ritual, Silent and Still change Energy Points, not
+       Character Points, so they are not cost options (p. 50).  Its Less
+       Powerful is −1, −2 or −3 on the total.
+     - Sensors' Underwater, Analytic and Indirect are each bought at 1 a
+       Level, as the subject; an analytic function on Sensors already
+       owned is +1 on the total (p. 65).
+     - Heavy and Light Armour's Hidden and Optimized change how they
+       work, not their cost (pp. 40, 48).
+     - Contagious is 3 slots mild, taken a second time (6) highly (p. 85).
+   - **Deferred:** the Attributes' Types (Table 2-2) and Relevant Stats
+     wait until the window needs them.
+   - **Tests:**
+     - `test/TestRules` checks the counts, each name found once, pages in
+       their chapters at PDF + 2, the book's order, the options' shape,
+       labels, aliases, spot numbers and the small tables.
+     - `test/ListRules` prints the tables.  `tools/check-rules.py` (in
+       `make test`) compares every item with `rules/*.tsv`: page, cost,
+       highest Level, flags, Skill costs, slots, times and exclusions.
+     - `make check-pages` now also checks every item of Besm2Rules, and
+       each of its rules' pages, against the PDF's headings.
+     - 13 planted bugs were each caught by at least one of the three: a
+       page, a Defect left out, a name twice, a cost, a Skill cost, slots,
+       an exclusion, the label format, the PDF offset, the Staged table, a
+       rule's page, and `Find` ignoring case.
 2. **`Besm2Calc`.** Every rule from A2, with `TestCalc` over every
    fixture character and mecha (each number the file holds compared)
    and hand-made cases for each rule, each Weapon Ability and

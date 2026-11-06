@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
-# check-pages.py PDF BOOKMARKED RULES: checks every page in the rules
-# tables against the rulebook (A2.11 of PLAN.md).
+# check-pages.py PDF BOOKMARKED RULES [LISTING]: checks every page in the
+# rules tables against the rulebook (A2.11 of PLAN.md), and those of
+# Besm2Rules too (Part B, step 1).
 #
 #   PDF         BESM2ER.pdf, the original, with a text layer;
 #   BOOKMARKED  BESM2ER_bookmarked.pdf, whose bookmarks were typed by hand;
-#   RULES       the directory of the tables (rules/).
+#   RULES       the directory of the tables (rules/);
+#   LISTING     what test/ListRules prints of Besm2Rules.
 #
 # The headings are found by font with rulebook-headings.py (beside this
 # script), so only headings are read, never the rulebook's text (AGENTS.md).
@@ -15,7 +17,11 @@
 #     page in their table, so the Skill heading must be found in the Skill
 #     chapter, PDF 121-131), or a Weapon Attack Ability or Disability of
 #     weapon-abilities-disabilities.tsv is not a bullet heading on its page;
-#   - a row whose PDF page isn't its printed page + 2.
+#   - a row whose PDF page isn't its printed page + 2;
+#   - with LISTING, an item of Besm2Rules that is not a heading on its
+#     page (a Stat is the bullet "Body Stat"; a Weapon Ability or
+#     Disability a bullet; any other an item heading), or one of its
+#     rules' pages (StatsPage, ...) without its heading.
 # A name the heading spells differently is matched through ALIASES below;
 # each alias is a spelling the book itself uses elsewhere (Table 2-2, 2-3,
 # 2-4 or the running text), recorded in PLAN.md.
@@ -81,9 +87,10 @@ def bookmarks(pdf):
     return marks
 
 def main(argv):
-    if len(argv) != 3:
-        sys.exit('usage: check-pages.py PDF BOOKMARKED RULES')
-    pdf, marked, rules = argv
+    if len(argv) not in (3, 4):
+        sys.exit('usage: check-pages.py PDF BOOKMARKED RULES [LISTING]')
+    pdf, marked, rules = argv[:3]
+    listing = argv[3] if len(argv) == 4 else None
     fails = 0
     def fail(msg):
         nonlocal fails
@@ -136,6 +143,32 @@ def main(argv):
         checked += 1
     if not fails:
         print(f'ok   - all {checked} names of the tables are headings on their pages')
+
+    if listing:
+        n_items = n_sections = 0
+        before = fails
+        with open(listing, encoding='utf-8') as f:
+            for line in f:
+                r = line.rstrip('\n').split('\t')
+                if r[0] in ('alias', 'exclude'):
+                    continue
+                if r[0] == 'section':
+                    p = int(r[1]) + 2
+                    if not any(norm(r[2]) in by_page.get((p, k), set()) for k in ('step', 'item', 'bullet')):
+                        fail(f'Besm2Rules: the page {r[1]} (PDF {p}) has no heading {r[2]!r}')
+                    n_sections += 1
+                    continue
+                kind, page, p, name = r[0], int(r[1]), int(r[2]), r[3]
+                if p != page + 2:
+                    fail(f'Besm2Rules: {name} is p. {page} but PDF {p}')
+                elif kind == 'stat':
+                    if not at(name + ' Stat', p, 'bullet'):
+                        fail(f'Besm2Rules: the Stat {name} (p. {page}, PDF {p}) is not a heading there')
+                elif not at(name, p, 'bullet' if kind in ('ability', 'disability') else 'item'):
+                    fail(f'Besm2Rules: {name} (p. {page}, PDF {p}) is not a heading there')
+                n_items += 1
+        if fails == before:
+            print(f'ok   - all {n_items} items and {n_sections} rules\' pages of Besm2Rules are headings on their pages')
 
     # The bookmarks: each table name with a bookmark must point at its page.
     marks = {}

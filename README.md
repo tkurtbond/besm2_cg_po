@@ -43,11 +43,11 @@ libraries installed in `~/.local/lib/poc` (`POCLIBDIR`):
 
 ```
 make                  # besm2_cg_po and besm2_calc_po
-make test             # what needs no display
+make test             # what needs no display, and Besm2Rules against rules/
 make test-headless    # the window tests, on Xvfb
 make test-sway        # the window tests, on a headless sway
 make valgrind-headless
-make check-pages      # the pages in rules/ against the rulebook's PDF
+make check-pages      # the pages in rules/ and Besm2Rules against the rulebook's PDF
 make install          # to ~/local/bin (PREFIX)
 ```
 
