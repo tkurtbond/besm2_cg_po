@@ -5,13 +5,16 @@ MODULE TestModel; (* Besm2Character's editing: what the Attributes, Defects and 
    the same for Defects and Skills, SetGenre and Relink, and the Weapon
    Attack dialog through NewMod, InsertMod, ChangeMod, RemoveMod,
    CopyMods and SetPrimary; step 9's New Mecha and Duplicate through
-   NewMecha, ReadText and Besm2Save.Copy; here each is
+   NewMecha, ReadText and Besm2Save.Copy; step 10's Creation dialog
+   through SetCreation, TakeCreation, SaveSkills and RestoreCreation,
+   and SetGenre's repricing of the Skills a file couldn't price; here each is
    checked on an entity built by hand, then what they made is saved and
    loaded again.  Needs no display.  What it saves goes in ../obj. *)
 
 IMPORT Check, C := Besm2Calc, Ch := Besm2Character, R := Besm2Rules, Besm2Save, Besm2Text, Ropes;
 
 CONST SavePath = "../obj/model-test.yaml"; WeaponPath = "../obj/model-weapon.yaml";
+  UnpricedPath = "data/unpriced.yaml"; CreationPath = "../obj/model-creation.yaml";
 
 TYPE Rope = Ropes.Rope;
 
@@ -255,6 +258,60 @@ BEGIN
   END
 END SaveLoad;
 
+(* Step 10: a file's Skills with no genre to price them are kept as
+   overrides (unpriced); a creation taken from another character, or a
+   genre set, prices them, and clears each override it agrees with. *)
+PROCEDURE Creation;
+  VAR u, camp: Ch.Entity; dr, ga, mp: Ch.Skill; marks: Ch.SkillMarks; oc, c: C.Creation;
+    keys: SET; has: BOOLEAN;
+BEGIN
+  ok := Ch.LoadAll(UnpricedPath, back, msg) & (LEN(back^) = 2);
+  Check.Check(ok, "data/unpriced.yaml loaded");
+  IF ~ok THEN RETURN END;
+  u := back[0]; camp := back[1];
+  dr := u.skills(Ch.Skill); ga := dr.next(Ch.Skill); mp := ga.next(Ch.Skill);
+  Check.Check(dr.unpriced & dr.points.overridden & (C.Value(dr.points) = 8) & ga.unpriced & mp.unpriced
+    & (mp.house = NIL) & mp.points.overridden & ~u.hasCreation,
+    "no genre: each Skill's points kept as an unpriced override");
+  oc := u.creation; keys := u.creationKeys; has := u.hasCreation; marks := Ch.SaveSkills(u);
+
+  Ch.TakeCreation(u, camp); Ch.ComputeAll(back);
+  Check.Check((u.creation.genre = R.Cyberpunk) & (u.creation.characterPoints = 45) & (u.available = 47)
+    & (u.creation.statCeiling = 10) & (u.creationKeys = camp.creationKeys) & u.hasCreation,
+    "TakeCreation: the numbers, options and keys");
+  Check.Check((mp.house # NIL) & (mp.house # camp.creation.houseSkills) & (u.creation.houseSkills = mp.house)
+    & Is(mp.house(Ch.HouseSkill).name, "Mecha Piloting"), "the house Skills copied, and the Skill tied to the copy");
+  Check.Check(~mp.points.overridden & ~mp.unpriced & (C.Value(mp.points) = 5),
+    "the house Skill's price agrees with the file's: the override cleared");
+  Check.Check(dr.points.overridden & dr.unpriced & (C.Value(dr.points) = 8),
+    "Cyberpunk prices Driving 2 at 6, not the file's 8: kept, still unpriced");
+
+  Ch.SetGenre(u, R.ModernMilitary); Ch.ComputeAll(back);
+  Check.Check(~dr.points.overridden & ~dr.unpriced & (C.Value(dr.points) = 8),
+    "SetGenre: Modern Military prices it at 8 (p. 119): the override cleared");
+  Check.Check(ga.points.overridden & ga.unpriced & (C.Value(ga.points) = 99), "Gaming's 99 still kept");
+
+  ok := Besm2Save.SaveAll(back, CreationPath, msg) & Ch.LoadAll(CreationPath, es, msg) & (LEN(es^) = 2);
+  Check.Check(ok, "saved and loaded again");
+  IF ok THEN
+    Check.Check((es[0].creation.genre = R.ModernMilitary) & (es[0].creation.characterPoints = 45)
+      & (es[0].creation.backgroundPoints = 2) & (es[0].creation.statCeiling = 10)
+      & (es[0].creation.houseSkills # NIL) & ~es[0].skills.next.next.points.overridden,
+      "the creation and its house Skill, and the Skill priced by it")
+  END;
+
+  Ch.RestoreCreation(u, oc, keys, has, marks); Ch.ComputeAll(back);
+  Check.Check((u.creation.genre = C.NoGenre) & (u.creationKeys = {}) & ~u.hasCreation
+    & (u.creation.houseSkills = NIL) & (mp.house = NIL) & mp.points.overridden & mp.unpriced
+    & dr.points.overridden & dr.unpriced & (C.Value(dr.points) = 8),
+    "RestoreCreation: the creation and every Skill as they were");
+
+  c := u.creation; c.genre := R.ModernMilitary; c.backgroundPoints := 1;
+  Ch.SetCreation(u, c, {Ch.GenreKey}, FALSE); Ch.ComputeAll(back);
+  Check.Check(u.hasCreation & ~dr.points.overridden & (u.creation.backgroundPoints = 1),
+    "SetCreation: a key written makes `creation`; the genre prices Driving")
+END Creation;
+
 BEGIN
   Attributes;
   Defects;
@@ -263,5 +320,6 @@ BEGIN
   Several;
   Weapons;
   SaveLoad;
+  Creation;
   Check.Summary
 END TestModel.

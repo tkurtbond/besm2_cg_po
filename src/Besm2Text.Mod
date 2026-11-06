@@ -187,6 +187,21 @@ BEGIN
   END
 END SortCI;
 
+(* r for an FLTK menu's item or a Choice's: each "&" doubled, so that
+   it is shown, not taken as a shortcut's mark.  NIL stays NIL. *)
+PROCEDURE MenuText*(r: Rope): Rope;
+  VAR t: Rope; k: LONGINT; ch: CHAR;
+BEGIN
+  IF r = NIL THEN RETURN NIL END;
+  t := Ropes.FromString("");
+  FOR k := 0 TO Ropes.Length(r) - 1 DO
+    ch := Ropes.Fetch(r, k);
+    IF ch = "&" THEN t := Ropes.AppendChar(t, "&") END;
+    t := Ropes.AppendChar(t, ch)
+  END;
+  RETURN t
+END MenuText;
+
 (* ---- Flat copies ---- *)
 
 (* The text of r as a 0X-terminated array of exactly Length(r) + 1

@@ -16,14 +16,16 @@ MODULE TestWindow; (* Besm2Window: the Character tab, driven as a user would, an
    8: the Weapon Attack dialog, its Cancel and OK, and Close while it
    is open.  Step 9: the Mecha tab, the Character menu and the
    entities' Choice, then the file of several saved and loaded again.
-   Runs
+   Step 10: Character > Creation..., each of its controls, its Cancel,
+   OK and Copy from, a mecha's owner's, and Add Character's copy of the
+   creation; Close while it is open.  Runs
    in test/: its files are data/*.yaml, and what it saves goes in
    ../obj; it opens copies of the data/*.yaml it changes there, so a
    File > Save gone wrong can't change it.  poc drops a string literal
    inside an array index (a[F("x")]), so none is written there. *)
 
-IMPORT Check, Fl, FlBrowsers, FlMenus, FlText, C := Besm2Calc, Ch := Besm2Character, R := Besm2Rules, Besm2Background,
-  Besm2ItemPanel, MP := Besm2MechaPanel, Besm2Save, Besm2Text, Besm2Viewer, Besm2Widgets, D := Besm2WeaponDialog, W := Besm2Window, Out, Ropes;
+IMPORT Check, Fl, FlBrowsers, FlMenus, FlText, FlValuators, C := Besm2Calc, Ch := Besm2Character, R := Besm2Rules, Besm2Background,
+  Besm2ItemPanel, MP := Besm2MechaPanel, Besm2Save, Besm2Text, Besm2Viewer, Besm2Widgets, D := Besm2WeaponDialog, Cr := Besm2Creation, W := Besm2Window, Out, Ropes;
 
 CONST
   SavePath = "../obj/window-test.yaml";
@@ -32,6 +34,7 @@ CONST
   BarePath = "../obj/bare.yaml";  (* data/bare.yaml, copied *)
   WeaponPath = "../obj/window-weapon.yaml";
   SeveralPath = "../obj/window-several.yaml";  (* data/window.yaml, copied *)
+  CreationPath = "../obj/window-creation.yaml";  (* data/window.yaml, copied *)
 
 TYPE Rope = Ropes.Rope;
 
@@ -805,6 +808,126 @@ BEGIN
   RETURN 0
 END DialogWarning;
 
+(* ---- Creation (step 10) ---- *)
+
+PROCEDURE Spun(v: FlValuators.Spinner): INTEGER;
+BEGIN RETURN SHORT(ENTIER(v.Value() + 0.5))
+END Spun;
+
+PROCEDURE LabelIs(b: Fl.Widget; want: ARRAY OF CHAR): BOOLEAN;
+  VAR label: ARRAY 256 OF CHAR;
+BEGIN
+  b.GetLabel(label);
+  IF label # want THEN Out.String("    label: "); Out.String(label); Out.Ln END;
+  RETURN label = want
+END LabelIs;
+
+PROCEDURE Creation;
+  VAR pilot, walker, added: Ch.Entity; dr: C.Skill; keys: SET; was: BOOLEAN; c: Ch.Entities; label: ARRAY 128 OF CHAR;
+BEGIN
+  Check.Check(Item("&Character/Cr&eation...", W.creationItem, 0, {}) & (W.creationItem < W.addCharacterItem),
+    "Character > Creation..., first");
+  Copy("data/window.yaml", CreationPath);
+  chosen := Rp(CreationPath); answer := W.Discard; Pick(W.openItem);
+  walker := W.entities[0]; pilot := W.entities[1]; dr := pilot.skills;
+  keys := pilot.creationKeys; was := W.modified;
+  Check.Check(~Inactive(W.creationItem), "active on a character");
+
+  Choose(0);
+  Check.Check(~Inactive(W.creationItem), "and on a mecha with an owner");
+  Pick(W.creationItem);
+  Check.Check((Cr.dialog # NIL) & (Cr.target = pilot) & LabelIs(Cr.title, "The creation of Pilot, which prices the mecha"),
+    "a mecha's: its owner's creation");
+  Cr.Cancel; Choose(1);
+
+  Pick(W.creationItem);
+  Check.Check((Cr.dialog # NIL) & (Cr.target = pilot) & LabelIs(Cr.title, "The creation of Pilot"), "Creation...: the dialog");
+  Check.Check(LabelIs(Cr.pointsOn, "Character Points (p. 13, PDF 15)") & LabelIs(Cr.stagedOn, "Staged Stat Cost, Table 4-7 (p. 166, PDF 168)")
+    & LabelIs(Cr.statOn, "A ceiling on each Stat (p. 16, PDF 18)") & LabelIs(Cr.autoFireOn, "Auto-Fire counts as 1 slot (p. 84, PDF 86)"),
+    "each row with both pages");
+  Check.Check(Cr.pointsOn.Value() & (Spun(Cr.pointsIn) = 20) & (Cr.genre.Value() = R.ModernMilitary + 1)
+    & Cr.skillOn.Value() & (Spun(Cr.skillIn) = 20) & (Spun(Cr.backgroundIn) = 0) & ~Cr.stagedOn.Value()
+    & ~Cr.statOn.Value() & ~Cr.statIn.Active() & (Spun(Cr.statIn) = 10) & ~Cr.bonusOn.Value() & (Spun(Cr.bonusIn) = 8)
+    & ~Cr.autoFireOn.Value(), "the file's creation shown; the numbers not set at their defaults, inactive");
+  Check.Check(~Cr.copyChoice.Active() & ~Cr.copyButton.Active() & Cr.fileButton.Active(), "no other character to copy from");
+  Check.Check(LabelIs(Cr.summary, "Character Points: 20 spent of 20.  Skill Points: 8 spent of 20."), "the points");
+
+  Cr.SetCharacterPoints(TRUE, 25);
+  Check.Check((pilot.available = 25) & W.modified
+    & Line(W.CharacterPoints, "Character Points: Stats 13 + Attributes 8 - Bonus Points 1 = 20 of 25", FALSE),
+    "Character Points 25: the window follows");
+  Cr.SetBackgroundPoints(2);
+  Check.Check((pilot.available = 27) & (Ch.BackgroundPointsKey IN pilot.creationKeys), "Background Points 2: 27");
+  Cr.SetGenre(R.Cyberpunk);
+  Check.Check((C.Value(dr.points) = 6) & (W.skillPanel.genre.Value() = R.Cyberpunk + 1)
+    & LabelIs(Cr.summary, "Character Points: 20 spent of 27.  Skill Points: 6 spent of 20."),
+    "Cyberpunk: Driving 3 a Level, and the Skills tab's genre follows");
+  Cr.SetSkillPoints(FALSE, 0);
+  Check.Check((pilot.creation.skillPoints = C.Unset) & ~(Ch.SkillPointsKey IN pilot.creationKeys) & ~Cr.skillIn.Active()
+    & (Spun(Cr.skillIn) = 20) & (pilot.skillPoints = 20), "the GM's Skill Points off: the rule's 20, shown");
+  Cr.SetStatCeiling(TRUE, 4);
+  Check.Check((pilot.creation.statCeiling = 4) & C.HasWarning(pilot, C.StatRange, NIL) & Cr.statIn.Active(),
+    "a ceiling of 4: Body 5 is above it");
+  Cr.SetBonusCeiling(TRUE, 1);
+  Check.Check((pilot.creation.bonusCeiling = 1) & ~C.HasWarning(pilot, C.OverBonusCeiling, NIL), "a Bonus Point ceiling of 1");
+  Cr.SetStaged(TRUE);
+  Check.Check(pilot.creation.stagedStatCost & (C.Value(pilot.statPoints[C.Body]) = R.StagedStatCost(5)), "Staged Stat Cost");
+  Cr.SetAutoFireOne(TRUE);
+  Check.Check((pilot.creation.autoFireSlots = 1) & (Ch.AutoFireSlotsKey IN pilot.creationKeys), "Auto-Fire as 1 slot");
+  Cr.Cancel;
+  Check.Check((Cr.dialog = NIL) & (pilot.creation.characterPoints = 20) & (pilot.creation.backgroundPoints = 0)
+    & (pilot.creation.genre = R.ModernMilitary) & (pilot.creation.skillPoints = 20) & (pilot.creation.statCeiling = 0)
+    & (pilot.creation.bonusCeiling = 0) & ~pilot.creation.stagedStatCost & (pilot.creation.autoFireSlots = 3)
+    & (pilot.creationKeys = keys) & (C.Value(dr.points) = 8) & (W.skillPanel.genre.Value() = R.ModernMilitary + 1)
+    & (W.modified = was) & Line(W.CharacterPoints, "Character Points: Stats 13 + Attributes 8 - Bonus Points 1 = 20 of 20", FALSE),
+    "Cancel: everything as it was");
+
+  Pick(W.creationItem);
+  Cr.SetCharacterPoints(FALSE, 0);
+  Check.Check((pilot.available = 0) & ~(Ch.CharacterPointsKey IN pilot.creationKeys) & ~Cr.pointsIn.Active() & (Spun(Cr.pointsIn) = 20),
+    "Character Points off: no limit; the spinner keeps 20");
+  Cr.SetStaged(TRUE); Cr.SetStaged(FALSE);
+  Check.Check(~(Ch.StagedStatCostKey IN pilot.creationKeys), "an option turned on and off again: not written");
+  Cr.SetBackgroundPoints(1);
+  Cr.Ok;
+  Check.Check((Cr.dialog = NIL) & W.modified & (pilot.creation.backgroundPoints = 1), "OK: kept");
+  chosen := Rp(CreationPath); Pick(W.saveItem);
+  c := Reload(CreationPath);
+  Check.Check((c # NIL) & (c[1].creation.characterPoints = 0) & (c[1].creation.backgroundPoints = 1)
+    & (c[1].creation.genre = R.ModernMilitary) & (c[1].creationKeys = {Ch.BackgroundPointsKey, Ch.GenreKey, Ch.SkillPointsKey}),
+    "saved and loaded again: no Character Points, Background Points 1");
+
+  Pick(W.addCharacterItem); added := W.entity;
+  Check.Check((added # pilot) & (added.creation.genre = R.ModernMilitary) & (added.creation.backgroundPoints = 1)
+    & (added.creationKeys = pilot.creationKeys) & added.hasCreation, "Add Character: the shown one's creation");
+  Pick(W.creationItem);
+  Cr.copyChoice.ItemLabel(0, label);
+  Check.Check(Cr.copyChoice.Active() & (Cr.copyChoice.Length() = 2) & (label = "Pilot"), "Copy from: the other character");
+  Cr.SetGenre(R.Cyberpunk); Cr.SetCharacterPoints(TRUE, 50);
+  Cr.Copy(0);
+  Check.Check((added.creation.genre = R.ModernMilitary) & (added.creation.characterPoints = 0) & (Cr.genre.Value() = R.ModernMilitary + 1)
+    & ~Cr.pointsOn.Value(), "Copy: Pilot's creation, shown");
+  chosen := Rp("data/window.yaml"); Cr.FromFile;
+  Check.Check((added.creation.characterPoints = 20) & (added.creation.backgroundPoints = 0) & Cr.pointsOn.Value() & (Spun(Cr.pointsIn) = 20),
+    "From a File: its first character's creation");
+  chosen := Rp("data/creation.yaml"); Cr.FromFile; Cr.SetBackgroundPoints(0);
+  Check.Check((added.creation.genre = R.Cyberpunk) & (Ch.StagedStatCostKey IN added.creationKeys)
+    & ~(Ch.BackgroundPointsKey IN added.creationKeys), "a copy's options kept as it wrote them, off too");
+  chosen := Rp("data/window.yaml"); Cr.FromFile;
+  before := tells; chosen := Rp("data/mecha.yaml"); Cr.FromFile;
+  Check.Check((tells = before + 1) & (added.creation.characterPoints = 20), "a file of only mecha: said so, nothing copied");
+  before := tells; chosen := Rp("data/no-such-file.yaml"); Cr.FromFile;
+  Check.Check(tells = before + 1, "a file that won't load: said so");
+  chosen := NIL; Cr.FromFile;
+  Check.Check(added.creation.characterPoints = 20, "the file chooser cancelled: nothing");
+  Cr.Ok;
+  Check.Check(pilot.creation.backgroundPoints = 1, "Pilot's own creation not changed by the copy");
+
+  Pick(W.addMechaItem);
+  Check.Check(W.entity.isMecha & (W.entity.owner = NIL) & Inactive(W.creationItem), "a mecha with no owner: inactive");
+  Choose(0)
+END Creation;
+
 PROCEDURE Weapons;
   VAR p: Besm2ItemPanel.AttrPanel; wa: R.Item; a, a2: Ch.Attr; m: Ch.Mod; was: BOOLEAN; es: Ch.Entities;
     label: ARRAY 128 OF CHAR;
@@ -912,9 +1035,12 @@ BEGIN
   Skills;
   Background;
   Several;
+  Creation;
   Weapons;
+  Pick(W.creationItem); Cr.SetCharacterPoints(TRUE, 77);
   W.Close;
   Check.Check(W.window = NIL, "Close deletes it");
   Check.Check((D.dialog = NIL) & (e.attrs.level = 4), "and cancels the Weapon Attack dialog");
+  Check.Check((Cr.dialog = NIL) & (e.creation.characterPoints = 0), "and the Creation dialog");
   Check.Summary
 END TestWindow.

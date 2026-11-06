@@ -67,7 +67,7 @@ CONST
   NoCost* = 20;        (* attribute: its cost is the GM's (or its Level's choice), and no override gives it *)
 
   MaxSkillLevel = 6;
-  MaxStat = 12;
+  MaxStat* = 12;
   MaxDefects = 8;       (* recommended, p. 100 *)
   BaseSkillPoints = 20; SkillPointsALevel = 10;
   DamageALevel = 15; GearDamageALevel = 5;
@@ -75,7 +75,7 @@ CONST
   GunnerCost = 5;
   MechaPointsALevel = 20; LessPowerfulPoints = 5;
   MechaHP = 40; ToughnessHP = 20;
-  BookAutoFireSlots = 3;
+  BookAutoFireSlots* = 3;
 
 TYPE
   (* A number on the sheet: the computed value, and the override the

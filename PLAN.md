@@ -1361,7 +1361,8 @@ saved YAML holds names as the formatters expect them, without pages.
    - A new character has no `creation`, so no Character Points until
      step 10's Character > Creation...: the points show only what is
      spent, "33 (no limit set)", never red.  A file's `creation` is
-     used as written.
+     used as written.  (Step 10 gave it Creation...; Add Character
+     copies the creation of the character shown.)
    - The Background tab (description and notes) moves to step 7.
 
    *Done 2026-11-06.*  New modules, none with a window but
@@ -1390,6 +1391,7 @@ saved YAML holds names as the formatters expect them, without pages.
    Decided while building it (2026-11-06):
    - **No Character menu yet.**  FLTK shows a menu only with items in
      it, and its first, Creation..., is step 10's; it comes then.
+     (Step 9 added the menu, step 10 Creation... at its head.)
    - **A mecha shown** (a file of only mecha) has its Stats spinners
      and boxes off, and of the derived values only HP (p. 59: a mecha
      has no Stats); its points are "Mecha Points: Attributes ... -
@@ -1466,7 +1468,7 @@ saved YAML holds names as the formatters expect them, without pages.
      **+** and **-** take the selected one once more or once less.
    - **The genre** is chosen on the Skills tab (Table 2-4's **?**, p.
      119, PDF 121), since it sets every Skill's cost; choosing it adds
-     `creation: genre`.  Step 10's Creation... will show it too.
+     `creation: genre`.  Step 10's Creation... shows it too.
    - **Specialisations** are typed separated by commas, trimmed, blanks
      dropped; the first is free and each other 1 SP (p. 118).
    - **House Skills** (`creation: skills`) are offered after the
@@ -1481,6 +1483,9 @@ saved YAML holds names as the formatters expect them, without pages.
    - Known: a Skill loaded from a file with no genre keeps its points
      as an override (they can't be checked), even after a genre is
      chosen; clearing the override is step 10's Creation... question.
+     (Closed in step 10: such a Skill is marked unpriced, and once a
+     genre or house Skill prices it, an override the price agrees with
+     is cleared; one that disagrees is kept.)
    - **A poc bug**, found here: a string literal inside an array index
      (`a[F("x")]`) is never emitted, and the link fails ("use of
      undefined value '@.str...'").  The tests compute such an index
@@ -1604,6 +1609,52 @@ saved YAML holds names as the formatters expect them, without pages.
 10. **Options and limits.** Character > Creation...: the campaign's
     Character Points, Background Points, genre, Skill Points, Staged
     Stat Cost, the GM's ceilings.
+    *Done 2026-11-06.*  New module `src/Besm2Creation.Mod`: the
+    **Creation** dialog (OvaSettings' pattern: modal, changes go into
+    the model live, Cancel or the close button restores what was there
+    at open).  Each control has a **?** to its page: Character Points
+    (p. 13, PDF 15; default 40 when turned on), Background Points (p.
+    130, PDF 132), genre (Table 2-4, p. 119, PDF 121), Skill Points (p.
+    117, PDF 119; while off, the rule's number is shown), Staged Stat
+    Cost (p. 166, PDF 168), a Stat ceiling (p. 16, PDF 18; default
+    10), a Bonus Point ceiling (p. 100, PDF 102, "no more than eight
+    Defects"; default 8) and one Auto-Fire slot (p. 84, PDF 86).  A
+    summary line shows what the creation gives.
+    **Copy from** takes the creation (and its house Skills, copied
+    deep) of another entity in the file, or of the first character in
+    another file (**From File...**; a file of only mecha is refused
+    with a message).  **Add Character** copies the creation of the
+    character shown (or of a mecha's owner).  On a mecha, Creation...
+    edits its owner's creation ("..., which prices the mecha"), and is
+    greyed for an unowned mecha.
+    `src/Besm2Character.Mod` gained `SetCreation`, `TakeCreation`,
+    `SaveSkills`/`RestoreCreation` (for Cancel) and `Reprice`.
+    Decided while building it (2026-11-06):
+    - **Keys kept.**  An option turned off that was in the file when
+      the dialog opened (or was copied in) keeps its key, written
+      false, so a file's explicit `staged-stat-cost: false` survives;
+      one turned on and off again in the dialog leaves no key.
+      Character Points, Skill Points and the ceilings are removed when
+      off.
+    - **Unpriced Skills** (no genre, or neither in the rulebook nor a
+      house Skill) are repriced whenever the genre or house Skills
+      change; an override the new price agrees with is cleared.
+    Found while building it: p. 16 (PDF 18)'s GM ceiling or floor is
+    on the total Character Points spent on Stats, while A4's
+    `options: stat-ceiling` is a ceiling on each Stat (whose range p.
+    16 gives as 1 to 12).  Left as A4 has it, for the user to decide
+    whether to add a total ceiling and floor.
+    Tests: `test/TestModel.Mod`'s Creation (`test/data/unpriced.yaml`,
+    `test/data/creation.yaml`: Reprice, SetCreation, TakeCreation,
+    SaveSkills and RestoreCreation, saved and loaded again) and
+    `test/TestWindow.Mod`'s Creation (every control, Ok, Cancel, Copy
+    from, From File..., a mecha's owner, Add Character, Close with the
+    dialog open).  Planted bugs caught: Reprice's agreement test;
+    RestoreCreation's house Skills; the deep copy of house Skills;
+    Key ignoring the opening keys; Cancel's restore; the opening keys
+    not reset after a copy; Add Character not copying; Close not
+    cancelling the dialog.  `make test`, `make test-headless`, `make
+    test-sway` and `make valgrind-headless` pass.
 11. **Preview tab.** The formatters' output of the character as it
     stands; Copy and Save.
 12. **Finish.** READMEs, valgrind clean on Xvfb and sway (and the

@@ -35,7 +35,7 @@ MODULE Besm2Window; (* besm2_cg_po's main window: the menu bar, the Character ta
 
 IMPORT Fl, FlBrowsers, FlDialogs, FlInputs, FlLayout, FlMenus, FlPreferences, FlValuators,
   C := Besm2Calc, Ch := Besm2Character, R := Besm2Rules, Besm2Layout, Besm2Paths, Besm2Save, Besm2Text,
-  Besm2Background, Besm2ItemPanel, Besm2MechaPanel, Besm2Viewer, Besm2Warnings, Besm2WeaponDialog, Besm2Widgets, FlButtons, Ropes;
+  Besm2Background, Besm2Creation, Besm2ItemPanel, Besm2MechaPanel, Besm2Viewer, Besm2Warnings, Besm2WeaponDialog, Besm2Widgets, FlButtons, Ropes;
 
 CONST
   Title* = "BESM2ER Character Generator";
@@ -73,7 +73,7 @@ VAR
   characterTab-, attributesTab-, defectsTab-, skillsTab-, mechaTab-, backgroundTab-, previewTab-: Fl.Group;
   newItem-, openItem-, saveItem-, saveAsItem-, quitItem-: INTEGER;
   rulebookItem-, choosePdfItem-, viewerItem-: INTEGER;
-  addCharacterItem-, addMechaItem-, duplicateItem-, removeItem-, moveUpItem-, moveDownItem-,
+  creationItem-, addCharacterItem-, addMechaItem-, duplicateItem-, removeItem-, moveUpItem-, moveDownItem-,
   nextItem-, previousItem-: INTEGER;
   entityChoice-: FlMenus.Choice;  (* the entities, by number and name; current chosen *)
 
@@ -126,6 +126,7 @@ VAR
   showing: BOOLEAN;  (* ShowAll is setting the widgets: their callbacks change nothing *)
   weaponLine: INTEGER;      (* the Weapon Attack's line, while its dialog is open *)
   weaponModified: BOOLEAN;  (* modified, when it opened *)
+  creationModified: BOOLEAN;  (* modified, when the Creation dialog opened *)
 
 PROCEDURE^ ShowAll;
 
@@ -499,18 +500,11 @@ END StatAction;
 (* Entity i's label in the Choice: its number and name, " (mecha)" for
    a mecha, any "&" doubled so that FLTK shows it. *)
 PROCEDURE EntityLabel(i: INTEGER): Rope;
-  VAR r, name: Rope; k: LONGINT; ch: CHAR;
+  VAR r, name: Rope;
 BEGIN
   r := Besm2Text.Int(i + 1); Besm2Text.Add(r, ". ");
   name := Besm2Text.Trim(entities[i].name);
-  IF name = NIL THEN Besm2Text.Add(r, "(no name)")
-  ELSE
-    FOR k := 0 TO Ropes.Length(name) - 1 DO
-      ch := Ropes.Fetch(name, k);
-      IF ch = "&" THEN r := Ropes.AppendChar(r, "&") END;
-      r := Ropes.AppendChar(r, ch)
-    END
-  END;
+  IF name = NIL THEN Besm2Text.Add(r, "(no name)") ELSE r := Ropes.Cat(r, Besm2Text.MenuText(name)) END;
   IF entities[i].isMecha THEN Besm2Text.Add(r, " (mecha)") END;
   RETURN r
 END EntityLabel;
@@ -536,6 +530,7 @@ BEGIN
     s := Besm2Text.Chars(EntityLabel(i)); entityChoice.SetItemLabel(i, s^)
   END;
   IF entityChoice.SetValue(current) THEN END;
+  Activate(creationItem, ~entity.isMecha OR (entity.owner # NIL));
   Activate(removeItem, n > 1);
   Activate(moveUpItem, current > 0); Activate(previousItem, current > 0);
   Activate(moveDownItem, current < n - 1); Activate(nextItem, current < n - 1)
@@ -576,9 +571,17 @@ BEGIN
   ShowEntity(Count() - 1)
 END Append;
 
-(* Character > Add Character, Add Mecha: a new one, last. *)
+(* Character > Add Character, Add Mecha: a new one, last.  A new
+   character has the creation of the one shown (of a mecha, its
+   owner's), so it is in the same campaign. *)
 PROCEDURE AddCharacterAction(w: Fl.Widget);
-BEGIN Append(Ch.New())
+  VAR e: Ch.Entity;
+BEGIN
+  e := Ch.New();
+  IF ~entity.isMecha THEN Ch.TakeCreation(e, entity)
+  ELSIF entity.owner # NIL THEN Ch.TakeCreation(e, entity.owner(Ch.Entity))
+  END;
+  Append(e)
 END AddCharacterAction;
 
 PROCEDURE AddMechaAction(w: Fl.Widget);
@@ -969,6 +972,30 @@ BEGIN
   END
 END WeaponAction;
 
+(* The Creation dialog's (step 10): after each change it makes, and
+   after OK or Cancel (Cancel leaves modified as it was). *)
+PROCEDURE CreationChanged;
+BEGIN Changed; ShowAll
+END CreationChanged;
+
+PROCEDURE CreationDone(ok: BOOLEAN);
+BEGIN
+  IF ~ok THEN modified := creationModified; ShowTitle END
+END CreationDone;
+
+(* Character > Creation...: the shown character's, or its owner's for a
+   mecha. *)
+PROCEDURE CreationAction(w: Fl.Widget);
+BEGIN
+  IF entity.isMecha & (entity.owner = NIL) THEN tell(Rp("This mecha has no owner in the file, whose creation would price it."))
+  ELSE creationModified := modified; Besm2Creation.Edit(entity, entities, CreationDone)
+  END
+END CreationAction;
+
+PROCEDURE CreationPath(save: BOOLEAN; VAR p: Rope): BOOLEAN;
+BEGIN RETURN choosePath(save, p)
+END CreationPath;
+
 PROCEDURE BuildLists;
   CONST ExtraBottom = 120;  (* a panel's rows under its browser, but for the extension's *)
   VAR h: INTEGER;
@@ -1012,6 +1039,7 @@ BEGIN
   saveItem := bar.Add("&File/&Save", ORD("s"), Fl.Command, SaveAction, {});
   saveAsItem := bar.Add("&File/Save &As...", ORD("s"), Fl.Command + Fl.Shift, SaveAsAction, FlMenus.MenuDivider);
   quitItem := bar.Add("&File/&Quit", ORD("q"), Fl.Command, Quit, {});
+  creationItem := bar.Add("&Character/Cr&eation...", 0, {}, CreationAction, FlMenus.MenuDivider);
   addCharacterItem := bar.Add("&Character/&Add Character", 0, {}, AddCharacterAction, {});
   addMechaItem := bar.Add("&Character/Add &Mecha", 0, {}, AddMechaAction, {});
   duplicateItem := bar.Add("&Character/&Duplicate", 0, {}, DuplicateAction, {});
@@ -1055,6 +1083,7 @@ PROCEDURE Close*;
   VAR i, t: INTEGER;
 BEGIN
   IF Besm2WeaponDialog.dialog # NIL THEN Besm2WeaponDialog.Cancel END;
+  IF Besm2Creation.dialog # NIL THEN Besm2Creation.Cancel END;
   window.Delete;
   window := NIL; bar := NIL; entityChoice := NIL; tabs := NIL;
   characterTab := NIL; attributesTab := NIL; defectsTab := NIL; skillsTab := NIL; mechaTab := NIL;
@@ -1076,6 +1105,8 @@ BEGIN
   tell := DialogTell; ask := DialogAsk; confirm := DialogConfirm; choosePath := DialogPath; choosePdf := DialogPdf; askText := DialogText;
   Besm2Widgets.openPage := OpenPage;
   Besm2WeaponDialog.tell := PanelTell; Besm2WeaponDialog.changed := WeaponChanged; weaponLine := 0;
+  Besm2Creation.tell := PanelTell; Besm2Creation.changed := CreationChanged; Besm2Creation.choosePath := CreationPath;
+  creationModified := FALSE;
   rulebookOption := NIL; savedRulebook := NIL; preferences := NIL;
   Besm2Viewer.Default(viewer); viewerOption := FALSE;
   entities := NIL; current := 0; entity := NIL; path := NIL; modified := FALSE; showing := FALSE

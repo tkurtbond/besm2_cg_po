@@ -169,7 +169,12 @@ TYPE
     levelIsText*: BOOLEAN; levelText*: Rope;
     hasSpecialisations*: BOOLEAN; specialisations*: Besm2Text.List;
     extra*: Raw;
-    fPoints: INTEGER; listed: BOOLEAN
+    fPoints: INTEGER; listed: BOOLEAN;
+    (* Its points kept as an override because the file had no genre to
+       price them by, or no house Skill of its name (AdoptItems);
+       SetGenre and SetCreation clear the override once the creation
+       prices it as the file did. *)
+    unpriced-: BOOLEAN
   END;
 
   HouseSkill* = POINTER TO HouseSkillDesc;
@@ -198,6 +203,11 @@ TYPE
   END;
 
   Entities* = POINTER TO ARRAY OF Entity;
+
+  (* An entity's Skills as they were (SaveSkills), for a dialog's
+     Cancel: each one's points, house Skill and unpriced. *)
+  SkillMark = RECORD skill: Skill; points: C.Number; house: C.HouseSkill; unpriced: BOOLEAN END;
+  SkillMarks* = POINTER TO ARRAY OF SkillMark;
 
   (* Called on each entity Read reads, before it is computed (SetUpgrade). *)
   Hook* = PROCEDURE (e: Entity);
@@ -609,7 +619,7 @@ BEGIN
   h := House(e, name);
   C.InitSkill(s, Lookup(R.Skill, -1, name), h, level, s.specialisations.n);
   s.name := name; s.levelText := levelText;
-  s.fPoints := Int(m, "points"); s.listed := Listed(m, "points");
+  s.fPoints := Int(m, "points"); s.listed := Listed(m, "points"); s.unpriced := FALSE;
   s.extra := Extras(m, SkillKeys);
   RETURN s
 END ReadSkill;
@@ -1196,7 +1206,7 @@ BEGIN
   END;
   s.levelIsText := FALSE; s.levelText := NIL;
   s.hasSpecialisations := FALSE; SetSpecs(s, specs);
-  s.extra := NIL; s.fPoints := 0; s.listed := FALSE;
+  s.extra := NIL; s.fPoints := 0; s.listed := FALSE; s.unpriced := FALSE;
   RETURN s
 END NewSkill;
 
@@ -1229,12 +1239,108 @@ BEGIN
   s.next := NIL
 END RemoveSkill;
 
+(* The Skills whose points were kept for want of a genre (unpriced),
+   now that e has one: an override the genre's price agrees with is
+   cleared (PLAN.md, Part B, step 10).  One it doesn't agree with is
+   kept, and may still be cleared by another genre. *)
+PROCEDURE Reprice(e: Entity);
+  VAR s: C.Skill;
+BEGIN
+  IF e.isMecha OR (e.creation.genre = C.NoGenre) THEN RETURN END;
+  C.Compute(e);
+  s := e.skills;
+  WHILE s # NIL DO
+    WITH s: Skill DO
+      IF s.unpriced & (~s.points.overridden OR (s.points.ovValue = s.points.value)) THEN
+        C.Clear(s.points); s.unpriced := FALSE
+      END
+    END;
+    s := s.next
+  END
+END Reprice;
+
 (* e's genre set to g (C.NoGenre: none); it is saved in `creation`. *)
 PROCEDURE SetGenre*(e: Entity; g: INTEGER);
 BEGIN
   e.creation.genre := g;
-  IF g # C.NoGenre THEN INCL(e.creationKeys, GenreKey); e.hasCreation := TRUE END
+  IF g # C.NoGenre THEN INCL(e.creationKeys, GenreKey); e.hasCreation := TRUE
+  ELSE EXCL(e.creationKeys, GenreKey)
+  END;
+  Reprice(e)
 END SetGenre;
+
+(* Each of e's Skills tied again, by name, to a house Skill of its
+   creation (NIL: none), after the house Skills changed. *)
+PROCEDURE BindSkills(e: Entity);
+  VAR s: C.Skill;
+BEGIN
+  s := e.skills;
+  WHILE s # NIL DO
+    WITH s: Skill DO s.house := House(e, s.name) END;
+    s := s.next
+  END
+END BindSkills;
+
+(* e's creation set to c, written with the keys keys, and `creation`
+   written at all if has (or keys has any); its Skills tied again to
+   c's house Skills, and repriced if c has a genre. *)
+PROCEDURE SetCreation*(e: Entity; c: C.Creation; keys: SET; has: BOOLEAN);
+BEGIN
+  e.creation := c; e.creationKeys := keys; e.hasCreation := has OR (keys # {});
+  BindSkills(e);
+  Reprice(e)
+END SetCreation;
+
+(* A copy of house Skills h, for another entity. *)
+PROCEDURE CopyHouseSkills(h: C.HouseSkill): C.HouseSkill;
+  VAR first, last: C.HouseSkill; n: HouseSkill;
+BEGIN
+  first := NIL; last := NIL;
+  WHILE h # NIL DO
+    NEW(n); n^ := h(HouseSkill)^; n.next := NIL;
+    IF last = NIL THEN first := n ELSE last.next := n END;
+    last := n;
+    h := h.next
+  END;
+  RETURN first
+END CopyHouseSkills;
+
+(* to's creation made from's: the campaign's numbers, options and house
+   Skills (copied), so a character starts in from's campaign. *)
+PROCEDURE TakeCreation*(to, from: Entity);
+  VAR c: C.Creation;
+BEGIN
+  c := from.creation; c.houseSkills := CopyHouseSkills(from.creation.houseSkills);
+  SetCreation(to, c, from.creationKeys, from.hasCreation)
+END TakeCreation;
+
+(* e's Skills as they are now, for RestoreCreation. *)
+PROCEDURE SaveSkills*(e: Entity): SkillMarks;
+  VAR m: SkillMarks; s: C.Skill; n: INTEGER;
+BEGIN
+  n := 0; s := e.skills; WHILE s # NIL DO INC(n); s := s.next END;
+  NEW(m, n + 1);
+  n := 0; s := e.skills;
+  WHILE s # NIL DO
+    m[n].skill := s(Skill); m[n].points := s.points; m[n].house := s.house; m[n].unpriced := s(Skill).unpriced;
+    INC(n); s := s.next
+  END;
+  m[n].skill := NIL;
+  RETURN m
+END SaveSkills;
+
+(* e's creation put back to c, keys and has, and its Skills as m
+   saved them (SaveSkills), with nothing priced again. *)
+PROCEDURE RestoreCreation*(e: Entity; c: C.Creation; keys: SET; has: BOOLEAN; m: SkillMarks);
+  VAR i: LONGINT;
+BEGIN
+  e.creation := c; e.creationKeys := keys; e.hasCreation := has;
+  i := 0;
+  WHILE m[i].skill # NIL DO
+    m[i].skill.points := m[i].points; m[i].skill.house := m[i].house; m[i].skill.unpriced := m[i].unpriced;
+    INC(i)
+  END
+END RestoreCreation;
 
 (* The file's number for n: an override if listed, or if it differs
    from the computed number, with a notice. *)
@@ -1360,9 +1466,11 @@ BEGIN
       where := Within(e.label, sk.name, NIL, FALSE, PageOf(sk.item));
       IF sk.levelIsText THEN NotANumber(where, "level", sk.levelText) END;
       IF (sk.item = NIL) & (sk.house = NIL) THEN
-        Keep(sk.points, sk.fPoints, sk.listed, where, "points", "not in the rulebook")
+        Keep(sk.points, sk.fPoints, sk.listed, where, "points", "not in the rulebook");
+        sk.unpriced := ~sk.listed  (* a house Skill copied in later may price it *)
       ELSIF e.creation.genre = C.NoGenre THEN
         Keep(sk.points, sk.fPoints, sk.listed, where, "points", "");
+        sk.unpriced := ~sk.listed;
         unpriced := unpriced OR ~sk.listed
       ELSE Adopt(sk.points, sk.fPoints, sk.listed, where, "points")
       END
