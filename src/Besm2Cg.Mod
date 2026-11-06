@@ -21,6 +21,7 @@ VAR
   parser: ArgParser.Parser;
   helpShown: BOOLEAN;
   file: Ropes.Rope;  (* the file argument; NIL for none *)
+  campaignFile: Ropes.Rope;  (* --campaign's; NIL for none *)
   entities: Ch.Entities;  (* the file's; NIL for none *)
   preferences: FlPreferences.Preferences;
 
@@ -49,6 +50,10 @@ BEGIN
   RETURN TRUE
 END DoViewer;
 
+PROCEDURE DoCampaign(VAR arg: ARRAY OF CHAR): BOOLEAN;
+BEGIN campaignFile := Ropes.FromString(arg); RETURN TRUE
+END DoCampaign;
+
 PROCEDURE DoArgument(startIdx: INTEGER; VAR arg: ARRAY OF CHAR): BOOLEAN;
 BEGIN
   IF file # NIL THEN Fail(ArgParser.UsageErrorStatus, "one file at a time: ", arg) END;
@@ -65,6 +70,8 @@ BEGIN
     DoRulebook));
   parser.AddOption(ArgParser.MakeStringOption("v", "viewer",
     "okular, evince, mupdf, xdg-open, or a command: %f the PDF, %p its page.", DoViewer));
+  parser.AddOption(ArgParser.MakeStringOption(0X, "campaign",
+    "A campaign file (or a character's) whose creation File > New starts a character with.", DoCampaign));
   parser.ParseArguments(1)
 END ParseCommandLine;
 
@@ -76,6 +83,17 @@ BEGIN
     s := Besm2Text.Chars(msg); Fail(FailureStatus, s^, "")
   END
 END LoadFile;
+
+(* --campaign's file, for File > New. *)
+PROCEDURE LoadCampaign;
+  VAR s: Besm2Text.String; msg: Ropes.Rope; from: Ch.Entity;
+BEGIN
+  s := Besm2Text.Chars(campaignFile);
+  IF ~Ch.LoadCampaign(s^, from, msg) THEN
+    s := Besm2Text.Chars(msg); Fail(FailureStatus, s^, "")
+  END;
+  Besm2Window.campaign := from
+END LoadCampaign;
 
 (* TRUE if the environment variable name is set and not empty. *)
 PROCEDURE IsSet(name: ARRAY OF CHAR): BOOLEAN;
@@ -102,9 +120,10 @@ BEGIN
 END RequireDisplay;
 
 BEGIN
-  helpShown := FALSE; file := NIL; entities := NIL;
+  helpShown := FALSE; file := NIL; campaignFile := NIL; entities := NIL;
   ParseCommandLine;
   IF ~helpShown THEN
+    IF campaignFile # NIL THEN LoadCampaign END;
     IF file # NIL THEN LoadFile END;
     RequireDisplay;
     Besm2Window.Build;

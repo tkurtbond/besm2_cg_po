@@ -12,7 +12,7 @@ IMPORT C := Besm2Calc, Ch := Besm2Character, R := Besm2Rules, Besm2Text, Ropes;
 
 CONST
   CharacterPointsPage = 13;  (* Step 1: the campaign's Character Points *)
-  StatLimitsPage = 16;       (* Step 3: 1 to 12, and one Stat at 12 *)
+  StatLimitsPage = 16;       (* Step 3: 1 to 12, one Stat at 12, the GM's ceiling or floor *)
   MaxStat = 12; MaxDefects = 8; MaxSkillLevel = 6;
 
 TYPE Rope = Ropes.Rope;
@@ -195,6 +195,14 @@ BEGIN
       Besm2Text.Add(r, " "); Besm2Text.Add(r, s); Besm2Text.Add(r, ")")
   | C.NoCost:
       Besm2Text.Add(r, "its cost is the GM's: give its points")
+  | C.StatPointsAbove:
+      Besm2Text.Add(r, "the Stats cost "); Besm2Text.AddInt(r, e.statTotal);
+      Besm2Text.Add(r, " Character Points, above the campaign's ceiling of ");
+      Besm2Text.AddInt(r, e.creation.statPointsCeiling); AddPages(r, StatLimitsPage)
+  | C.StatPointsBelow:
+      Besm2Text.Add(r, "the Stats cost "); Besm2Text.AddInt(r, e.statTotal);
+      Besm2Text.Add(r, " Character Points, below the campaign's floor of ");
+      Besm2Text.AddInt(r, e.creation.statPointsFloor); AddPages(r, StatLimitsPage)
   ELSE
     Besm2Text.Add(r, "warning "); Besm2Text.AddInt(r, w.code)
   END;

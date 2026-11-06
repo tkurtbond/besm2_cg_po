@@ -65,6 +65,8 @@ CONST
   SkilledAndUnskilled* = 18;  (* Highly Skilled with Unskilled (p. 112) *)
   NoGenreSet* = 19;    (* skills, but no genre to price them by *)
   NoCost* = 20;        (* attribute: its cost is the GM's (or its Level's choice), and no override gives it *)
+  StatPointsAbove* = 21;  (* the Stats cost more than the campaign's stat-points-ceiling (p. 16) *)
+  StatPointsBelow* = 22;  (* the Stats cost less than the campaign's stat-points-floor (p. 16) *)
 
   MaxSkillLevel = 6;
   MaxStat* = 12;
@@ -97,14 +99,17 @@ TYPE
   END;
 
   (* A4's `creation`: the campaign's numbers and options.  0 for
-     characterPoints, statCeiling or bonusCeiling: none given, so no
-     limit is checked. *)
+     characterPoints, statCeiling, bonusCeiling, statPointsCeiling or
+     statPointsFloor: none given, so no limit is checked.  statCeiling
+     is on each Stat; statPointsCeiling and statPointsFloor on the
+     Character Points the Stats cost in all (p. 16, an optional rule). *)
   Creation* = RECORD
     characterPoints*, backgroundPoints*: INTEGER;
     genre*: INTEGER;        (* R.Cyberpunk .. R.TeenageRomance, or NoGenre *)
     skillPoints*: INTEGER;  (* the GM's, or Unset *)
     stagedStatCost*: BOOLEAN;
     statCeiling*, bonusCeiling*: INTEGER;
+    statPointsCeiling*, statPointsFloor*: INTEGER;
     autoFireSlots*: INTEGER;  (* 3, or 1 as the book's examples (open question 12) *)
     houseSkills*: HouseSkill
   END;
@@ -268,6 +273,7 @@ PROCEDURE InitCreation*(VAR c: Creation);
 BEGIN
   c.characterPoints := 0; c.backgroundPoints := 0; c.genre := NoGenre; c.skillPoints := Unset;
   c.stagedStatCost := FALSE; c.statCeiling := 0; c.bonusCeiling := 0;
+  c.statPointsCeiling := 0; c.statPointsFloor := 0;
   c.autoFireSlots := BookAutoFireSlots; c.houseSkills := NIL
 END InitCreation;
 
@@ -432,7 +438,13 @@ BEGIN
     END;
     INC(e.statTotal, Value(e.statPoints[i]))
   END;
-  IF twelves > 1 THEN Warn(e, TwoAtTwelve, NIL, NIL, NIL, NIL, -1) END
+  IF twelves > 1 THEN Warn(e, TwoAtTwelve, NIL, NIL, NIL, NIL, -1) END;
+  IF (e.creation.statPointsCeiling > 0) & (e.statTotal > e.creation.statPointsCeiling) THEN
+    Warn(e, StatPointsAbove, NIL, NIL, NIL, NIL, -1)
+  END;
+  IF (e.creation.statPointsFloor > 0) & (e.statTotal < e.creation.statPointsFloor) THEN
+    Warn(e, StatPointsBelow, NIL, NIL, NIL, NIL, -1)
+  END
 END ComputeStats;
 
 (* ---- Attributes ---- *)

@@ -5,16 +5,21 @@ MODULE Besm2Creation; (* The Creation dialog: the campaign's numbers and options
    its owner's, which prices it): its Character Points (p. 13), Background
    Points (p. 130), genre (Table 2-4, p. 119), the GM's Skill Points
    (p. 117), and the options: Staged Stat Cost (Table 4-7, p. 166), a
-   ceiling on each Stat (p. 16) and on the Bonus Points (p. 100), and
-   Auto-Fire counted as 1 slot (p. 84; open question 12).  Each row has
+   ceiling on each Stat (p. 16) and on the Bonus Points (p. 100),
+   Auto-Fire counted as 1 slot (p. 84; open question 12), and a ceiling
+   and a floor on the Character Points the Stats cost in all (p. 16;
+   step 10a).  Each row has
    its pages and a ? button.  A number has a check button: off, the key
    isn't written, and no limit is checked; its spinner keeps what it
    held, and one never set starts at a default (the GM's Skill Points:
    the rule's number, shown while it is off).
 
    Copy from takes the whole `creation`, house Skills too, from another
-   character of the file or the first of another file (Ch.TakeCreation),
-   so that a campaign's characters share it.
+   character of the file (Ch.TakeCreation), so that a campaign's
+   characters share it; Load Campaign... takes it from a campaign file
+   (PLAN.md, A4, step 10a), or the first character of a file of
+   entities, and Save Campaign... writes it as a campaign file, for the
+   GM to hand the players.
 
    The dialog changes the model as the user works, and changed, the
    window's, computes every entity again and shows them; Cancel puts back
@@ -22,15 +27,16 @@ MODULE Besm2Creation; (* The Creation dialog: the campaign's numbers and options
    doesn't wait: Edit shows it, and OK or Cancel calls done. *)
 
 IMPORT Fl, FlButtons, FlMenus, FlValuators, C := Besm2Calc, Ch := Besm2Character, R := Besm2Rules,
-  Besm2Text, Besm2Widgets, Ropes;
+  Besm2Save, Besm2Text, Besm2Widgets, Ropes;
 
 CONST
-  Width = 560; Height = 400; Row = 25; Gap = 8;
+  Width = 560; Height = 470; Row = 25; Gap = 8;
   LabelW = 330; SpinX = 345; SpinW = 70; HelpX = 425; Top = 40;
   (* The defaults of a number never set. *)
   DefaultCharacterPoints = 40;  (* p. 13's example campaign *)
   DefaultStatCeiling = 10;
   DefaultBonusCeiling = 8;      (* p. 100: no more than eight Defects *)
+  DefaultStatPointsCeiling = 24; DefaultStatPointsFloor = 12;  (* p. 16's 12 to 24 *)
   MaxPoints = 999; MaxBackground = 3; MaxBonus = 99;
   CharacterPointsPage = 13;     (* Step 1 *)
   StatCeilingPage = 16;         (* Step 3: the GM's ceiling or floor *)
@@ -42,12 +48,14 @@ TYPE
 VAR
   dialog-: Fl.DoubleWindow;  (* NIL when closed *)
   title-: Fl.Box;
-  pointsOn-, skillOn-, stagedOn-, statOn-, bonusOn-, autoFireOn-: FlButtons.CheckButton;
-  pointsIn-, backgroundIn-, skillIn-, statIn-, bonusIn-: FlValuators.Spinner;
+  pointsOn-, skillOn-, stagedOn-, statOn-, bonusOn-, autoFireOn-,
+  statPointsCeilingOn-, statPointsFloorOn-: FlButtons.CheckButton;
+  pointsIn-, backgroundIn-, skillIn-, statIn-, bonusIn-,
+  statPointsCeilingIn-, statPointsFloorIn-: FlValuators.Spinner;
   genre-: FlMenus.Choice;     (* entry 0: none, then Besm2Rules' genres *)
   summary-: Fl.Box;
   copyChoice-: FlMenus.Choice;  (* others[i]: entry i *)
-  copyButton-, fileButton-, ok-, cancel-: FlButtons.Button;
+  copyButton-, loadButton-, saveButton-, ok-, cancel-: FlButtons.Button;
 
   target-: Ch.Entity;  (* whose creation is edited *)
   others: Ch.Entities;  (* the file's other characters, NIL at the end *)
@@ -63,8 +71,9 @@ VAR
 
   (* Shows a message: the window's. *)
   tell*: PROCEDURE (text: Rope);
-  (* Asks for a file to open: the window's. *)
-  choosePath*: PROCEDURE (save: BOOLEAN; VAR path: Rope): BOOLEAN;
+  (* Asks for a campaign file to load, or to save to if save: the
+     window's. *)
+  chooseCampaign*: PROCEDURE (save: BOOLEAN; VAR path: Rope): BOOLEAN;
   (* Computes every entity again and shows them, after a change: the
      window's. *)
   changed*: PROCEDURE;
@@ -101,6 +110,7 @@ PROCEDURE ShowEnabled;
 BEGIN
   Enable(pointsIn, pointsOn.Value()); Enable(skillIn, skillOn.Value());
   Enable(statIn, statOn.Value()); Enable(bonusIn, bonusOn.Value());
+  Enable(statPointsCeilingIn, statPointsCeilingOn.Value()); Enable(statPointsFloorIn, statPointsFloorOn.Value());
   IF ~skillOn.Value() THEN skillIn.SetValue(target.skillPoints) END;
   ShowSummary
 END ShowEnabled;
@@ -124,6 +134,10 @@ BEGIN
   bonusOn.SetValue(c.bonusCeiling > 0);
   IF c.bonusCeiling > 0 THEN bonusIn.SetValue(c.bonusCeiling) END;
   autoFireOn.SetValue(c.autoFireSlots = 1);
+  statPointsCeilingOn.SetValue(c.statPointsCeiling > 0);
+  IF c.statPointsCeiling > 0 THEN statPointsCeilingIn.SetValue(c.statPointsCeiling) END;
+  statPointsFloorOn.SetValue(c.statPointsFloor > 0);
+  IF c.statPointsFloor > 0 THEN statPointsFloorIn.SetValue(c.statPointsFloor) END;
   ShowEnabled;
   showing := FALSE
 END Show;
@@ -160,6 +174,12 @@ BEGIN
   END;
   IF autoFireOn.Value() THEN c.autoFireSlots := 1 ELSE c.autoFireSlots := C.BookAutoFireSlots END;
   Key(k, Ch.AutoFireSlotsKey, autoFireOn.Value());
+  IF statPointsCeilingOn.Value() THEN c.statPointsCeiling := Int(statPointsCeilingIn); INCL(k, Ch.StatPointsCeilingKey)
+  ELSE c.statPointsCeiling := 0; EXCL(k, Ch.StatPointsCeilingKey)
+  END;
+  IF statPointsFloorOn.Value() THEN c.statPointsFloor := Int(statPointsFloorIn); INCL(k, Ch.StatPointsFloorKey)
+  ELSE c.statPointsFloor := 0; EXCL(k, Ch.StatPointsFloorKey)
+  END;
   Ch.SetCreation(target, c, k, baseHas);
   IF changed # NIL THEN changed END;
   ShowEnabled
@@ -189,21 +209,26 @@ BEGIN
   END
 END CopyAction;
 
-(* The first character of a file the user chooses. *)
-PROCEDURE FileAction(w: Fl.Widget);
-  VAR p, msg: Rope; s: Besm2Text.String; es: Ch.Entities; i: LONGINT;
+(* The creation of a campaign file the user chooses, or of the first
+   character of a file of entities. *)
+PROCEDURE LoadAction(w: Fl.Widget);
+  VAR p, msg: Rope; s: Besm2Text.String; from: Ch.Entity;
 BEGIN
-  IF (choosePath # NIL) & choosePath(FALSE, p) THEN
+  IF (chooseCampaign # NIL) & chooseCampaign(FALSE, p) THEN
     s := Besm2Text.Chars(p);
-    IF ~Ch.LoadAll(s^, es, msg) THEN tell(msg)
-    ELSE
-      i := 0; WHILE (i < LEN(es^)) & es[i].isMecha DO INC(i) END;
-      IF i < LEN(es^) THEN CopyFrom(es[i])
-      ELSE tell(Rp("That file has no character to copy from, only mecha."))
-      END
-    END
+    IF Ch.LoadCampaign(s^, from, msg) THEN CopyFrom(from) ELSE tell(msg) END
   END
-END FileAction;
+END LoadAction;
+
+(* The creation as it stands, to a campaign file the user chooses. *)
+PROCEDURE SaveAction(w: Fl.Widget);
+  VAR p, msg: Rope; s: Besm2Text.String;
+BEGIN
+  IF (chooseCampaign # NIL) & chooseCampaign(TRUE, p) THEN
+    s := Besm2Text.Chars(p);
+    IF ~Besm2Save.SaveCampaign(target, s^, msg) THEN tell(msg) END
+  END
+END SaveAction;
 
 (* ---- Opening and closing ---- *)
 
@@ -214,7 +239,8 @@ BEGIN
   dialog := NIL; title := NIL; summary := NIL; genre := NIL; copyChoice := NIL;
   pointsOn := NIL; skillOn := NIL; stagedOn := NIL; statOn := NIL; bonusOn := NIL; autoFireOn := NIL;
   pointsIn := NIL; backgroundIn := NIL; skillIn := NIL; statIn := NIL; bonusIn := NIL;
-  copyButton := NIL; fileButton := NIL; ok := NIL; cancel := NIL;
+  statPointsCeilingOn := NIL; statPointsFloorOn := NIL; statPointsCeilingIn := NIL; statPointsFloorIn := NIL;
+  copyButton := NIL; loadButton := NIL; saveButton := NIL; ok := NIL; cancel := NIL;
   d := done; done := NIL;
   target := NIL; others := NIL; savedSkills := NIL; savedCreation.houseSkills := NIL;
   IF d # NIL THEN d(isOk) END
@@ -290,6 +316,12 @@ BEGIN
   y := y + Row + Gap;
   Check(autoFireOn, "Auto-Fire counts as 1 slot", AutoFirePage, y);
   y := y + Row + Gap;
+  Check(statPointsCeilingOn, "A ceiling on the Stats' total cost", StatCeilingPage, y);
+  Spinner(statPointsCeilingIn, 1, MaxPoints, DefaultStatPointsCeiling, y);
+  y := y + Row + Gap;
+  Check(statPointsFloorOn, "A floor on the Stats' total cost", StatCeilingPage, y);
+  Spinner(statPointsFloorIn, 1, MaxPoints, DefaultStatPointsFloor, y);
+  y := y + Row + Gap;
   NEW(summary); Fl.OpenBox(summary, 10, y, Width - 20, Row, "");
   summary.SetAlign(Fl.AlignLeft + Fl.AlignInside);
   y := y + Row + Gap;
@@ -307,9 +339,13 @@ BEGIN
   copyButton.action := CopyAction;
   copyButton.SetTooltip("the whole creation, house Skills too, of the character chosen");
   IF n = 0 THEN copyChoice.Deactivate; copyButton.Deactivate END;
-  NEW(fileButton); FlButtons.OpenButton(fileButton, 425, y, 125, Row, "From a File...");
-  fileButton.action := FileAction;
-  fileButton.SetTooltip("the whole creation of the first character of a file");
+  y := y + Row + Gap;
+  NEW(loadButton); FlButtons.OpenButton(loadButton, 10, y, 150, Row, "Load Campaign...");
+  loadButton.action := LoadAction;
+  loadButton.SetTooltip("the whole creation of a campaign file, or of the first character of a file");
+  NEW(saveButton); FlButtons.OpenButton(saveButton, 170, y, 150, Row, "Save Campaign...");
+  saveButton.action := SaveAction;
+  saveButton.SetTooltip("the whole creation, as a campaign file to hand the players");
   NEW(ok); FlButtons.OpenButton(ok, Width - 190, Height - 35, 85, Row, "OK"); ok.action := OkAction;
   NEW(cancel); FlButtons.OpenButton(cancel, Width - 95, Height - 35, 85, Row, "Cancel"); cancel.action := CancelAction;
   dialog.End;
@@ -347,7 +383,8 @@ BEGIN
 END Edit;
 
 (* For tests: OK and Cancel, as if pushed; each control as if set;
-   Copy from the other character n (0: the first), and From a File. *)
+   Copy from the other character n (0: the first), Load Campaign...
+   and Save Campaign.... *)
 PROCEDURE Ok*;
 BEGIN OkAction(ok)
 END Ok;
@@ -400,11 +437,23 @@ PROCEDURE Copy*(n: INTEGER);
 BEGIN IF copyChoice.SetValue(n) THEN END; CopyAction(copyButton)
 END Copy;
 
-PROCEDURE FromFile*;
-BEGIN FileAction(fileButton)
-END FromFile;
+PROCEDURE SetStatPointsCeiling*(on: BOOLEAN; n: INTEGER);
+BEGIN SetNumber(statPointsCeilingOn, statPointsCeilingIn, on, n)
+END SetStatPointsCeiling;
+
+PROCEDURE SetStatPointsFloor*(on: BOOLEAN; n: INTEGER);
+BEGIN SetNumber(statPointsFloorOn, statPointsFloorIn, on, n)
+END SetStatPointsFloor;
+
+PROCEDURE LoadCampaign*;
+BEGIN LoadAction(loadButton)
+END LoadCampaign;
+
+PROCEDURE SaveCampaign*;
+BEGIN SaveAction(saveButton)
+END SaveCampaign;
 
 BEGIN
-  dialog := NIL; done := NIL; tell := NIL; choosePath := NIL; changed := NIL; target := NIL; others := NIL;
+  dialog := NIL; done := NIL; tell := NIL; chooseCampaign := NIL; changed := NIL; target := NIL; others := NIL;
   showing := FALSE
 END Besm2Creation.

@@ -35,6 +35,7 @@ CONST
   WeaponPath = "../obj/window-weapon.yaml";
   SeveralPath = "../obj/window-several.yaml";  (* data/window.yaml, copied *)
   CreationPath = "../obj/window-creation.yaml";  (* data/window.yaml, copied *)
+  CampaignPath = "../obj/window-campaign.yaml";
 
 TYPE Rope = Ropes.Rope;
 
@@ -849,13 +850,33 @@ BEGIN
     & Cr.skillOn.Value() & (Spun(Cr.skillIn) = 20) & (Spun(Cr.backgroundIn) = 0) & ~Cr.stagedOn.Value()
     & ~Cr.statOn.Value() & ~Cr.statIn.Active() & (Spun(Cr.statIn) = 10) & ~Cr.bonusOn.Value() & (Spun(Cr.bonusIn) = 8)
     & ~Cr.autoFireOn.Value(), "the file's creation shown; the numbers not set at their defaults, inactive");
-  Check.Check(~Cr.copyChoice.Active() & ~Cr.copyButton.Active() & Cr.fileButton.Active(), "no other character to copy from");
+  Check.Check(~Cr.statPointsCeilingOn.Value() & ~Cr.statPointsCeilingIn.Active() & (Spun(Cr.statPointsCeilingIn) = 24)
+    & ~Cr.statPointsFloorOn.Value() & ~Cr.statPointsFloorIn.Active() & (Spun(Cr.statPointsFloorIn) = 12)
+    & LabelIs(Cr.statPointsCeilingOn, "A ceiling on the Stats' total cost (p. 16, PDF 18)")
+    & LabelIs(Cr.statPointsFloorOn, "A floor on the Stats' total cost (p. 16, PDF 18)"),
+    "the Stats' total: no limits, the spinners at their defaults");
+  Check.Check(~Cr.copyChoice.Active() & ~Cr.copyButton.Active() & Cr.loadButton.Active() & Cr.saveButton.Active(),
+    "no other character to copy from; a campaign to load or save");
   Check.Check(LabelIs(Cr.summary, "Character Points: 20 spent of 20.  Skill Points: 8 spent of 20."), "the points");
 
   Cr.SetCharacterPoints(TRUE, 25);
   Check.Check((pilot.available = 25) & W.modified
     & Line(W.CharacterPoints, "Character Points: Stats 13 + Attributes 8 - Bonus Points 1 = 20 of 25", FALSE),
     "Character Points 25: the window follows");
+  Cr.SetStatPointsCeiling(TRUE, 12);
+  Check.Check((pilot.creation.statPointsCeiling = 12) & (Ch.StatPointsCeilingKey IN pilot.creationKeys)
+    & C.HasWarning(pilot, C.StatPointsAbove, NIL) & Cr.statPointsCeilingIn.Active()
+    & Line(W.CharacterPoints, "Character Points: Stats 13 + Attributes 8 - Bonus Points 1 = 20 of 25; Stats at most 12", TRUE),
+    "a ceiling of 12 on the Stats' total: 13 is above it, in red");
+  Cr.SetStatPointsCeiling(TRUE, 13); Cr.SetStatPointsFloor(TRUE, 14);
+  Check.Check(~C.HasWarning(pilot, C.StatPointsAbove, NIL) & C.HasWarning(pilot, C.StatPointsBelow, NIL)
+    & (Ch.StatPointsFloorKey IN pilot.creationKeys)
+    & Line(W.CharacterPoints, "Character Points: Stats 13 + Attributes 8 - Bonus Points 1 = 20 of 25; Stats at least 14, at most 13", TRUE),
+    "a floor of 14: 13 is below it");
+  Cr.SetStatPointsFloor(TRUE, 13);
+  Check.Check(~C.HasWarning(pilot, C.StatPointsBelow, NIL)
+    & Line(W.CharacterPoints, "Character Points: Stats 13 + Attributes 8 - Bonus Points 1 = 20 of 25; Stats at least 13, at most 13", FALSE),
+    "13 at both: within them");
   Cr.SetBackgroundPoints(2);
   Check.Check((pilot.available = 27) & (Ch.BackgroundPointsKey IN pilot.creationKeys), "Background Points 2: 27");
   Cr.SetGenre(R.Cyberpunk);
@@ -878,6 +899,7 @@ BEGIN
   Check.Check((Cr.dialog = NIL) & (pilot.creation.characterPoints = 20) & (pilot.creation.backgroundPoints = 0)
     & (pilot.creation.genre = R.ModernMilitary) & (pilot.creation.skillPoints = 20) & (pilot.creation.statCeiling = 0)
     & (pilot.creation.bonusCeiling = 0) & ~pilot.creation.stagedStatCost & (pilot.creation.autoFireSlots = 3)
+    & (pilot.creation.statPointsCeiling = 0) & (pilot.creation.statPointsFloor = 0)
     & (pilot.creationKeys = keys) & (C.Value(dr.points) = 8) & (W.skillPanel.genre.Value() = R.ModernMilitary + 1)
     & (W.modified = was) & Line(W.CharacterPoints, "Character Points: Stats 13 + Attributes 8 - Bonus Points 1 = 20 of 20", FALSE),
     "Cancel: everything as it was");
@@ -907,19 +929,31 @@ BEGIN
   Cr.Copy(0);
   Check.Check((added.creation.genre = R.ModernMilitary) & (added.creation.characterPoints = 0) & (Cr.genre.Value() = R.ModernMilitary + 1)
     & ~Cr.pointsOn.Value(), "Copy: Pilot's creation, shown");
-  chosen := Rp("data/window.yaml"); Cr.FromFile;
-  Check.Check((added.creation.characterPoints = 20) & (added.creation.backgroundPoints = 0) & Cr.pointsOn.Value() & (Spun(Cr.pointsIn) = 20),
-    "From a File: its first character's creation");
-  chosen := Rp("data/creation.yaml"); Cr.FromFile; Cr.SetBackgroundPoints(0);
+  chosen := Rp("data/campaign.yaml"); Cr.LoadCampaign;
+  Check.Check((added.creation.characterPoints = 40) & (added.creation.statPointsCeiling = 6) & (added.creation.statPointsFloor = 4)
+    & Cr.statPointsCeilingOn.Value() & (Spun(Cr.statPointsCeilingIn) = 6) & Cr.statPointsFloorOn.Value() & (Spun(Cr.statPointsFloorIn) = 4)
+    & (Spun(Cr.pointsIn) = 40), "Load Campaign...: a campaign file's creation, shown");
+  chosen := Rp("data/window.yaml"); Cr.LoadCampaign;
+  Check.Check((added.creation.characterPoints = 20) & (added.creation.backgroundPoints = 0) & Cr.pointsOn.Value() & (Spun(Cr.pointsIn) = 20)
+    & (added.creation.statPointsCeiling = 0) & ~Cr.statPointsCeilingOn.Value() & ~Cr.statPointsFloorOn.Value(),
+    "Load Campaign... of a character file: its first character's whole creation");
+  chosen := Rp("data/creation.yaml"); Cr.LoadCampaign; Cr.SetBackgroundPoints(0);
   Check.Check((added.creation.genre = R.Cyberpunk) & (Ch.StagedStatCostKey IN added.creationKeys)
     & ~(Ch.BackgroundPointsKey IN added.creationKeys), "a copy's options kept as it wrote them, off too");
-  chosen := Rp("data/window.yaml"); Cr.FromFile;
-  before := tells; chosen := Rp("data/mecha.yaml"); Cr.FromFile;
+  Cr.SetStatPointsCeiling(TRUE, 30);
+  chosen := Rp(CampaignPath); Cr.SaveCampaign;
+  ok := Ch.LoadCampaign(CampaignPath, e, msg);
+  Check.Check(ok & (e.creation.genre = R.Cyberpunk) & (e.creation.statPointsCeiling = 30) & (e.creationKeys = added.creationKeys),
+    "Save Campaign...: written, and loads again as it was");
+  chosen := Rp("data/window.yaml"); Cr.LoadCampaign;
+  before := tells; chosen := Rp("data/mecha.yaml"); Cr.LoadCampaign;
   Check.Check((tells = before + 1) & (added.creation.characterPoints = 20), "a file of only mecha: said so, nothing copied");
-  before := tells; chosen := Rp("data/no-such-file.yaml"); Cr.FromFile;
+  before := tells; chosen := Rp("data/no-such-file.yaml"); Cr.LoadCampaign;
   Check.Check(tells = before + 1, "a file that won't load: said so");
-  chosen := NIL; Cr.FromFile;
+  chosen := NIL; Cr.LoadCampaign;
   Check.Check(added.creation.characterPoints = 20, "the file chooser cancelled: nothing");
+  before := tells; Cr.SaveCampaign;
+  Check.Check(tells = before, "Save Campaign... cancelled: nothing");
   Cr.Ok;
   Check.Check(pilot.creation.backgroundPoints = 1, "Pilot's own creation not changed by the copy");
 
@@ -927,6 +961,35 @@ BEGIN
   Check.Check(W.entity.isMecha & (W.entity.owner = NIL) & Inactive(W.creationItem), "a mecha with no owner: inactive");
   Choose(0)
 END Creation;
+
+(* File > New from Campaign... (step 10a). *)
+PROCEDURE NewFromCampaign;
+  VAR first: Ch.Entity;
+BEGIN
+  Check.Check(Item("&File/New from &Campaign...", W.newFromCampaignItem, 0, {})
+    & (W.newItem < W.newFromCampaignItem) & (W.newFromCampaignItem < W.openItem), "File > New from Campaign..., after New");
+  answer := W.Discard; first := W.entity;
+  chosen := NIL; Pick(W.newFromCampaignItem);
+  Check.Check((W.entity = first) & (W.campaign = NIL), "cancelled: nothing");
+  before := tells; chosen := Rp("data/no-such-file.yaml"); Pick(W.newFromCampaignItem);
+  Check.Check((tells = before + 1) & (W.entity = first) & (W.campaign = NIL), "a file that won't load: said so, nothing");
+  chosen := Rp("data/campaign.yaml"); Pick(W.newFromCampaignItem);
+  e := W.entity;
+  Check.Check((W.campaign # NIL) & (e # first) & (LEN(W.entities^) = 1) & e.hasCreation & ~e.isMecha
+    & (e.creation.characterPoints = 40) & (e.creation.genre = R.ModernMilitary)
+    & (e.creation.statPointsCeiling = 6) & (e.creation.statPointsFloor = 4) & (e.creationKeys = W.campaign.creationKeys) & ~W.modified,
+    "a campaign: a new character in it");
+  Check.Check(Line(W.CharacterPoints, "Character Points: Stats 3 + Attributes 0 - Bonus Points 0 = 3 of 40; Stats at least 4, at most 6", TRUE),
+    "its Stats below the campaign's floor");
+  Pick(W.creationItem); Cr.SetCharacterPoints(TRUE, 30); Cr.SetStatPointsFloor(FALSE, 0); Cr.Ok;
+  Check.Check((e.creation.characterPoints = 30) & (W.campaign.creation.characterPoints = 40) & (W.campaign.creation.statPointsFloor = 4),
+    "copied, not linked: the campaign unchanged by an edit");
+  Pick(W.newItem);
+  Check.Check((W.entity # e) & (W.entity.creation.characterPoints = 40) & (W.entity.creation.statPointsFloor = 4),
+    "File > New afterwards: in the campaign");
+  W.campaign := NIL; Pick(W.newItem);
+  Check.Check(W.entity.creation.statPointsCeiling = 0, "no campaign: no limits")
+END NewFromCampaign;
 
 PROCEDURE Weapons;
   VAR p: Besm2ItemPanel.AttrPanel; wa: R.Item; a, a2: Ch.Attr; m: Ch.Mod; was: BOOLEAN; es: Ch.Entities;
@@ -1019,7 +1082,7 @@ BEGIN
 END Weapons;
 
 BEGIN
-  W.tell := Tell; W.ask := Ask; W.confirm := Confirm; confirmed := FALSE; confirms := 0; W.choosePath := ChoosePath; W.choosePdf := ChoosePdf; W.askText := AskText;
+  W.tell := Tell; W.ask := Ask; W.confirm := Confirm; confirmed := FALSE; confirms := 0; W.choosePath := ChoosePath; W.choosePdf := ChoosePdf; W.chooseCampaign := ChoosePath; W.askText := AskText;
   tells := 0; asked := 0; answer := W.Cancel; chosen := NIL; typed := NIL;
   Basics;
   NewCharacter;
@@ -1036,6 +1099,7 @@ BEGIN
   Background;
   Several;
   Creation;
+  NewFromCampaign;
   Weapons;
   Pick(W.creationItem); Cr.SetCharacterPoints(TRUE, 77);
   W.Close;

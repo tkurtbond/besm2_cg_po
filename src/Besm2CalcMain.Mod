@@ -20,6 +20,13 @@ MODULE Besm2CalcMain; (* besm2_calc_po: checks, fills in, upgrades and formats B
    written at all, since its entity would be lost.  --check may go with
    either.
 
+   --campaign FILE (PLAN.md, step 10a) gives each character of the files
+   the creation of FILE, a campaign file or the first character of a
+   file of entities, copied, before it is checked, filled in, upgraded
+   or formatted; one whose own creation differs has a difference
+   notice, so --check fails on it.  Its numbers are computed again
+   under the campaign's, but for the overrides the file gave.
+
    Without them it formats: each file is read and computed, saved in
    memory through Besm2Save, and the saved entities formatted by
    pobesm2_fmt2's formatters, so a file whose numbers agree with the
@@ -37,6 +44,8 @@ TYPE Rope = Ropes.Rope;
 
 VAR
   check, fill, upgrade: BOOLEAN;
+  campaignFile: Rope;     (* --campaign's, NIL for none *)
+  campaign: Ch.Entity;    (* its creation's *)
   failed: BOOLEAN;   (* exit 1 *)
 
 PROCEDURE ["C", "strerror"] strerror(e: SYSTEM.INT32): SYSTEM.ADDRESS;
@@ -74,6 +83,39 @@ END DoFill;
 PROCEDURE DoUpgrade(): BOOLEAN;
 BEGIN upgrade := TRUE; RETURN TRUE
 END DoUpgrade;
+
+PROCEDURE DoCampaign(VAR arg: ARRAY OF CHAR): BOOLEAN;
+BEGIN campaignFile := Ropes.FromString(arg); RETURN TRUE
+END DoCampaign;
+
+(* ---- Campaigns ---- *)
+
+(* e's creation as Besm2Save would write it, to compare. *)
+PROCEDURE CreationText(e: Ch.Entity): Rope;
+  VAR x: Ch.Entity;
+BEGIN
+  x := Ch.New(); Ch.TakeCreation(x, e);
+  RETURN Besm2Save.ToText(Ch.One(x))
+END CreationText;
+
+(* Each character of es given the campaign's creation; a difference
+   notice for each whose own differed. *)
+PROCEDURE UseCampaign(es: Ch.Entities);
+  VAR i: LONGINT; want, t: Rope; s: Besm2Text.String;
+BEGIN
+  want := CreationText(campaign);
+  FOR i := 0 TO LEN(es^) - 1 DO
+    IF ~es[i].isMecha THEN
+      IF ~Ropes.Equal(CreationText(es[i]), want) THEN
+        t := es[i].label; Besm2Text.Add(t, ": creation differs from the campaign's, ");
+        s := Besm2Text.Chars(campaignFile); Besm2Text.Add(t, s^); Besm2Text.Add(t, ", which is used");
+        Ch.AddNotice(Ch.Difference, t)
+      END;
+      Ch.TakeCreation(es[i], campaign)
+    END
+  END;
+  Ch.ComputeAll(es)
+END UseCampaign;
 
 (* ---- Reporting ---- *)
 
@@ -185,6 +227,7 @@ BEGIN
   IF stdin THEN source := Fyaml.stdinName; Ch.Read("", TRUE, results, es)
   ELSE path := Besm2Text.Chars(name); COPY(path^, source); Ch.Read(path^, FALSE, results, es)
   END;
+  IF (campaign # NIL) & (es # NIL) THEN UseCampaign(es) END;
   IF fill OR upgrade OR check THEN
     problems := FALSE; r := results;
     WHILE r # NIL DO IF r.entity = NIL THEN Report(r, source); problems := TRUE END; r := r.next END;
@@ -202,9 +245,9 @@ BEGIN
 END ProcessOne;
 
 PROCEDURE Main;
-  VAR p: ArgParser.Parser; e: Platform.ErrorCode; path: Besm2Text.String; i: INTEGER;
+  VAR p: ArgParser.Parser; e: Platform.ErrorCode; path: Besm2Text.String; i: INTEGER; msg: Rope;
 BEGIN
-  check := FALSE; fill := FALSE; upgrade := FALSE; failed := FALSE;
+  check := FALSE; fill := FALSE; upgrade := FALSE; failed := FALSE; campaignFile := NIL; campaign := NIL;
   p := Besm2Cli.NewParser(Program, "besm2_calc_po [options] [files...]");
   p.AddOption(ArgParser.MakeOption(0X, "check",
     "List on standard error each number of the files that disagrees with the rules, and what else is wrong; exit 1 if any.",
@@ -214,10 +257,20 @@ BEGIN
   p.AddOption(ArgParser.MakeOption(0X, "upgrade",
     "As --fill, with names split from subjects, BESM2ER names, Defect levels and Weapon Attack details as keys.",
     DoUpgrade));
+  p.AddOption(ArgParser.MakeStringOption(0X, "campaign",
+    "Give each character the creation of this campaign file (or of its first character) first; a creation that differs is a difference.",
+    DoCampaign));
   p.ParseArguments(1);   (* exits with status 2 on a command-line mistake *)
   IF Besm2Cli.helpShown THEN Out.Flush; Platform.Exit(0) END;
   IF (fill OR upgrade) & (Besm2Cli.files.n > 1) THEN Usage("--fill and --upgrade take one file", "") END;
   IF upgrade THEN Besm2Upgrade.Install END;
+  IF campaignFile # NIL THEN
+    path := Besm2Text.Chars(campaignFile);
+    IF ~Ch.LoadCampaign(path^, campaign, msg) THEN
+      Err.String(Program); Err.String(": "); ErrRope(msg); Err.Ln;
+      Platform.Exit(1)
+    END
+  END;
 
   IF Besm2Config.hasOutputFile & ~(fill OR upgrade) THEN
     path := Besm2Text.Chars(Besm2Config.outputFile);

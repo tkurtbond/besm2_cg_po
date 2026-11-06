@@ -545,6 +545,17 @@ BEGIN
   d := Df("Awkward", 1); C.Compute(e); Warns(C.TooManyDefects, NIL, TRUE, "9 Defects");
   e.creation.bonusCeiling := 8; C.Compute(e); Warns(C.OverBonusCeiling, NIL, TRUE, "9 BP, ceiling 8");
   e.creation.bonusCeiling := 9; C.Compute(e); Warns(C.OverBonusCeiling, NIL, FALSE, "ceiling 9");
+  sample := "Stats' total";
+  e := New(FALSE); Stats(4, 4, 4);
+  e.creation.statPointsCeiling := 11; C.Compute(e); Warns(C.StatPointsAbove, NIL, TRUE, "Stats 12, ceiling 11");
+  e.creation.statPointsCeiling := 12; C.Compute(e); Warns(C.StatPointsAbove, NIL, FALSE, "Stats 12, ceiling 12");
+  e.creation.statPointsFloor := 13; C.Compute(e); Warns(C.StatPointsBelow, NIL, TRUE, "Stats 12, floor 13");
+  e.creation.statPointsFloor := 12; C.Compute(e); Warns(C.StatPointsBelow, NIL, FALSE, "Stats 12, floor 12");
+  e.creation.statPointsCeiling := 0; e.creation.statPointsFloor := 0; e.creation.stagedStatCost := TRUE;
+  e.stat[C.Body] := 11; C.Compute(e);
+  e.creation.statPointsCeiling := e.statTotal - 1; C.Compute(e);
+  Warns(C.StatPointsAbove, NIL, TRUE, "the Stats' cost, Staged, not their values");
+  sample := "Defects";
   NEW(d); C.InitDefect(d, NIL, 2); C.AddDefect(e, d); C.Compute(e);
   Is(C.Value(d.points), -2, "an unknown Defect, its rank"); Yes(C.HasWarning(e, C.UnknownItem, NIL), "warned");
 

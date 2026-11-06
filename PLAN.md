@@ -861,6 +861,8 @@ creation:
     stat-ceiling: 10
     bonus-point-ceiling: 8
     auto-fire-slots: 1      # 3 by default (p. 84); 1 as the examples (question 12)
+    stat-points-ceiling: 24 # the most CP the Stats may cost in all (p. 16)
+    stat-points-floor: 18   # the least CP the Stats may cost in all (p. 16)
   house-skills:             # the campaign's own Skills (house rules)
     - name: Persuasion
       costs: {Modern Military: 3}   # SP a Level, per genre
@@ -883,6 +885,25 @@ no page and no PDF button.  It lives in each character's `creation`,
 so a file stays complete on its own; the generator can copy the
 `house-skills` (and the rest of `creation`) from another character or
 a campaign file, to start a new character in the same campaign.
+
+`stat-points-ceiling` and `stat-points-floor` (2026-11-06, step 10a):
+p. 16 (PDF 18)'s GM limits on the total Character Points spent on the
+Stats, an optional rule; each a whole number 1 or more, and a warning
+when the Stats cost more than the ceiling or less than the floor.
+(`stat-ceiling` is the ceiling on each Stat.)
+
+**Campaign files** (2026-11-06, step 10a): a file whose top level is a
+mapping with only `creation`, as above, rather than a sequence of
+entities.  It is what a GM hands the players; the generator and
+`besm2_calc --campaign` copy it into each character's `creation`.  The
+formatters don't read campaign files.
+
+```yaml
+creation:
+  character-points: 40
+  genre: Modern Military
+  options: {stat-points-ceiling: 24}
+```
 
 #### Notes: `notes` (2026-11-06)
 
@@ -1655,6 +1676,57 @@ saved YAML holds names as the formatters expect them, without pages.
     not reset after a copy; Add Character not copying; Close not
     cancelling the dialog.  `make test`, `make test-headless`, `make
     test-sway` and `make valgrind-headless` pass.
+10a. **Campaign files.** (Added 2026-11-06 at the user's request.)  A
+    GM's campaign as a file of its own, to hand to the players: a YAML
+    file holding only a `creation:` mapping (A4).  The Creation dialog
+    gets **Load Campaign...** (in place of From File...; it reads a
+    campaign file, or a character file, whose first character's
+    creation it takes) and **Save Campaign...**; File gets **New from
+    Campaign...**; the last campaign file is kept in the preferences;
+    `besm2_cg --campaign FILE` starts the new character from it, and
+    `besm2_calc --campaign FILE` gives each character of the files the
+    campaign's creation before checking, filling or upgrading them,
+    with a notice for each whose own creation differed.  The creation
+    is copied, never linked: each character's file stays complete on
+    its own.  With it, p. 16 (PDF 18)'s GM limits on the total
+    Character Points spent on Stats, as an optional rule (the user,
+    2026-11-06): `options: stat-points-ceiling` and
+    `stat-points-floor`, each a warning when the Stats cost more or
+    less.
+
+    *Done 2026-11-06.*  `Besm2Character.LoadCampaign` reads a
+    campaign file (a root mapping whose only key is `creation`; any
+    other key is refused, saying where) or a character file (its first
+    character's creation; a file of only mecha is refused), and
+    `Besm2Save.SaveCampaign` writes one, `creation` always present.
+    `Besm2Calc` adds `stat-points-ceiling` and `stat-points-floor`
+    (each 1 or more) to the creation, and warns `StatPointsAbove` and
+    `StatPointsBelow` on the Stats' cost (Staged if Staged Stat Cost is
+    on), with both pages; the Character tab's Character Points line
+    adds "; Stats at least F, at most C" and turns red on either.  The
+    Creation dialog has a check and spinner for each (defaults 24 and
+    12), and Load Campaign... and Save Campaign... on their own row;
+    File > New from Campaign... (after New) loads one and starts a
+    character in it, and File > New then starts each in it too
+    (`Besm2Window.campaign`).  `besm2_calc --campaign` reports
+    "LABEL: creation differs from the campaign's, FILE, which is
+    used" as a difference, so `--check` exits 1.  A calculation
+    warning such as `StatPointsAbove` is not printed by `--check`, as
+    no calculation warning is; the window shows them.  Test data
+    `test/data/campaign.yaml`, `campaign-extra.yaml` (an extra key) and
+    `campaign-zero.yaml` (a floor of 0).  Tests: TestCalc (the limits,
+    and a Staged cost), TestWarnings (both texts), TestModel (loading,
+    refusals, saving and loading again), TestWindow (the dialog's rows,
+    Load and Save Campaign..., Cancel, New from Campaign..., copied not
+    linked, New afterwards) and test/cli.sh (`--campaign` on both
+    programs, a bad or mecha-only campaign).  Planted bugs, each caught:
+    the ceiling or the floor compared one off; the floor's warning
+    showing the ceiling; the floor not saved; not read; a campaign
+    file's extra keys allowed; New not using the campaign; the
+    campaign linked instead of copied; the floor's warning not red;
+    the ceiling not shown in the dialog; besm2_calc's notice dropped;
+    the campaign's creation not taken.  `make test`, `test-headless`,
+    `test-sway` and `valgrind-headless` pass (no valgrind errors).
 11. **Preview tab.** The formatters' output of the character as it
     stands; Copy and Save.
 12. **Finish.** READMEs, valgrind clean on Xvfb and sway (and the

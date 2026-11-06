@@ -60,6 +60,7 @@ CONST
   CharacterPointsKey* = 0; BackgroundPointsKey* = 1; GenreKey* = 2; SkillPointsKey* = 3;
   OptionsKey* = 4; StagedStatCostKey* = 5; StatCeilingKey* = 6; BonusCeilingKey* = 7;
   AutoFireSlotsKey* = 8; HouseSkillsKey* = 9;
+  StatPointsCeilingKey* = 10; StatPointsFloorKey* = 11;
 
   EntityKeys = "name, tagline, description, size, mecha, stats, derived, attributes, defects, skills, notes, creation";
   StatKeys = "name, value, points, overrides";
@@ -68,7 +69,7 @@ CONST
   DefectKeys = "name, subject, level, points, details, overrides";
   SkillKeys = "name, level, points, specialisations, overrides";
   CreationKeys = "character-points, background-points, genre, skill-points, options, house-skills";
-  OptionKeys = "staged-stat-cost, stat-ceiling, bonus-point-ceiling, auto-fire-slots";
+  OptionKeys = "staged-stat-cost, stat-ceiling, bonus-point-ceiling, auto-fire-slots, stat-points-ceiling, stat-points-floor";
   HouseSkillKeys = "name, costs, stat, specializations";
 
 TYPE
@@ -695,6 +696,20 @@ BEGIN
     IF ~m.IntegerField("auto-fire-slots", c.autoFireSlots, yamlError) THEN RETURN FALSE END;
     IF (c.autoFireSlots # 1) & (c.autoFireSlots # 3) THEN
       RETURN Fail(m.Value("auto-fire-slots"), "auto-fire-slots must be 1 or 3")
+    END
+  END;
+  IF m.HasKey("stat-points-ceiling") THEN
+    INCL(e.creationKeys, StatPointsCeilingKey);
+    IF ~m.IntegerField("stat-points-ceiling", c.statPointsCeiling, yamlError) THEN RETURN FALSE END;
+    IF c.statPointsCeiling < 1 THEN
+      RETURN Fail(m.Value("stat-points-ceiling"), "stat-points-ceiling must be 1 or more")
+    END
+  END;
+  IF m.HasKey("stat-points-floor") THEN
+    INCL(e.creationKeys, StatPointsFloorKey);
+    IF ~m.IntegerField("stat-points-floor", c.statPointsFloor, yamlError) THEN RETURN FALSE END;
+    IF c.statPointsFloor < 1 THEN
+      RETURN Fail(m.Value("stat-points-floor"), "stat-points-floor must be 1 or more")
     END
   END;
   e.creation := c;
@@ -1623,6 +1638,51 @@ BEGIN
   END;
   RETURN TRUE
 END Load;
+
+(* The creation in the campaign file at path (PLAN.md, A4: a mapping of
+   only `creation`), or of the first character of a file of entities,
+   in from, a new character's (New), to copy with TakeCreation.  FALSE,
+   with msg, if the file can't be read, has a problem, or has no
+   creation to give (a file of only mecha). *)
+PROCEDURE LoadCampaign*(path: ARRAY OF CHAR; VAR from: Entity; VAR msg: Rope): BOOLEAN;
+  VAR s: FyamlStreams.Stream; err: Fyaml.Error; d: Fyaml.Document; root: Fyaml.Node;
+    mapping, ok: BOOLEAN; es: Entities; i: LONGINT;
+BEGIN
+  from := NIL; msg := NIL; mapping := FALSE;
+  s := FyamlStreams.OpenFileWith(path, {}, err);
+  IF s = NIL THEN msg := Besm2Text.Trim(Ropes.FromString(err.msg^)); RETURN FALSE END;
+  d := s.Next(err);
+  IF d # NIL THEN
+    root := d.Root();
+    mapping := (root # NIL) & root.IsMapping();
+    IF mapping THEN
+      yamlError := NIL; message := NIL;
+      from := New(); from.hasCreation := TRUE;
+      ok := OnlyKeys(root, "creation");
+      IF ok & ~root.HasKey("creation") THEN ok := Fail(root, "a campaign file holds a creation") END;
+      IF ok THEN ok := ReadCreation(root.Value("creation"), from) END;
+      IF ~ok THEN
+        from := NIL;
+        IF yamlError # NIL THEN msg := Besm2Text.Trim(Ropes.FromString(yamlError.msg^))
+        ELSE msg := Ropes.FromString(path); Besm2Text.Add(msg, ": "); msg := Ropes.Cat(msg, message)
+        END
+      END
+    END;
+    d.Close
+  ELSIF err # NIL THEN msg := Besm2Text.Trim(Ropes.FromString(err.msg^))
+  END;
+  s.Close;
+  IF msg # NIL THEN RETURN FALSE END;
+  IF mapping THEN C.Compute(from); RETURN TRUE END;
+  IF ~LoadAll(path, es, msg) THEN RETURN FALSE END;
+  i := 0; WHILE (i < LEN(es^)) & es[i].isMecha DO INC(i) END;
+  IF i = LEN(es^) THEN
+    msg := Ropes.FromString(path); Besm2Text.Add(msg, " has no character to copy from, only mecha");
+    RETURN FALSE
+  END;
+  from := es[i];
+  RETURN TRUE
+END LoadCampaign;
 
 BEGIN
   ClearNotices; upgrade := NIL;

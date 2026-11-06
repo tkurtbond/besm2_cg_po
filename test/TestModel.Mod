@@ -312,6 +312,60 @@ BEGIN
     "SetCreation: a key written makes `creation`; the genre prices Driving")
 END Creation;
 
+(* Step 10a: campaign files.  LoadCampaign reads one (a mapping of
+   only `creation`), or a file of entities' first character; refuses a
+   file of only mecha, a key besides `creation`, a limit under 1, and a
+   file that isn't there; SaveCampaign writes one LoadCampaign reads
+   back the same, and a character's file keeps the Stats' limits. *)
+PROCEDURE Campaign;
+  CONST CampaignPath = "data/campaign.yaml"; SavedPath = "../obj/model-campaign.yaml";
+    StatPath = "../obj/model-stat-limits.yaml";
+  VAR from, back2, x: Ch.Entity; c: C.Creation;
+BEGIN
+  ok := Ch.LoadCampaign(CampaignPath, from, msg);
+  Check.Check(ok & (from # NIL) & ~from.isMecha & from.hasCreation, "data/campaign.yaml loaded");
+  IF ~ok THEN RETURN END;
+  c := from.creation;
+  Check.Check((c.characterPoints = 40) & (c.genre = R.ModernMilitary) & (c.statPointsCeiling = 6)
+    & (c.statPointsFloor = 4) & (c.skillPoints = C.Unset) & ~c.stagedStatCost
+    & (from.creationKeys = {Ch.CharacterPointsKey, Ch.GenreKey, Ch.OptionsKey, Ch.StatPointsCeilingKey, Ch.StatPointsFloorKey}),
+    "its numbers, options and keys");
+
+  ok := Ch.LoadCampaign(UnpricedPath, x, msg);
+  Check.Check(ok & (x # NIL) & Is(x.name, "Unpriced"), "a file of entities: its first character");
+  ok := Ch.LoadCampaign("data/mecha.yaml", x, msg);
+  Check.Check(~ok & (x = NIL) & Is(msg, "data/mecha.yaml has no character to copy from, only mecha"),
+    "a file of only mecha: refused, said why");
+  ok := Ch.LoadCampaign("data/campaign-extra.yaml", x, msg);
+  Check.Check(~ok & (x = NIL) & Is(msg, 'data/campaign-extra.yaml: /: "players" is not one of creation'),
+    "a key besides creation: refused, said where");
+  ok := Ch.LoadCampaign("data/campaign-zero.yaml", x, msg);
+  Check.Check(~ok & Is(msg, "data/campaign-zero.yaml: /creation/options/stat-points-floor: stat-points-floor must be 1 or more"),
+    "a floor of 0: refused, said where");
+  ok := Ch.LoadCampaign("data/no-such-campaign.yaml", x, msg);
+  Check.Check(~ok & (msg # NIL), "a file that isn't there: refused, said why");
+
+  ok := Besm2Save.SaveCampaign(from, SavedPath, msg) & Ch.LoadCampaign(SavedPath, back2, msg);
+  Check.Check(ok, "SaveCampaign, and loaded again");
+  IF ok THEN
+    Check.Check((back2.creation.characterPoints = 40) & (back2.creation.genre = R.ModernMilitary)
+      & (back2.creation.statPointsCeiling = 6) & (back2.creation.statPointsFloor = 4)
+      & (back2.creationKeys = from.creationKeys), "the same creation")
+  END;
+  x := Ch.New(); ok := Besm2Save.SaveCampaign(x, SavedPath, msg) & Ch.LoadCampaign(SavedPath, back2, msg);
+  Check.Check(ok & (back2.creationKeys = {}) & (back2.creation.genre = C.NoGenre),
+    "a character with no creation: an empty campaign, loaded again");
+
+  x := Ch.New(); Ch.TakeCreation(x, from); x.stat[C.Body] := 5; C.Compute(x);
+  ok := Besm2Save.SaveAll(Ch.One(x), StatPath, msg) & Ch.LoadAll(StatPath, es, msg) & (LEN(es^) = 1);
+  Check.Check(ok, "a character in the campaign, saved and loaded again");
+  IF ok THEN
+    Check.Check((es[0].creation.statPointsCeiling = 6) & (es[0].creation.statPointsFloor = 4)
+      & C.HasWarning(es[0], C.StatPointsAbove, NIL) & ~C.HasWarning(es[0], C.StatPointsBelow, NIL),
+      "its Stats' limits kept, and the Stats' 7 above the ceiling of 6")
+  END
+END Campaign;
+
 BEGIN
   Attributes;
   Defects;
@@ -321,5 +375,6 @@ BEGIN
   Weapons;
   SaveLoad;
   Creation;
+  Campaign;
   Check.Summary
 END TestModel.

@@ -370,22 +370,26 @@ BEGIN
   RETURN m
 END HouseSkillNode;
 
-PROCEDURE Creation(m: Node; e: Ch.Entity);
+(* e's `creation` in m, if it has one, or always. *)
+PROCEDURE Creation(m: Node; e: Ch.Entity; always: BOOLEAN);
   VAR n, o, seq: Node; k: SET; c: C.Creation; name: ARRAY 64 OF CHAR; h: C.HouseSkill;
 BEGIN
   k := e.creationKeys; c := e.creation;
-  IF ~e.hasCreation & (k = {}) THEN RETURN END;
+  IF ~always & ~e.hasCreation & (k = {}) THEN RETURN END;
   n := d.CreateMapping();
   IF Ch.CharacterPointsKey IN k THEN Pair(n, "character-points", Int(c.characterPoints)) END;
   IF Ch.BackgroundPointsKey IN k THEN Pair(n, "background-points", Int(c.backgroundPoints)) END;
   IF (Ch.GenreKey IN k) & (c.genre # C.NoGenre) THEN R.GenreName(c.genre, name); Pair(n, "genre", Plain(name)) END;
   IF (Ch.SkillPointsKey IN k) & (c.skillPoints # C.Unset) THEN Pair(n, "skill-points", Int(c.skillPoints)) END;
-  IF k * {Ch.OptionsKey, Ch.StagedStatCostKey, Ch.StatCeilingKey, Ch.BonusCeilingKey, Ch.AutoFireSlotsKey} # {} THEN
+  IF k * {Ch.OptionsKey, Ch.StagedStatCostKey, Ch.StatCeilingKey, Ch.BonusCeilingKey, Ch.AutoFireSlotsKey,
+           Ch.StatPointsCeilingKey, Ch.StatPointsFloorKey} # {} THEN
     o := d.CreateMapping();
     IF Ch.StagedStatCostKey IN k THEN Pair(o, "staged-stat-cost", Bool(c.stagedStatCost)) END;
     IF Ch.StatCeilingKey IN k THEN Pair(o, "stat-ceiling", Int(c.statCeiling)) END;
     IF Ch.BonusCeilingKey IN k THEN Pair(o, "bonus-point-ceiling", Int(c.bonusCeiling)) END;
     IF Ch.AutoFireSlotsKey IN k THEN Pair(o, "auto-fire-slots", Int(c.autoFireSlots)) END;
+    IF Ch.StatPointsCeilingKey IN k THEN Pair(o, "stat-points-ceiling", Int(c.statPointsCeiling)) END;
+    IF Ch.StatPointsFloorKey IN k THEN Pair(o, "stat-points-floor", Int(c.statPointsFloor)) END;
     Pair(n, "options", o)
   END;
   IF (Ch.HouseSkillsKey IN k) OR (c.houseSkills # NIL) THEN
@@ -405,7 +409,7 @@ BEGIN
   TextPair(m, "description", e.hasDescription, e.description);
   TextPair(m, "size", e.hasSize, e.size);
   IF e.hasMechaKey OR e.isMecha THEN Pair(m, "mecha", Bool(e.isMecha)) END;
-  Creation(m, e);
+  Creation(m, e, FALSE);
   Stats(m, e);
   Derived(m, e);
   IF e.hasAttributes OR (e.attrs # NIL) THEN
@@ -468,18 +472,12 @@ BEGIN
   RETURN copies[i]
 END Copy;
 
-(* Writes the entities es to the file at path, through path.tmp, which
-   replaces it only once written.  FALSE, with msg, if it couldn't be,
+(* doc written to the file at path, through path.tmp, which replaces it
+   only once written, and closed.  FALSE, with msg, if it couldn't be,
    the old file left as it was. *)
-PROCEDURE SaveAll*(es: Ch.Entities; path: ARRAY OF CHAR; VAR msg: Rope): BOOLEAN;
-  VAR doc: Fyaml.Document; err: Fyaml.Error; tmp, p: Besm2Text.String; t: Rope; e: Platform.ErrorCode;
-    written: BOOLEAN;
+PROCEDURE WriteFile(doc: Fyaml.Document; path: ARRAY OF CHAR; VAR msg: Rope): BOOLEAN;
+  VAR err: Fyaml.Error; tmp, p: Besm2Text.String; t: Rope; e: Platform.ErrorCode; written: BOOLEAN;
 BEGIN
-  msg := NIL;
-  doc := Document(es);
-  IF doc = NIL THEN
-    msg := Ropes.FromString("the entities' YAML couldn't be built (a duplicate key)"); RETURN FALSE
-  END;
   t := Ropes.FromString(path); Besm2Text.Add(t, ".tmp"); tmp := Besm2Text.Chars(t);
   written := doc.ToFile(tmp^, Fyaml.emitModeBlock, err);
   doc.Close; d := NIL;
@@ -497,6 +495,34 @@ BEGIN
     RETURN FALSE
   END;
   RETURN TRUE
+END WriteFile;
+
+(* Writes the entities es to the file at path, as WriteFile. *)
+PROCEDURE SaveAll*(es: Ch.Entities; path: ARRAY OF CHAR; VAR msg: Rope): BOOLEAN;
+  VAR doc: Fyaml.Document;
+BEGIN
+  msg := NIL;
+  doc := Document(es);
+  IF doc = NIL THEN
+    msg := Ropes.FromString("the entities' YAML couldn't be built (a duplicate key)"); RETURN FALSE
+  END;
+  RETURN WriteFile(doc, path, msg)
 END SaveAll;
+
+(* Writes e's creation to the file at path as a campaign file (PLAN.md,
+   A4): a mapping of only `creation`, always written, as WriteFile. *)
+PROCEDURE SaveCampaign*(e: Ch.Entity; path: ARRAY OF CHAR; VAR msg: Rope): BOOLEAN;
+  VAR root: Node;
+BEGIN
+  msg := NIL;
+  d := Fyaml.NewDocument(); ok := TRUE;
+  root := d.CreateMapping(); d.SetRoot(root);
+  Creation(root, e, TRUE);
+  IF ~ok THEN
+    d.Close; d := NIL;
+    msg := Ropes.FromString("the campaign's YAML couldn't be built (a duplicate key)"); RETURN FALSE
+  END;
+  RETURN WriteFile(d, path, msg)
+END SaveCampaign;
 
 END Besm2Save.

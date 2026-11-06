@@ -41,6 +41,11 @@ check "and says where" grep -q "^besm2_cg_po: $out/bad.yaml:5:.*: error: .*not a
 printf -- '- name: X\n  stats:\n  - name: Body\n    value: 4\n    points: 40\n' >"$out/good.yaml"
 run "$prog" "$out/good.yaml"
 check "besm2_cg_po: a file that loads goes on to need a display" grep -qx 'besm2_cg_po: no display: neither DISPLAY nor WAYLAND_DISPLAY is set' "$out/stderr"
+run "$prog" --campaign no-such-file.yaml
+check "besm2_cg_po: a missing --campaign exits 1" test $st -eq 1
+check "and says so, before needing a display" grep -qx "besm2_cg_po: no-such-file.yaml: error: No such file or directory" "$out/stderr"
+run "$prog" --campaign test/data/campaign.yaml
+check "besm2_cg_po: a --campaign that loads goes on to need a display" grep -qx 'besm2_cg_po: no display: neither DISPLAY nor WAYLAND_DISPLAY is set' "$out/stderr"
 run "$prog" a.yaml b.yaml
 check "besm2_cg_po: two files exit 2" test $st -eq 2
 check "and says so" grep -qx "besm2_cg_po: one file at a time: b.yaml" "$out/stderr"
@@ -78,6 +83,28 @@ check "and says so, as pobesm2_fmt2 does" grep -qx "besm2_calc_po: no-such-file.
 
 run "$calc" --check --fill --upgrade no-such-file.yaml
 check "besm2_calc_po: its own options are known" test $st -eq 1
+
+# --campaign (step 10a): the campaign's creation is used, and a
+# different one is a difference.
+run "$calc" --campaign test/data/campaign.yaml --check test/data/window.yaml
+check "besm2_calc_po --campaign --check: a different creation exits 1" test $st -eq 1
+check "and says which character, and that the campaign's is used" grep -qx "test/data/window.yaml: difference: Pilot: creation differs from the campaign's, test/data/campaign.yaml, which is used" "$out/stderr"
+check "and nothing about the mecha" test "$(wc -l < "$out/stderr")" -eq 1
+run "$calc" --campaign test/data/campaign.yaml --fill test/data/window.yaml
+check "besm2_calc_po --campaign --fill exits 0" test $st -eq 0
+check "and writes the campaign's creation" grep -q '^      stat-points-ceiling: 6$' "$out/stdout"
+check "with its Character Points" grep -q '^    character-points: 40$' "$out/stdout"
+check "and not the file's own" sh -c '! grep -q "skill-points: 20" "$1"' sh "$out/stdout"
+cp "$out/stdout" "$out/filled.yaml"
+run "$calc" --campaign test/data/campaign.yaml --check "$out/filled.yaml"
+check "besm2_calc_po --campaign --check: the same creation is no difference" test $st -eq 0
+run "$calc" --campaign test/data/campaign-extra.yaml test/data/window.yaml
+check "besm2_calc_po: a bad --campaign exits 1" test $st -eq 1
+check "and says why" grep -qx 'besm2_calc_po: test/data/campaign-extra.yaml: /: "players" is not one of creation' "$out/stderr"
+check "and prints nothing" test ! -s "$out/stdout"
+run "$calc" --campaign test/data/mecha.yaml test/data/window.yaml
+check "besm2_calc_po: a --campaign of only mecha exits 1" test $st -eq 1
+check "and says so" grep -qx 'besm2_calc_po: test/data/mecha.yaml has no character to copy from, only mecha' "$out/stderr"
 
 run "$calc" < /dev/null
 check "besm2_calc_po reads standard input, here empty, and exits 0, with no display" test $st -eq 0

@@ -96,6 +96,10 @@ BEGIN
   e := New(); IF Defect(e, "Unique Character Defect", 1) # NIL THEN END;
   IF Defect(e, "Unique Character Defect", 1) # NIL THEN END; e.creation.bonusCeiling := 1;
   Says(e, C.OverBonusCeiling, "the Defects give 2 Bonus Points, above the campaign's ceiling of 1");
+  e := New(); e.creation.statPointsCeiling := 2;
+  Says(e, C.StatPointsAbove, "the Stats cost 3 Character Points, above the campaign's ceiling of 2 (p. 16, PDF 18)");
+  e := New(); e.creation.statPointsFloor := 12;
+  Says(e, C.StatPointsBelow, "the Stats cost 3 Character Points, below the campaign's floor of 12 (p. 16, PDF 18)");
   e := New(); a := Attr(e, "Highly Skilled", "", 1); IF Defect(e, "Unskilled", 1) # NIL THEN END;
   Says(e, C.SkilledAndUnskilled, "Highly Skilled (p. 42, PDF 44) with Unskilled (p. 112, PDF 114)");
 

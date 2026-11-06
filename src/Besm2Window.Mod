@@ -29,7 +29,7 @@ MODULE Besm2Window; (* besm2_cg_po's main window: the menu bar, the Character ta
 
    What would wait for the user -- a message, a question, a file
    chooser, the rulebook's viewer -- goes through a procedure variable
-   (tell, ask, choosePath, choosePdf, askText, and Besm2Widgets.openPage),
+   (tell, ask, choosePath, choosePdf, chooseCampaign, askText, and Besm2Widgets.openPage),
    so a test can answer it.  The rulebook's path and the viewer the user
    chooses are kept in the preferences (UsePreferences), between runs. *)
 
@@ -71,7 +71,7 @@ VAR
   bar-: FlMenus.MenuBar;
   tabs-: FlLayout.Tabs;
   characterTab-, attributesTab-, defectsTab-, skillsTab-, mechaTab-, backgroundTab-, previewTab-: Fl.Group;
-  newItem-, openItem-, saveItem-, saveAsItem-, quitItem-: INTEGER;
+  newItem-, newFromCampaignItem-, openItem-, saveItem-, saveAsItem-, quitItem-: INTEGER;
   rulebookItem-, choosePdfItem-, viewerItem-: INTEGER;
   creationItem-, addCharacterItem-, addMechaItem-, duplicateItem-, removeItem-, moveUpItem-, moveDownItem-,
   nextItem-, previousItem-: INTEGER;
@@ -111,12 +111,19 @@ VAR
   confirm*: PROCEDURE (question, yes: Rope): BOOLEAN;
   choosePath*: PROCEDURE (save: BOOLEAN; VAR path: Rope): BOOLEAN;
   choosePdf*: PROCEDURE (VAR path: Rope): BOOLEAN;
+  (* chooseCampaign asks for a campaign file to load, or to save to if
+     save (PLAN.md, step 10a). *)
+  chooseCampaign*: PROCEDURE (save: BOOLEAN; VAR path: Rope): BOOLEAN;
   askText*: PROCEDURE (prompt: Rope; VAR text: Rope): BOOLEAN;
 
   (* The rulebook: --rulebook's path, or the one chosen this run (NIL:
      none), and the one saved in the preferences (NIL: none). *)
   rulebookOption*: Rope;
   savedRulebook-: Rope;
+  (* The campaign File > New starts a character in: --campaign's, or the
+     last New from Campaign...'s (NIL: none).  Its creation is copied
+     (Ch.TakeCreation), never linked. *)
+  campaign*: Ch.Entity;
   (* The viewer, and whether --viewer chose it, so the preferences'
      doesn't replace it. *)
   viewer*: Besm2Viewer.Viewer;
@@ -234,6 +241,38 @@ BEGIN
   NEW(s, preferences.TextLength(name) + 1); preferences.GetText(name, "", s^);
   RETURN Besm2Text.Trim(Ropes.FromString(s^))
 END Kept;
+
+(* Asks for a campaign file, starting where the last one kept was. *)
+PROCEDURE DialogCampaign(save: BOOLEAN; VAR p: Rope): BOOLEAN;
+  VAR c: FlDialogs.NativeFileChooser; name: ARRAY 4096 OF CHAR; filter: ARRAY 32 OF CHAR; ok: BOOLEAN;
+    last: Rope; i, slash: LONGINT;
+BEGIN
+  NEW(c);
+  IF save THEN
+    FlDialogs.OpenNativeFileChooser(c, FlDialogs.BrowseSaveFile);
+    c.SetTitle("Save the campaign as"); c.SetOptions(FlDialogs.SaveAsConfirm)
+  ELSE
+    FlDialogs.OpenNativeFileChooser(c, FlDialogs.BrowseFile);
+    c.SetTitle("Load a campaign")
+  END;
+  filter := "YAML *.{yaml,yml}"; filter[4] := 9X;  (* FLTK's "name<tab>pattern" *)
+  c.SetFilter(filter);
+  last := NIL; IF preferences # NIL THEN last := Kept("campaign") END;
+  IF last # NIL THEN
+    (* Where the last one was, and its name. *)
+    Ropes.ToString(last, name);
+    slash := -1; i := 0;
+    WHILE name[i] # 0X DO IF name[i] = "/" THEN slash := i END; INC(i) END;
+    IF slash >= 0 THEN
+      c.SetPresetFile(name);   (* whole, before the directory is cut off *)
+      name[slash + 1] := 0X; c.SetDirectory(name)
+    END
+  END;
+  ok := c.Show() = FlDialogs.Chosen;
+  IF ok THEN c.FileName(0, name); p := Ropes.FromString(name); ok := p # NIL END;
+  c.Close;
+  RETURN ok
+END DialogCampaign;
 
 (* Takes the rulebook's path and the viewer from p (NIL: none), where
    the ones the user chooses are kept; --viewer's wins over the one
@@ -361,7 +400,8 @@ BEGIN
 END SetLines;
 
 (* The points: "Character Points: Stats 15 + Attributes 22 - Bonus
-   Points 4 = 33 of 35" (Mecha Points for a mecha, without Stats),
+   Points 4 = 33 of 35" (with "; Stats at least 18, at most 24" for a
+   campaign's limits on the Stats' total) (Mecha Points for a mecha, without Stats),
    "Bonus Points: 4 (ceiling: none)", "Skill Points: 15 of 20"; each red
    when it is over its limit. *)
 PROCEDURE ShowPoints;
@@ -378,8 +418,19 @@ BEGIN
   ELSIF e.isMecha & (e.owner = NIL) THEN Besm2Text.Add(r, " (no owner in the file)")
   ELSE Besm2Text.Add(r, " (no limit set)")
   END;
+  IF ~e.isMecha & ((e.creation.statPointsFloor > 0) OR (e.creation.statPointsCeiling > 0)) THEN
+    Besm2Text.Add(r, "; Stats ");
+    IF e.creation.statPointsFloor > 0 THEN
+      Besm2Text.Add(r, "at least "); Besm2Text.AddInt(r, e.creation.statPointsFloor);
+      IF e.creation.statPointsCeiling > 0 THEN Besm2Text.Add(r, ", ") END
+    END;
+    IF e.creation.statPointsCeiling > 0 THEN
+      Besm2Text.Add(r, "at most "); Besm2Text.AddInt(r, e.creation.statPointsCeiling)
+    END
+  END;
   SetLines(CharacterPoints, r,
-    C.HasWarning(e, C.OverCharacterPoints, NIL) OR C.HasWarning(e, C.OverMechaPoints, NIL));
+    C.HasWarning(e, C.OverCharacterPoints, NIL) OR C.HasWarning(e, C.OverMechaPoints, NIL)
+    OR C.HasWarning(e, C.StatPointsAbove, NIL) OR C.HasWarning(e, C.StatPointsBelow, NIL));
   r := Rp("Bonus Points: "); Besm2Text.AddInt(r, e.bonusPoints); Besm2Text.Add(r, " (ceiling: ");
   IF e.creation.bonusCeiling > 0 THEN Besm2Text.AddInt(r, e.creation.bonusCeiling) ELSE Besm2Text.Add(r, "none") END;
   Besm2Text.Add(r, ")");
@@ -806,9 +857,40 @@ BEGIN
   RETURN ok
 END MayLeave;
 
+(* A new character, in the campaign if there is one. *)
+PROCEDURE NewCharacter(): Ch.Entity;
+  VAR e: Ch.Entity;
+BEGIN
+  e := Ch.New();
+  IF campaign # NIL THEN Ch.TakeCreation(e, campaign) END;
+  RETURN e
+END NewCharacter;
+
 PROCEDURE NewAction(w: Fl.Widget);
-BEGIN IF MayLeave() THEN Take(Ch.One(Ch.New()), NIL) END
+BEGIN IF MayLeave() THEN Take(Ch.One(NewCharacter()), NIL) END
 END NewAction;
+
+(* Asks for a campaign file, as chooseCampaign; the path, made
+   absolute, kept for the next time. *)
+PROCEDURE CampaignPath(save: BOOLEAN; VAR p: Rope): BOOLEAN;
+BEGIN
+  IF ~chooseCampaign(save, p) THEN RETURN FALSE END;
+  p := Besm2Paths.Absolute(p, NIL); Keep("campaign", p);
+  RETURN TRUE
+END CampaignPath;
+
+(* File > New from Campaign...: a new character in the campaign of a
+   file the user chooses, which File > New uses from then on. *)
+PROCEDURE NewFromCampaignAction(w: Fl.Widget);
+  VAR p, msg: Rope; s: Besm2Text.String; from: Ch.Entity;
+BEGIN
+  IF MayLeave() & CampaignPath(FALSE, p) THEN
+    s := Besm2Text.Chars(p);
+    IF Ch.LoadCampaign(s^, from, msg) THEN campaign := from; Take(Ch.One(NewCharacter()), NIL)
+    ELSE tell(msg)
+    END
+  END
+END NewFromCampaignAction;
 
 PROCEDURE OpenAction(w: Fl.Widget);
   VAR p: Rope;
@@ -992,10 +1074,6 @@ BEGIN
   END
 END CreationAction;
 
-PROCEDURE CreationPath(save: BOOLEAN; VAR p: Rope): BOOLEAN;
-BEGIN RETURN choosePath(save, p)
-END CreationPath;
-
 PROCEDURE BuildLists;
   CONST ExtraBottom = 120;  (* a panel's rows under its browser, but for the extension's *)
   VAR h: INTEGER;
@@ -1035,6 +1113,7 @@ BEGIN
   NEW(main); window := main; Fl.OpenDoubleWindow(window, Width, Height, Title);
   NEW(bar); FlMenus.OpenMenuBar(bar, 0, 0, Width - ChoiceW, BarHeight, "");
   newItem := bar.Add("&File/&New", ORD("n"), Fl.Command, NewAction, {});
+  newFromCampaignItem := bar.Add("&File/New from &Campaign...", 0, {}, NewFromCampaignAction, {});
   openItem := bar.Add("&File/&Open...", ORD("o"), Fl.Command, OpenAction, {});
   saveItem := bar.Add("&File/&Save", ORD("s"), Fl.Command, SaveAction, {});
   saveAsItem := bar.Add("&File/Save &As...", ORD("s"), Fl.Command + Fl.Shift, SaveAsAction, FlMenus.MenuDivider);
@@ -1075,7 +1154,7 @@ BEGIN
   window.SizeRange(Width, Height, 0, 0);
   window.End;
   window.action := Quit;
-  Take(Ch.One(Ch.New()), NIL)
+  Take(Ch.One(NewCharacter()), NIL)
 END Build;
 
 (* Deletes the window and everything in it, for tests. *)
@@ -1103,9 +1182,10 @@ END Close;
 
 BEGIN
   tell := DialogTell; ask := DialogAsk; confirm := DialogConfirm; choosePath := DialogPath; choosePdf := DialogPdf; askText := DialogText;
+  chooseCampaign := DialogCampaign; campaign := NIL;
   Besm2Widgets.openPage := OpenPage;
   Besm2WeaponDialog.tell := PanelTell; Besm2WeaponDialog.changed := WeaponChanged; weaponLine := 0;
-  Besm2Creation.tell := PanelTell; Besm2Creation.changed := CreationChanged; Besm2Creation.choosePath := CreationPath;
+  Besm2Creation.tell := PanelTell; Besm2Creation.changed := CreationChanged; Besm2Creation.chooseCampaign := CampaignPath;
   creationModified := FALSE;
   rulebookOption := NIL; savedRulebook := NIL; preferences := NIL;
   Besm2Viewer.Default(viewer); viewerOption := FALSE;
