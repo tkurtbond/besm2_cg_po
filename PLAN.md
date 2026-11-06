@@ -816,11 +816,18 @@ computed from it. Formatters keep printing the Bonus Points from
 - Formatters print these as the book records an attack (p. 92):
   the Abilities, then the Disabilities, a repeat as `×2` (`x2` in
   ASCII mode) and a detail in brackets, then the damage, then
-  `details` if any: `Weapon Attack 3: Plasma Buster Missiles (Area
+  `details` if any: `Weapon Attack: Plasma Buster Missiles 3 (Area
   Effect, Homing, Long Range, Limited Shots ×2 [3 shots], Slow,
   Stoppable, 60 Damage. 12 CP)`. The existing fixtures write `Damage
   45` first; an `--upgrade`d one will print in the book's order, a
   change in output accepted for the structured form only.
+  (2026-11-06, step 3: the name and subject come before the Level, as
+  the packed names print today, so a file upgraded to `subject` prints
+  byte for byte as before; the book's own "Weapon Attack Level 3:
+  Plasma Buster Missiles", p. 92, PDF 94, puts the Level first.  The
+  weapon part comes first in the parentheses, before `elements`,
+  `choices`, `enhancements`/`limiters` and `details`, all joined with
+  "; "; Abilities and Disabilities keep the file's order.)
 - `enhancements` and `limiters` (the 4E shapes) **stay as they are**,
   printed as today, for the files that use them; the new programs
   read them but don't compute with them, and `--upgrade` doesn't
@@ -915,6 +922,16 @@ override with a notice, never silently replaced. Formatters ignore
 overridden number with `*`, as ova_fmt does (open question 2, decided
 2026-11-06).
 
+Step 3 (2026-11-06): a mapping accepts only the keys of its own
+computed numbers: `points` on a Stat, Attribute, Defect or Skill,
+`damage` on an Attribute, `value` on a Derived Value.  Any other name
+(`pionts`, or `value` on a Stat), or an item that isn't a name, is bad
+input (`/1/attributes/0/overrides/0: "pionts" is not one of points,
+damage`), and the entity is skipped, as a misspelt name would
+otherwise drop a mark silently.  The mark is written `\*` (reST),
+right after the number: `7\* CP`, `3\* SP`, `20\* Damage`, and in
+grid's points and value columns.
+
 #### Sub-choices
 
 `elements` stays for Elemental Control and the like. If A2.4 finds
@@ -922,17 +939,55 @@ other Attributes whose choices change their cost, they get `choices:`,
 a list of names, printed as `elements` is; otherwise choices stay in
 `details`.
 
+Decided at step 3 (2026-11-06): `choices` holds the options of an
+Attribute that Besm2Calc prices (A2.4), each item one of Besm2Rules'
+option labels for that Attribute (Heavy Armour's "partial, thin
+area", "hidden", ...; Flight's "can hover", "glider", ...), as a name
+or `{name, counts-as}` for an option taken more than once (printed
+`radio ×2`).  The formatters print the choices sorted, after the
+elements and before the enhancements and limiters.
+
 #### Rolling it out
 
-1. A fixture, `test/data/extended-2e.yaml`, with every new key, and
-   the upgraded forms of `composite-2e.yaml` and
-   `enyon-boase-2e.yaml`.
+1. A fixture, `test/data/keys-ext.yaml` (made-up names), with every
+   new key, and the upgraded forms of `composite-2e.yaml` and
+   `enyon-boase-2e.yaml`, as `composite-ext.yaml` and
+   `enyon-boase-ext.yaml`.  (2026-11-06: `-ext`, not `-2e`, so the
+   `all`-mode golden cases, which read every `*-2e` fixture in one
+   run, don't change; the other cases read `@(*-2e|*-ext)`.)  The
+   upgraded fixtures keep their names as written ("Weapon",
+   "Super-Strength", "Hanger Queen"): renaming them is `--upgrade`'s
+   job in step 4.  Bad input: `bad-overrides.yaml`, `bad-weapon.yaml`.
+   `test/upgraded.sh` checks that `enyon-boase-ext.yaml` prints byte
+   for byte as `enyon-boase-2e.yaml` and `composite-ext.yaml` as
+   `composite-2e.yaml` but for its weapons' lines.
 2. The Ada `besm2_fmt` first: print `subject` and the Weapon Attack
    keys, ignore the rest, golden files for the new fixture, the old
    golden files unchanged; then obesm2_fmt, obesm2_fmt2 and
    pobesm2_fmt2, each byte-for-byte with the Ada; then the four
    `besm2-rst*.scm` (AGENTS.md: all should produce the same output).
 3. Each repo committed on its own, with the user's go-ahead.
+
+Done 2026-11-06 (step 3): besm2_fmt (the golden files of the three
+`-ext` fixtures and the two bad ones, `test/upgraded.sh`, seven new
+`cli.sh` checks), obesm2_fmt, obesm2_fmt2 and pobesm2_fmt2 (the Ada's
+golden files copied, passing byte for byte; `make compare` passes), and
+the four Scheme programs (`make compare-besm2_fmt`: the Ada's golden
+files for every single-file case, matched by all six variants; the
+fixtures there are `*-ext-2e.yaml`, for that repository's `%-2e`
+rules).  The ports reported a missing key with its path
+(`/2/attributes/0/disabilities/0: missing required key "name"`) where
+the Ada didn't, which was a fault of alibfyaml: its `Missing_Key` and
+`Data_Error` messages had no path or position.  Fixed 2026-11-06 in
+alibfyaml, whose messages now start with the line and column of a bad
+scalar (or, for a value that isn't a scalar, of its key), when it has
+them, and then the path of the mapping (a missing key) or of the value
+(bad data), as olibfyaml's do; `Libfyaml.In_File` puts the file name
+in front.  The Ada now gives the ports' path, line and column
+(`error processing bad-int.yaml:5:42: /1/stats/0/points: not a valid
+integer: "lots"`), and `cli.sh` checks them.  ova_fmt, which prints its
+own path and location, drops the library's so they aren't printed
+twice.  The output is the same.
 
 ### A5. The sheet and the window
 
@@ -1162,7 +1217,7 @@ saved YAML holds names as the formatters expect them, without pages.
        of the highest Level that isn't Personal Gear.  A Different
        Gunner on a character's weapon is warned (it is for mecha).
 3. **The YAML extensions** (A4, "Rolling it out") in the formatters,
-   before either program writes them.
+   before either program writes them.  Done 2026-11-06.
 4. **Files and `besm2_calc_po`.** First `ToRope`/`TakeRope` in
    pobesm2_fmt2's `Besm2Out` (open question 10, decided), with a
    `TestOut`, committed in pobesm2_fmt2; then `Besm2Entities`,
