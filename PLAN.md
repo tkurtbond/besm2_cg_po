@@ -575,10 +575,77 @@ and `errata.tsv`.  Phase B turns them into `Besm2Rules`.
     from Big Robots, Cool Starships (PDF 95), converted by the user, so
     its Armour, Partial Armour, Super-Strength and AR are BRCS's;
     "Hanger Queen" is a misspelling (BRCS and BESM2ER both say
-    Hangar).  Extra Actions, Leadership, Persuasion and Political
-    Sciences (Enyon Boase) are in none of BESM1E, BRCS, Hot Rods and
-    Gun Bunnies, BESM2ER or Retro as items; they came from his 4th
-    Edition version, and are now fixed or a house rule (see "Decided").
+    Hangar).  Extra Actions and Political Sciences (Enyon Boase) are
+    in none of BESM1E, BRCS, Hot Rods and Gun Bunnies, BESM2ER or Retro
+    as items; Leadership and Persuasion are in none but Retro, where
+    they are Skills (Table 6-2, p. 194, PDF 196; corrected 2026-11-06,
+    see below).  They came from his 4th Edition version, and are now
+    fixed or a house rule (see "Decided").
+
+    **Retro against BESM2ER, item by item** (2026-11-06).  Retro has no
+    list of its own changes: its foreword (p. 4, PDF 6) promises only
+    "expanded and updated content", and the list on pp. 12-13 (PDF
+    14-15) is of 2nd to 4th Edition.  So Retro's headings (by font:
+    OzHandicraftBT-Roman-SC7 at 24/16.8 pt for items, Calibri-Bold
+    12 pt for Weapon Attack Abilities and Disabilities) and tables were
+    compared with rules/*.tsv.  Pages are Retro's, printed and PDF.
+    - *The same:* Stats cost 1 point per value (Table 3-1, p. 27, PDF
+      29); ACV, DCV, Health, Energy and Shock Value have the same
+      formulas (p. 212, PDF 214); Skill Points are 20 + 10 per Level
+      of Highly Skilled; every Defect's BP range (Awkward Size 1-6,
+      Diminutive 3 or 6, Crew Requirement 1-6, the rest 1-2); all 13
+      Mecha Attribute costs; and the slots of every Ability and
+      Disability both books have.
+    - *Attributes* (Table 4-1, p. 50, PDF 52).  Added: Mimic 3/Level
+      (p. 98, PDF 100), Nullify 3 (p. 103, PDF 105), Transfer 3
+      (p. 133, PDF 135), Unknown Power, Varies (p. 136, PDF 138; not in
+      Table 4-1), Wealth 3 (p. 137, PDF 139; BESM2ER's Unique Character
+      Attribute sample).  Renamed: Focussed Damage, Organisational Ties,
+      Special Defence, Unique Attribute, Weapon (or Special) Attack,
+      Magic (was Magic (and Psionics)); "Racial" is "Species".  Costs:
+      Dynamic Sorcery's entry says 2 or 4 (Table 4-1 and BESM2ER: 1, 2
+      or 4); Transmutation 1, 2, 3 or 4 (BESM2ER 1, 2 or 4).  Astral
+      Projection is 1 in Table 4-1 but 3/Level in its entry, as in
+      BESM2ER: a slip.  Types: Art of Distraction is Normal,
+      Paranormal; Meld Paranormal, Technological; Massive Damage
+      "Permanent" (a slip).
+    - *Defects* (Table 5-1, p. 167, PDF 169; Table 5-2, p. 187, PDF
+      189).  Added: Blind Fury 1-2 BP Special (p. 170, PDF 172),
+      Rudimentary Manipulation 1-2 BP Normal (p. 181, PDF 183), Social
+      Fault 1-2 BP Normal (p. 183, PDF 185).  Weak Point, BESM2ER's
+      Unique Defect sample, is a Defect of its own (p. 186, PDF 188).
+      Unique Character Defect is Unique Defect (p. 184, PDF 186).
+      Inept Combat is missing from Table 5-1 but its entry is there
+      (p. 174, PDF 176).
+    - *Weapon Attack* (Table 4-3, p. 140, PDF 142; Table 4-4, p. 150,
+      PDF 152).  New Abilities, 1 slot each: Demoralise (p. 143, PDF
+      145), Lethargy (p. 146, PDF 148), Selective (p. 148, PDF 150).
+      New Disability: Two Hands (p. 153, PDF 155), with no slot count
+      in Table 4-4.  Renamed: Autofire, Unique Disability.
+    - *Skills* (Table 6-2, p. 194, PDF 196; Table 6-3, p. 209, PDF
+      211), the biggest change.  The genres are Action Adventure,
+      Cyberpunk, High Fantasy, Mecha Drama, Occult Horror, Romantic
+      Comedy, Space Opera and Urban Fantasy (Hot Rods and Guns, Martial
+      Arts, Medieval Fantasy, Modern Military and Teenage Romance are
+      gone).  64 Skills to BESM2ER's 52.  Gone: Computers, Cooking,
+      Driving, Electronics, Piloting, Stealth.  Added: Civilisation,
+      Climbing, Domestic Arts, Empathy, Engineering, Environmental
+      Sciences, Etiquette, Leadership, Listening, Naturopathy, Occult,
+      Occupation, Persuasion, Powerlifting, Religion, Search, Sneak,
+      Street Sense.  The Defense Skills are spelt Defence.  In the three
+      genres both have (Cyberpunk, Occult Horror, Space Opera), 24 of
+      the 43 shared Skills cost differently, mostly by 1.
+    - *Optional rules.*  BESM2ER's Staged Stat Cost (Table 4-7, p. 166,
+      PDF 168) is gone; Table 8-7, Alternate Stat Costs (p. 261, PDF
+      263), offers "Free, then Three" and "Bracket Costs" instead.
+    - *Added without costs:* species and class templates (pp. 31-46),
+      Tables 2-1 and 2-2 (power levels and benchmarks, pp. 18-20),
+      Session Zero, monsters (from p. 268), example builds.
+
+    None of this changes what the programs compute, which is BESM2ER.
+    Retro characters would need a second skill-cost table, rows for
+    the new items, and Table 8-7 for Staged Stat Cost, all behind one
+    switch (say `creation.options: {ruleset: retro}`); not planned.
 
 ### A3. Where the calculations live (decided, 2026-11-06)
 
