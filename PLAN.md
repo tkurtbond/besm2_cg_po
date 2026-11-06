@@ -754,6 +754,32 @@ so a file stays complete on its own; the generator can copy the
 `house-skills` (and the rest of `creation`) from another character or
 a campaign file, to start a new character in the same campaign.
 
+#### Notes: `notes` (2026-11-06)
+
+On any entity, `notes` is a list of short lines that are never priced:
+what the rulebook leaves to the player, such as a free unarmed attack
+("Punch: Damage ACV+10, Muscle-Powered, Melee", which the fixtures had
+as "Natural Attack: Punch" among the Attributes).
+
+```yaml
+notes:
+  - "Punch: Damage ACV+10, Muscle-Powered, Melee"
+```
+
+Each note is trimmed; an empty list prints nothing; a note that isn't a
+string is an error (`/1/notes/0: not a scalar`) and its entity is
+skipped.  Every formatter prints the notes after Skills, in order:
+
+- terse, grid and raw ms: `**Notes:**`, a blank line, one `- note`
+  bullet per note (a line feed inside a note is followed by two
+  spaces, so the note stays one bullet), and a blank line.
+- h-m-m: a `Notes` heading at depth 2, then the notes at depth 3,
+  joined by "; ", or one per line under `-S`.
+
+Done in besm2_fmt (with `test/data/notes-2e.yaml` and `bad-notes.yaml`),
+obesm2_fmt, obesm2_fmt2, pobesm2_fmt2 (goldens identical to the Ada's)
+and the four Scheme programs (identical to the Ada's `-n` output).
+
 #### Overrides: `overrides`
 
 As in ova_cg_po: any mapping holding a computed number may hold
@@ -1005,6 +1031,36 @@ from the user's PDF at test time and keep none of it.
     warning.  (Enyon Boase's names were bugs, now fixed, not aliases;
     Pawl Cardynham's "Unarmed Defence" is the British spelling of
     Unarmed Defense and may be an alias.)
+    Partly decided (2026-11-06, by the user): an alias is read, but the
+    generator and `besm2_calc_po --upgrade` write BESM2ER's name
+    (Hangar Queen, p. 105; Super Strength, p. 74; Heavy Armour, p. 40;
+    Unique Character Defect, p. 112; Unarmed Defense, p. 128; Weapon
+    Attack, p. 81, with the weapon's name as its `subject`).  Armour
+    with a separate Partial Armour Defect is done the BESM2ER way, as
+    the campaign's FV2021 Coleopteran already is: Heavy Armour's
+    Partial option takes points off its own cost (p. 40), no Defect.
+    "X" placeholders (the unfinished Glanna Matthews and Lowdy Penhale)
+    are illegal values, not names; a placeholder is 0.
+    Decided (2026-11-06, by the user, the rest):
+    - **Features or Accessories** (p. 32, PDF 34) is one Attribute in
+      `Besm2Rules`, with two display names: "Accessories" on an entity
+      with `mecha: true`, "Features" otherwise.  Either word (or the
+      full name) is read as it, and `--check` gives at most a warning
+      when the word doesn't match the entity; the generator and
+      `--upgrade` write the matching word.  The formatters print the
+      name as written, so they don't change.
+    - **"Natural Attack: Punch"** is not an Attribute (it costs
+      nothing); it becomes a note (A4, `notes`).  The fixture
+      FV2021-Coleopteran-2e.yaml (and its copies in composite-2e.yaml
+      and composite-multi-doc-2e.yaml) was rebuilt from the campaign's
+      Coleopteran: Heavy Armour with the Partial option, no Partial
+      Armour Defect, the punch as a note, and 43 MP of Attributes, −3
+      of Defects, 40 MP in all.  Its `details` are short table values
+      (levels, ranges, damage, Weapon Attack Abilities and
+      Disabilities); the campaign file's sentences that paraphrase the
+      rulebook were left out (AGENTS.md, copyright).  Its spellings
+      ("Hanger Queen", "Weapon:", Super-Strength) are kept as aliases
+      for the tests.
 12. **Auto-Fire: 3 slots or 1** (A2 results, 5 and 12): the entry
     says 3, and so do Retro's rule and its corrected Hellcat; BESM2ER's
     examples and the Coleopteran use 1.  Proposed: 3, with a
