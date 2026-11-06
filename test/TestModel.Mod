@@ -1,14 +1,16 @@
 MODULE TestModel; (* Besm2Character's editing: what the Attributes, Defects and Skills tabs do to an entity *)
 
-(* PLAN.md, Part B, step 7.  The window's lists change an entity only
+(* PLAN.md, Part B, steps 7 and 8.  The window's lists change an entity only
    through Besm2Character's NewAttr, InsertAttr, ChangeAttr, RemoveAttr,
-   the same for Defects and Skills, SetGenre and Relink; here each is
+   the same for Defects and Skills, SetGenre and Relink, and the Weapon
+   Attack dialog through NewMod, InsertMod, ChangeMod, RemoveMod,
+   CopyMods and SetPrimary; here each is
    checked on an entity built by hand, then what they made is saved and
    loaded again.  Needs no display.  What it saves goes in ../obj. *)
 
 IMPORT Check, C := Besm2Calc, Ch := Besm2Character, R := Besm2Rules, Besm2Save, Besm2Text, Ropes;
 
-CONST SavePath = "../obj/model-test.yaml";
+CONST SavePath = "../obj/model-test.yaml"; WeaponPath = "../obj/model-weapon.yaml";
 
 TYPE Rope = Ropes.Rope;
 
@@ -135,6 +137,74 @@ BEGIN
   Check.Check(a.mecha = NIL, "renamed: unlinked")
 END Mecha;
 
+PROCEDURE Weapons;
+  VAR we: Ch.Entity; wes, wback: Ch.Entities; w, w2, bw: Ch.Attr; acc, area, melee, auto: Ch.Mod; copy: C.Mod;
+BEGIN
+  we := Ch.New(); wes := Ch.One(we);
+  w := Ch.NewAttr(R.Find("Weapon Attack"), 4, Rp("Sword"), NIL); Ch.InsertAttr(we, w); Ch.ComputeAll(wes);
+  Check.Check((C.Value(w.points) = 16) & (C.Value(w.damage) = 60), "Weapon Attack 4: the primary, 4 a Level, 15 damage a Level (p. 82)");
+
+  acc := Ch.NewMod(we, R.FindKind(R.Ability, "Accurate"), 1, NIL);
+  Ch.InsertMod(w, TRUE, acc); Ch.ComputeAll(wes);
+  Check.Check((w.abilities = acc) & w.hasAbilities & ~w.hasDisabilities & w.structured & w.hasDamage
+    & (acc.countsAs = 0) & (acc.slots = 1) & Is(acc.name, "Accurate"),
+    "NewMod, InsertMod: its slots taken once leave counts-as out; the keys saved");
+  Check.Check(C.Value(w.damage) = 45, "an Ability slot: 15 less damage");
+
+  area := Ch.NewMod(we, R.FindKind(R.Ability, "Area Effect"), 2, Rp("  wide  "));
+  Ch.InsertMod(w, TRUE, area); Ch.ComputeAll(wes);
+  Check.Check((acc.next = area) & (area.countsAs = 2) & (C.Times(area) = 2) & Is(area.detail, "wide") & area.hasDetail,
+    "twice: counts-as 2, last, its detail trimmed");
+  Check.Check(C.Value(w.damage) = 15, "two slots more: 15 damage");
+
+  melee := Ch.NewMod(we, R.FindKind(R.Disability, "Melee"), 1, NIL);
+  Ch.InsertMod(w, FALSE, melee); Ch.ComputeAll(wes);
+  Check.Check(w.hasDisabilities & (w.disabilities = melee) & (melee.countsAs = 1) & (melee.slots = 1),
+    "Melee counting as 1, less than its 2: counts-as kept");
+  Check.Check(C.Value(w.damage) = 30, "a Disability slot: 15 more damage");
+
+  Ch.ChangeMod(we, area, NIL, 1, NIL); Ch.ComputeAll(wes);
+  Check.Check((area.item.name = "Area Effect") & (area.countsAs = 0) & ~area.hasDetail & (C.Value(w.damage) = 45),
+    "ChangeMod: the same name, one slot, no detail");
+  Ch.ChangeMod(we, area, R.FindKind(R.Ability, "Long Range"), 1, Rp("far")); Ch.ComputeAll(wes);
+  Check.Check(Is(area.name, "Long Range") & (acc.next = area) & Is(area.detail, "far"), "another name, in place");
+
+  copy := Ch.CopyMods(w.abilities);
+  Check.Check((copy # acc) & (copy.item = acc.item) & (copy.next # area) & (copy.next.item = area.item)
+    & Is(copy.next(Ch.Mod).detail, "far") & (copy.next.next = NIL), "CopyMods: its own records, the same");
+
+  Ch.RemoveMod(w, TRUE, acc); Ch.ComputeAll(wes);
+  Check.Check((w.abilities = area) & (C.Value(w.damage) = 60), "RemoveMod: the first");
+
+  auto := Ch.NewMod(we, R.FindKind(R.Ability, "Auto-Fire"), 1, NIL);
+  Ch.InsertMod(w, TRUE, auto); Ch.ComputeAll(wes);
+  Check.Check((auto.countsAs = 1) & (C.Value(w.damage) = 45), "Auto-Fire counting as 1, as the book's examples");
+
+  w2 := Ch.NewAttr(R.Find("Weapon Attack"), 4, Rp("Bow"), NIL); Ch.InsertAttr(we, w2); Ch.ComputeAll(wes);
+  Check.Check(w.isPrimary & ~w2.isPrimary & (C.Value(w2.points) = 2), "two at Level 4: the first the primary, the second 2");
+  Ch.SetPrimary(we, w2, TRUE); Ch.ComputeAll(wes);
+  Check.Check(w2.primary & w2.isPrimary & ~w.isPrimary & (C.Value(w.points) = 2) & (C.Value(w2.points) = 16),
+    "SetPrimary: the second marked, now the primary");
+  Ch.SetPrimary(we, w, TRUE); Ch.ComputeAll(wes);
+  Check.Check(w.primary & ~w2.primary & w.isPrimary, "marking the first unmarks the second");
+  Ch.SetPrimary(we, w, FALSE); Ch.ComputeAll(wes);
+  Check.Check(~w.primary & w.isPrimary, "unmarked: the first of the highest Level again");
+  w2.differentGunner := TRUE; Ch.ComputeAll(wes);
+  Check.Check(C.HasWarning(we, C.GunnerNotMecha, w2), "a different gunner on a character: warned");
+  w2.differentGunner := FALSE;
+
+  ok := Besm2Save.SaveAll(wes, WeaponPath, msg) & Ch.LoadAll(WeaponPath, wback, msg);
+  Check.Check(ok, "saved and loaded again");
+  IF ok THEN
+    bw := wback[0].attrs(Ch.Attr);
+    Check.Check((bw.abilities # NIL) & (bw.abilities.countsAs = 0) & Is(bw.abilities(Ch.Mod).detail, "far")
+      & (bw.abilities.next # NIL) & (bw.abilities.next.countsAs = 1) & (bw.disabilities # NIL)
+      & (bw.disabilities.countsAs = 1), "the Abilities and Disabilities, a counts-as of 1 kept");
+    Check.Check((C.Value(bw.damage) = C.Value(w.damage)) & (C.Value(bw.points) = C.Value(w.points)) & ~bw.damage.overridden,
+      "the damage and points the same")
+  END
+END Weapons;
+
 PROCEDURE SaveLoad;
   VAR b: Ch.Entity; ba: Ch.Attr; glider: INTEGER;
 BEGIN
@@ -159,6 +229,7 @@ BEGIN
   Defects;
   Skills;
   Mecha;
+  Weapons;
   SaveLoad;
   Check.Summary
 END TestModel.

@@ -12,20 +12,23 @@ MODULE TestWindow; (* Besm2Window: the Character tab, driven as a user would, an
    overrides, the points and their red, the warnings; File New, Open,
    Save, Save As and the save-first question; Rulebook > Open, Choose
    PDF... and Viewer....  Step 7: the Attributes, Defects, Skills and
-   Background tabs, then what they made saved and loaded again.  Runs
+   Background tabs, then what they made saved and loaded again.  Step
+   8: the Weapon Attack dialog, its Cancel and OK, and Close while it
+   is open.  Runs
    in test/: its files are data/*.yaml, and what it saves goes in
    ../obj; it opens copies of the data/*.yaml it changes there, so a
    File > Save gone wrong can't change it.  poc drops a string literal
    inside an array index (a[F("x")]), so none is written there. *)
 
 IMPORT Check, Fl, FlBrowsers, FlMenus, FlText, C := Besm2Calc, Ch := Besm2Character, R := Besm2Rules, Besm2Background,
-  Besm2ItemPanel, Besm2Save, Besm2Text, Besm2Viewer, Besm2Widgets, W := Besm2Window, Out, Ropes;
+  Besm2ItemPanel, Besm2Save, Besm2Text, Besm2Viewer, Besm2Widgets, D := Besm2WeaponDialog, W := Besm2Window, Out, Ropes;
 
 CONST
   SavePath = "../obj/window-test.yaml";
   SavePath2 = "../obj/window-two.yaml";
   OpenPath = "../obj/window.yaml";  (* data/window.yaml, copied *)
   BarePath = "../obj/bare.yaml";  (* data/bare.yaml, copied *)
+  WeaponPath = "../obj/window-weapon.yaml";
 
 TYPE Rope = Ropes.Rope;
 
@@ -647,6 +650,109 @@ BEGIN
   Check.Check(tells = before, "a viewer that starts: nothing said")
 END Rulebook;
 
+(* The last line of the dialog's warnings holding text; 0 if none. *)
+PROCEDURE DialogWarning(text: ARRAY OF CHAR): INTEGER;
+  VAR i: INTEGER; line: ARRAY 256 OF CHAR;
+BEGIN
+  i := D.warnings.Count();
+  WHILE i > 0 DO
+    D.warnings.GetText(i, line);
+    IF Ropes.Find(Rp(line), text, 0) >= 0 THEN RETURN i END;
+    DEC(i)
+  END;
+  RETURN 0
+END DialogWarning;
+
+PROCEDURE Weapons;
+  VAR p: Besm2ItemPanel.AttrPanel; wa: R.Item; a, a2: Ch.Attr; m: Ch.Mod; was: BOOLEAN; es: Ch.Entities;
+    label: ARRAY 128 OF CHAR;
+BEGIN
+  answer := W.Discard; Pick(W.newItem);
+  e := W.entity; p := W.attrPanel; wa := R.Find("Weapon Attack");
+  before := tells; W.weaponButton.DoCallback;
+  Check.Check((tells = before + 1) & Is(told, "Choose a Weapon Attack first.") & (D.dialog = NIL),
+    "Weapon... with no Weapon Attack selected: said so");
+  ChooseItem(p, wa); p.spinner.SetValue(4); p.text.SetValue("Sword"); p.add.DoCallback;
+  a := e.attrs(Ch.Attr); was := W.modified;
+  W.weaponButton.DoCallback;
+  Check.Check((D.dialog # NIL) & (D.attr = a) & (D.help.page = 81) & (ENTIER(D.level.Value() + 0.5) = 4)
+    & ~D.primary.Active() & D.primary.Value(), "Weapon...: its dialog, ? at p. 81, its Level; the only one, the primary");
+  D.title.GetLabel(label);
+  Check.Check(label = "Weapon Attack (p. 81, PDF 83)", "its name, with both pages");
+  Check.Check(Shows(D.damage, a.damage) & Shows(D.points, a.points) & (C.Value(a.damage) = 60) & (C.Value(a.points) = 16),
+    "its damage and points");
+
+  ChooseItem(D.abilities, R.FindKind(R.Ability, "Accurate"));
+  Check.Check((D.abilities.help.page = 83) & (ENTIER(D.abilities.spinner.Value() + 0.5) = 1), "an Ability chosen: ? at its page, its slots");
+  D.abilities.add.DoCallback;
+  Check.Check((D.abilities.browser.Count() = 1) & Holds(D.abilities.browser, 1, "Accurate") & Holds(D.abilities.browser, 1, "1 slot")
+    & Holds(D.abilities.browser, 1, "p. 83, PDF 85") & (C.Value(a.damage) = 45) & Shows(D.damage, a.damage) & W.modified,
+    "Add: listed, with its slots and both pages; the damage follows");
+
+  ChooseItem(D.disabilities, R.FindKind(R.Disability, "Melee"));
+  Check.Check(ENTIER(D.disabilities.spinner.Value() + 0.5) = 2, "Melee: its 2 slots");
+  D.disabilities.spinner.SetValue(1); D.disabilities.text.SetValue(" sword "); D.disabilities.add.DoCallback;
+  m := a.disabilities(Ch.Mod);
+  Check.Check((m # NIL) & (m.countsAs = 1) & Holds(D.disabilities.browser, 1, "Melee (sword)") & Holds(D.disabilities.browser, 1, "1 slot")
+    & (C.Value(a.damage) = 60), "counting as 1: counts-as, its detail, the damage");
+
+  Select(D.abilities.browser, 1);
+  Check.Check(D.abilities.Item() = R.FindKind(R.Ability, "Accurate"), "a line selected: loaded");
+  D.abilities.spinner.SetValue(2); D.abilities.change.DoCallback;
+  Check.Check(Holds(D.abilities.browser, 1, "Accurate x2") & Holds(D.abilities.browser, 1, "2 slots") & (C.Value(a.damage) = 45),
+    "Change: twice, x2");
+
+  D.SetLevel(5);
+  Check.Check((a.level = 5) & (C.Value(a.damage) = 60) & (C.Value(a.points) = 20) & Shows(D.points, a.points)
+    & Holds(p.browser, 1, "5 Weapon Attack: Sword") & Holds(p.browser, 1, "20 pts"), "the Level: damage, points, and the list, follow");
+  Type(D.damage, "50");
+  Check.Check(a.damage.overridden & (C.Value(a.damage) = 50) & Shows(D.damage, a.damage), "the damage overridden");
+  D.SetGunner(TRUE);
+  Check.Check(a.differentGunner & (C.Value(a.points) = 25) & (DialogWarning("Different Gunner") > 0), "a different gunner: +5, and warned on a character");
+
+  D.Cancel;
+  Check.Check((D.dialog = NIL) & (a.level = 4) & (a.abilities = NIL) & (a.disabilities = NIL) & ~a.damage.overridden
+    & ~a.differentGunner & (C.Value(a.damage) = 60) & (C.Value(a.points) = 16) & (W.modified = was)
+    & Holds(p.browser, 1, "4 Weapon Attack: Sword"), "Cancel: everything as it was");
+
+  W.weaponButton.DoCallback;
+  ChooseItem(D.disabilities, R.FindKind(R.Disability, "Melee")); D.disabilities.spinner.SetValue(1); D.disabilities.add.DoCallback;
+  ChooseItem(D.abilities, R.FindKind(R.Ability, "Area Effect")); D.abilities.add.DoCallback;
+  D.subjectIn.SetValue(" Spear ");
+  Select(D.abilities.browser, 1); D.abilities.remove.DoCallback;
+  Check.Check((D.abilities.browser.Count() = 0) & (a.abilities = NIL), "Remove");
+  ChooseItem(D.abilities, R.FindKind(R.Ability, "Area Effect")); D.abilities.add.DoCallback;
+  D.Ok;
+  Check.Check((D.dialog = NIL) & Is(a.subject, "Spear") & (a.abilities # NIL) & (a.disabilities.countsAs = 1)
+    & (C.Value(a.damage) = 60) & Holds(p.browser, 1, "4 Weapon Attack: Spear") & W.modified, "OK: kept, the subject taken");
+
+  ChooseItem(p, wa); p.spinner.SetValue(4); p.text.SetValue("Bow"); p.add.DoCallback;
+  a2 := a.next(Ch.Attr);
+  Check.Check(a.isPrimary & (C.Value(a2.points) = 2), "a second at the same Level: 2 points");
+  Select(p.browser, 1); W.weaponButton.DoCallback;
+  Check.Check(D.primary.Active() & D.primary.Value(), "two: primary can be changed");
+  before := tells; D.SetPrimary(FALSE);
+  Check.Check((tells = before + 1) & a.isPrimary & D.primary.Value(), "unmarked: still the primary, and said why");
+  Select(D.disabilities.browser, 1); D.disabilities.spinner.SetValue(2); D.disabilities.change.DoCallback;
+  Check.Check(a.disabilities.countsAs = 0, "Melee changed to its own 2 slots: counts-as left out");
+  D.Cancel;
+  Check.Check((a.disabilities # NIL) & (a.disabilities.countsAs = 1) & (C.Value(a.damage) = 60) & ~a.primary,
+    "Cancel: a changed Disability as it was");
+  Select(p.browser, 2); W.weaponButton.DoCallback;
+  D.SetPrimary(TRUE);
+  Check.Check(a2.primary & a2.isPrimary & ~a.isPrimary & (C.Value(a2.points) = 16) & (C.Value(a.points) = 2)
+    & Holds(p.browser, 1, "2 pts"), "the second marked: the primary, priced so, and the first a secondary");
+  D.Ok;
+
+  chosen := Rp(WeaponPath); Pick(W.saveAsItem);
+  es := Reload(WeaponPath);
+  Check.Check((es # NIL) & (es[0].attrs.disabilities # NIL) & (es[0].attrs.disabilities.countsAs = 1)
+    & es[0].attrs.next.primary & ~es[0].attrs.primary, "saved and loaded again: counts-as 1, the primary");
+
+  Select(p.browser, 1); W.weaponButton.DoCallback;
+  D.SetLevel(6)  (* left open: W.Close cancels it *)
+END Weapons;
+
 BEGIN
   W.tell := Tell; W.ask := Ask; W.choosePath := ChoosePath; W.choosePdf := ChoosePdf; W.askText := AskText;
   tells := 0; asked := 0; answer := W.Cancel; chosen := NIL; typed := NIL;
@@ -663,7 +769,9 @@ BEGIN
   Defects;
   Skills;
   Background;
+  Weapons;
   W.Close;
   Check.Check(W.window = NIL, "Close deletes it");
+  Check.Check((D.dialog = NIL) & (e.attrs.level = 4), "and cancels the Weapon Attack dialog");
   Check.Summary
 END TestWindow.

@@ -1484,7 +1484,8 @@ saved YAML holds names as the formatters expect them, without pages.
    - **A poc bug**, found here: a string literal inside an array index
      (`a[F("x")]`) is never emitted, and the link fails ("use of
      undefined value '@.str...'").  The tests compute such an index
-     first.  Not yet reported to Peaseblossom.
+     first.  Reported as Peaseblossom's PLAN.md item 18 (22396a9);
+     the workaround stays until it is fixed.
    Tests:
    - `test/TestModel.Mod` (in `TESTS`, no display): the edits on an
      entity built by hand: options kept or dropped by ChangeAttr,
@@ -1511,6 +1512,47 @@ saved YAML holds names as the formatters expect them, without pages.
 8. **Weapon Attacks.** The dialog: subject, level, Abilities and
    Disabilities with counts and details, primary; damage and cost
    following each change.
+
+   *Done 2026-11-06.*  New module `src/Besm2WeaponDialog.Mod`: the
+   **Weapon...** button under the Attributes list opens it on the
+   selected Weapon Attack ("Choose a Weapon Attack first." otherwise).
+   It has the subject, the Level, the details, **Primary** and
+   **Different Gunner**, and two panels, Abilities (p. 83, PDF 85)
+   and Disabilities (p. 89, PDF 91), each a list with the Choice of
+   names and both pages, **?**, a slots spinner, a details field and
+   Add / Change / Remove.  Each line is the name, `xN` when taken
+   more than once, `(details)`, the slots and both pages.  Under them
+   the damage and the points, and the warnings for this attack,
+   follow every change.
+   `src/Besm2Character.Mod` gained `NewMod`, `InsertMod`, `ChangeMod`,
+   `RemoveMod`, `CopyMods` and `SetPrimary`.
+   Decided while building it (2026-11-06):
+   - **The slots spinner sets `counts-as`.**  Choosing a name sets it
+     to that item's slots once; a different number is written as
+     `counts-as` (Melee taken as 1, Auto-Fire as 1).
+   - **The Level, primary, gunner and the lists change the attack at
+     once**, so the window's totals follow; the subject and details
+     are taken on **OK**.  **Cancel** puts back the record, both lists
+     and every attack's `primary` as they were when it opened.
+   - **Primary** is greyed when the entity has one Weapon Attack.
+     Unmarking an attack that is still the first of the highest Level
+     says it is still the primary (p. 82, PDF 84).
+   - **Personal Gear** is left out: the YAML has no key for it.
+   Found while building it: Besm2Save dropped `counts-as` when it was
+   1, so Melee taken as 1 was saved as `- Melee` and loaded again as 2
+   slots (60 damage instead of 45).  `counts-as` is now written
+   whenever it was given, 1 included (`ItemNode`).
+   Tests: `test/TestModel.Mod`'s Weapons (damage and points, the Mod
+   edits, counts-as, the primary, GunnerNotMecha, saved and loaded
+   again) and `test/TestWindow.Mod`'s Weapons (the dialog driven as a
+   user would, Cancel and OK, two attacks and the primary, Save As and
+   loaded again, and Close cancelling an open dialog).
+   Planted bugs caught: save dropping counts-as 1; NewMod always
+   writing counts-as; Cancel keeping the lists (once a check changing
+   an item in place before Cancel was added); choosing a name leaving
+   the slots; Close leaving the dialog open; no recompute after a
+   change.  `make test`, `make test-headless`, `make test-sway` and
+   `make valgrind-headless` pass.
 9. **Mecha and several entities.** A mecha entity tied to its
    owner's Own a Big Mecha, its Mecha Points checked; several entities
    in a file (Add, Duplicate, Remove, Move, Next/Previous), as

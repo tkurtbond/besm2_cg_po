@@ -192,14 +192,18 @@ BEGIN
 END DerivedNode;
 
 (* A choice or a Weapon Ability or Disability: a plain name, or a
-   mapping when it has a count or a detail to say. *)
-PROCEDURE ItemNode(name: Rope; countsAs: INTEGER; hasDetail: BOOLEAN; detail: Rope): Node;
+   mapping when it has a count or a detail to say.  A choice's count
+   (its times) is said from 2; a Weapon Ability's or Disability's
+   counts-as whenever it is given (0: left out), since 1 can be less
+   than its slots taken once ({name: Melee, counts-as: 1}, A4; it was
+   dropped before 2026-11-06, step 8). *)
+PROCEDURE ItemNode(name: Rope; countsAs, from: INTEGER; hasDetail: BOOLEAN; detail: Rope): Node;
   VAR m: Node;
 BEGIN
-  IF (countsAs <= 1) & ~hasDetail THEN RETURN Text(name) END;
+  IF (countsAs < from) & ~hasDetail THEN RETURN Text(name) END;
   m := d.CreateMapping();
   Pair(m, "name", Text(name));
-  IF countsAs > 1 THEN Pair(m, "counts-as", Int(countsAs)) END;
+  IF countsAs >= from THEN Pair(m, "counts-as", Int(countsAs)) END;
   TextPair(m, "detail", hasDetail, detail);
   RETURN m
 END ItemNode;
@@ -211,7 +215,7 @@ BEGIN
     seq := d.CreateSequence();
     WHILE x # NIL DO
       md := x(Ch.Mod);
-      seq.Append(ItemNode(md.name, md.countsAs, md.hasDetail, md.detail));
+      seq.Append(ItemNode(md.name, md.countsAs, 1, md.hasDetail, md.detail));
       x := x.next
     END;
     Pair(m, key, seq)
@@ -225,9 +229,9 @@ BEGIN
   seq := d.CreateSequence(); written := {};
   c := a.choices;
   WHILE c # NIL DO
-    IF c.option < 0 THEN seq.Append(ItemNode(c.name, c.times, FALSE, NIL))
+    IF c.option < 0 THEN seq.Append(ItemNode(c.name, c.times, 2, FALSE, NIL))
     ELSIF ~(c.option IN written) & (a.times[c.option] > 0) THEN
-      INCL(written, c.option); seq.Append(ItemNode(c.name, a.times[c.option], FALSE, NIL))
+      INCL(written, c.option); seq.Append(ItemNode(c.name, a.times[c.option], 2, FALSE, NIL))
     END;
     c := c.next
   END;
@@ -235,7 +239,7 @@ BEGIN
     FOR i := 0 TO a.item.nOptions - 1 DO
       IF ~(i IN written) & (a.times[i] > 0) THEN
         label := Ropes.FromString(a.item.option[i].label);
-        seq.Append(ItemNode(label, a.times[i], FALSE, NIL))
+        seq.Append(ItemNode(label, a.times[i], 2, FALSE, NIL))
       END
     END
   END;

@@ -474,18 +474,30 @@ BEGIN
   RETURN Max(it.minCost, perLevel * a.level + flat)
 END AttrPoints;
 
+(* The slots Weapon Ability or Disability it counts as, taken once, as
+   Creation c prices it: the book's, Auto-Fire's c's; 1 for NIL. *)
+PROCEDURE SlotsOnce(it: R.Item; VAR c: Creation): INTEGER;
+BEGIN
+  IF it = NIL THEN RETURN 1
+  ELSIF it = autoFire THEN RETURN c.autoFireSlots
+  ELSE RETURN it.slots
+  END
+END SlotsOnce;
+
+(* The same, as e's campaign prices it (a mecha's owner's). *)
+PROCEDURE OnceSlots*(e: Entity; it: R.Item): INTEGER;
+  VAR c: Creation;
+BEGIN Rules(e, c); RETURN SlotsOnce(it, c)
+END OnceSlots;
+
 (* The slots m counts as, as Creation c prices it. *)
 PROCEDURE Slots(m: Mod; VAR c: Creation): INTEGER;
 BEGIN
-  IF m.countsAs > 0 THEN RETURN m.countsAs
-  ELSIF m.item = NIL THEN RETURN 1
-  ELSIF m.item = autoFire THEN RETURN c.autoFireSlots
-  ELSE RETURN m.item.slots
-  END
+  IF m.countsAs > 0 THEN RETURN m.countsAs ELSE RETURN SlotsOnce(m.item, c) END
 END Slots;
 
 (* How many times m is taken: its slots over the book's for one. *)
-PROCEDURE Times(m: Mod): INTEGER;
+PROCEDURE Times*(m: Mod): INTEGER;
 BEGIN
   IF (m.countsAs = 0) OR (m.item = NIL) OR (m.item.slots = 0) THEN RETURN 1
   ELSE RETURN Max(1, m.countsAs DIV m.item.slots)

@@ -29,7 +29,7 @@ MODULE Besm2Window; (* besm2_cg_po's main window: the menu bar, the Character ta
 
 IMPORT Fl, FlBrowsers, FlDialogs, FlInputs, FlLayout, FlMenus, FlPreferences, FlValuators,
   C := Besm2Calc, Ch := Besm2Character, R := Besm2Rules, Besm2Layout, Besm2Paths, Besm2Save, Besm2Text,
-  Besm2Background, Besm2ItemPanel, Besm2Viewer, Besm2Warnings, Besm2Widgets, Ropes;
+  Besm2Background, Besm2ItemPanel, Besm2Viewer, Besm2Warnings, Besm2WeaponDialog, Besm2Widgets, FlButtons, Ropes;
 
 CONST
   Title* = "BESM2ER Character Generator";
@@ -83,6 +83,7 @@ VAR
   points-: ARRAY NPointLines OF Fl.Box;
   warnings-: FlBrowsers.Browser;
   attrPanel-: Besm2ItemPanel.AttrPanel;
+  weaponButton-: FlButtons.Button;  (* the Attributes tab's: Besm2WeaponDialog on the line selected *)
   defectPanel-: Besm2ItemPanel.DefectPanel;
   skillPanel-: Besm2ItemPanel.SkillPanel;
   tabPoints-: ARRAY NLists, NPointLines OF Fl.Box;
@@ -110,6 +111,8 @@ VAR
   (* Where the rulebook and viewer are kept (NIL: nowhere). *)
   preferences-: FlPreferences.Preferences;
   showing: BOOLEAN;  (* ShowAll is setting the widgets: their callbacks change nothing *)
+  weaponLine: INTEGER;      (* the Weapon Attack's line, while its dialog is open *)
+  weaponModified: BOOLEAN;  (* modified, when it opened *)
 
 PROCEDURE^ ShowAll;
 
@@ -731,6 +734,29 @@ PROCEDURE PanelChanged(p: Besm2ItemPanel.ItemPanel);
 BEGIN Changed
 END PanelChanged;
 
+(* The Weapon Attack dialog's (step 8): after each change it makes, and
+   after OK or Cancel (Cancel leaves modified as it was). *)
+PROCEDURE WeaponChanged;
+BEGIN Changed; attrPanel.Refresh(weaponLine)
+END WeaponChanged;
+
+PROCEDURE WeaponDone(ok: BOOLEAN);
+BEGIN
+  IF ~ok THEN modified := weaponModified; ShowTitle END;
+  attrPanel.Refresh(weaponLine); weaponLine := 0
+END WeaponDone;
+
+PROCEDURE WeaponAction(w: Fl.Widget);
+  VAR a: Ch.Attr;
+BEGIN
+  a := attrPanel.AttrAt(attrPanel.browser.Value());
+  IF (a = NIL) OR ~a.weapon THEN tell(Rp("Choose a Weapon Attack first."))
+  ELSE
+    weaponLine := attrPanel.browser.Value(); weaponModified := modified;
+    Besm2WeaponDialog.Edit(entity, a, WeaponDone)
+  END
+END WeaponAction;
+
 PROCEDURE BuildLists;
   CONST ExtraBottom = 120;  (* a panel's rows under its browser, but for the extension's *)
   VAR h: INTEGER;
@@ -741,6 +767,9 @@ BEGIN
   h := ListBottom - 10 - Top - ExtraBottom - 4 * (Row + 5);
   NEW(attrPanel); Besm2ItemPanel.OpenAttrPanel(attrPanel, LeftX, Top, ColumnW, h);
   attrPanel.changed := PanelChanged;
+  NEW(weaponButton); FlButtons.OpenButton(weaponButton, LeftX + 225, attrPanel.bottom - Row, 90, Row, "Weapon...");
+  weaponButton.action := WeaponAction;
+  weaponButton.SetTooltip("the Weapon Attack selected: its Abilities, Disabilities and damage (p. 81, PDF 83)");
   BuildTotals(AttributesList, ListBottom);
   attributesTab.End;
   h := ListBottom - 10 - Top - ExtraBottom;
@@ -797,6 +826,7 @@ END Build;
 PROCEDURE Close*;
   VAR i, t: INTEGER;
 BEGIN
+  IF Besm2WeaponDialog.dialog # NIL THEN Besm2WeaponDialog.Cancel END;
   window.Delete;
   window := NIL; bar := NIL; tabs := NIL;
   characterTab := NIL; attributesTab := NIL; defectsTab := NIL; skillsTab := NIL; mechaTab := NIL;
@@ -810,13 +840,14 @@ BEGIN
     FOR i := 0 TO NPointLines - 1 DO tabPoints[t][i] := NIL END
   END;
   Besm2ItemPanel.Close(attrPanel); Besm2ItemPanel.Close(defectPanel); Besm2ItemPanel.Close(skillPanel);
-  attrPanel := NIL; defectPanel := NIL; skillPanel := NIL;
+  attrPanel := NIL; defectPanel := NIL; skillPanel := NIL; weaponButton := NIL;
   Besm2Background.Close
 END Close;
 
 BEGIN
   tell := DialogTell; ask := DialogAsk; choosePath := DialogPath; choosePdf := DialogPdf; askText := DialogText;
   Besm2Widgets.openPage := OpenPage;
+  Besm2WeaponDialog.tell := PanelTell; Besm2WeaponDialog.changed := WeaponChanged; weaponLine := 0;
   rulebookOption := NIL; savedRulebook := NIL; preferences := NIL;
   Besm2Viewer.Default(viewer); viewerOption := FALSE;
   entities := NIL; current := 0; entity := NIL; path := NIL; modified := FALSE; showing := FALSE

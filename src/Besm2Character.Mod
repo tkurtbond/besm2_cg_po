@@ -1046,6 +1046,75 @@ BEGIN
   a.next := NIL
 END RemoveAttr;
 
+(* ---- A Weapon Attack's Abilities and Disabilities (step 8) ---- *)
+
+(* A new Weapon Ability or Disability of it, counting as slots, with
+   detail (NIL: none); not yet a's (InsertMod).  counts-as is left out
+   when slots is what it counts as taken once, as e's campaign prices it
+   (A4). *)
+PROCEDURE NewMod*(e: Entity; it: R.Item; slots: INTEGER; detail: Rope): Mod;
+  VAR m: Mod;
+BEGIN
+  NEW(m);
+  IF slots = C.OnceSlots(e, it) THEN C.InitMod(m, it, 0) ELSE C.InitMod(m, it, slots) END;
+  m.name := ItemName(it); SetOptional(m.hasDetail, m.detail, detail);
+  RETURN m
+END NewMod;
+
+(* m, last of a's Abilities (ability) or Disabilities; a is saved
+   structured, with its damage. *)
+PROCEDURE InsertMod*(a: Attr; ability: BOOLEAN; m: Mod);
+BEGIN
+  m.next := NIL;
+  IF ability THEN C.AddMod(a.abilities, m); a.hasAbilities := TRUE
+  ELSE C.AddMod(a.disabilities, m); a.hasDisabilities := TRUE
+  END;
+  a.structured := TRUE; a.hasDamage := TRUE
+END InsertMod;
+
+(* m, one of e's, made it (NIL: as it is), counting as slots, with
+   detail, in its place. *)
+PROCEDURE ChangeMod*(e: Entity; m: Mod; it: R.Item; slots: INTEGER; detail: Rope);
+BEGIN
+  IF (it # NIL) & (it # m.item) THEN m.item := it; m.name := ItemName(it) END;
+  IF slots = C.OnceSlots(e, m.item) THEN m.countsAs := 0 ELSE m.countsAs := slots END;
+  SetOptional(m.hasDetail, m.detail, detail)
+END ChangeMod;
+
+PROCEDURE RemoveMod*(a: Attr; ability: BOOLEAN; m: Mod);
+  VAR p: C.Mod;
+BEGIN
+  IF ability THEN p := a.abilities ELSE p := a.disabilities END;
+  IF p = m THEN
+    IF ability THEN a.abilities := m.next ELSE a.disabilities := m.next END
+  ELSE
+    WHILE (p # NIL) & (p.next # m) DO p := p.next END;
+    IF p # NIL THEN p.next := m.next END
+  END;
+  m.next := NIL
+END RemoveMod;
+
+(* A copy of list, its own records, for putting back. *)
+PROCEDURE CopyMods*(list: C.Mod): C.Mod;
+  VAR first: C.Mod; m: Mod;
+BEGIN
+  first := NIL;
+  WHILE list # NIL DO
+    NEW(m); m^ := list(Mod)^; m.next := NIL; C.AddMod(first, m);
+    list := list.next
+  END;
+  RETURN first
+END CopyMods;
+
+(* a, one of e's Weapon Attacks, marked primary (on) or not: marking it
+   unmarks the others, as only one is primary (p. 82). *)
+PROCEDURE SetPrimary*(e: Entity; a: Attr; on: BOOLEAN);
+  VAR p: C.Attr;
+BEGIN
+  IF on THEN p := e.attrs; WHILE p # NIL DO p.primary := FALSE; p := p.next END END;
+  a.primary := on
+END SetPrimary;
+
 (* A new Defect of it at rank, about subject, with details; its rank
    is saved as `level` (A4). *)
 PROCEDURE NewDefect*(it: R.Item; rank: INTEGER; subject, details: Rope): Defect;
