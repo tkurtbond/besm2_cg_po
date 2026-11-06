@@ -5,3 +5,9 @@
 .~
 .~*\#
 \#*\#
+# poc/clang output (.sym, .ll, .o, test programs): see GNUmakefile
+/obj/
+# the programs
+/besm2_cg_po
+/besm2_calc_po
+src/TAGS

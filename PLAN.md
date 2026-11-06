@@ -1038,6 +1038,13 @@ saved YAML holds names as the formatters expect them, without pages.
    `tools/with-sway.sh`; a window with File > Quit that opens and
    quits under Xvfb and sway; `besm2_calc_po -h`; `test/cli.sh` for
    both (`-h`, bad options, no display for the window).
+   *Done 2026-11-06.* Until step 4 a file argument is a usage error
+   (status 2) in both programs, and `besm2_calc_po` with no file does
+   nothing and exits 0.  `test/TestWindow` picks File > Quit and
+   presses the close button, so Quit is checked on sway too, where
+   `test/quit.sh` (xdotool) is skipped.  `make test`, `test-headless`,
+   `test-sway` and `valgrind-headless` pass (0 errors);
+   `besm2_calc_po` doesn't link FLTK.
 1. **`Besm2Rules`.** The tables from A2; `TestRules`: every name
    present once, both pages for each, each in its section's range,
    costs as the reference section gives them, the label format; `make

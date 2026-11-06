@@ -1,0 +1,66 @@
+#!/bin/bash
+# cli.sh WINDOW CALC: the command lines of besm2_cg_po and besm2_calc_po,
+# and starting the window with no display (PLAN.md, Part B, step 0).
+# Needs no display: nothing here opens a window.
+set -u
+prog=$1 calc=$2
+status=0
+out=$(mktemp -d) || exit 2
+trap 'rm -rf "$out"' EXIT
+
+check() { # check LABEL CONDITION...
+  local label=$1; shift
+  if "$@"; then echo "ok   - $label"; else echo "FAIL - $label"; status=1; fi
+}
+
+# run PROGRAM ARGS...: with no display, its output in $out, status in $st.
+run() { env -u DISPLAY -u WAYLAND_DISPLAY -u TMUX "$@" >"$out/stdout" 2>"$out/stderr"; st=$?; }
+
+# ---- besm2_cg_po ----
+
+run "$prog" -h
+check "besm2_cg_po -h exits 0" test $st -eq 0
+check "besm2_cg_po -h prints the usage" grep -q 'besm2_cg_po \[options\]' "$out/stdout"
+check "besm2_cg_po -h needs no display" test ! -s "$out/stderr"
+
+run "$prog" --no-such-option
+check "besm2_cg_po: an unknown option exits 2" test $st -eq 2
+
+run "$prog" some-file.yaml
+check "besm2_cg_po: a file, before files are written, exits 2" test $st -eq 2
+check "and says so" grep -qx "besm2_cg_po: opening files isn't written yet: some-file.yaml" "$out/stderr"
+
+run "$prog"
+check "besm2_cg_po: no display exits 1" test $st -eq 1
+check "no display says so" grep -qx 'besm2_cg_po: no display: neither DISPLAY nor WAYLAND_DISPLAY is set' "$out/stderr"
+check "no display, outside tmux: one line" test "$(wc -l < "$out/stderr")" -eq 1
+check "no display writes nothing to standard output" test ! -s "$out/stdout"
+
+env -u DISPLAY -u WAYLAND_DISPLAY TMUX=/tmp/tmux-test/default,1,0 "$prog" >"$out/stdout" 2>"$out/stderr"; st=$?
+check "no display in tmux exits 1" test $st -eq 1
+check "no display in tmux: the tmux hint" grep -q '^besm2_cg_po: in tmux, .*tmux show-environment -g' "$out/stderr"
+check "no display in tmux: two lines" test "$(wc -l < "$out/stderr")" -eq 2
+
+env -u TMUX DISPLAY= WAYLAND_DISPLAY= "$prog" >"$out/stdout" 2>"$out/stderr"; st=$?
+check "empty DISPLAY and WAYLAND_DISPLAY count as none" test $st -eq 1
+
+# ---- besm2_calc_po: never needs a display ----
+
+run "$calc" -h
+check "besm2_calc_po -h exits 0" test $st -eq 0
+check "besm2_calc_po -h prints the usage" grep -q 'besm2_calc_po \[options\]' "$out/stdout"
+check "besm2_calc_po -h writes nothing to standard error" test ! -s "$out/stderr"
+
+run "$calc" --no-such-option
+check "besm2_calc_po: an unknown option exits 2" test $st -eq 2
+
+run "$calc" some-file.yaml
+check "besm2_calc_po: a file, before files are written, exits 2" test $st -eq 2
+check "and says so" grep -qx "besm2_calc_po: reading files isn't written yet: some-file.yaml" "$out/stderr"
+
+run "$calc"
+check "besm2_calc_po with nothing to do exits 0, with no display" test $st -eq 0
+check "and needs no display" test ! -s "$out/stderr"
+
+if [ $status -eq 0 ]; then echo "All checks passed."; else echo "Some checks failed."; fi
+exit $status
