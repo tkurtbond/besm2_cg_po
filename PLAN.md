@@ -413,7 +413,7 @@ descriptions.
     check-pages`); then check a sample by eye. Record the counts of
     Attributes, Defects, Skills, Abilities and Disabilities.
 
-#### A2 results (in progress, 2026-11-06)
+#### A2 results (done, 2026-11-06)
 
 The tables are in `rules/` (names, costs, levels, limits and pages
 only, with labels in our own words; nothing quoted, and the purchaser
@@ -483,8 +483,9 @@ and `errata.tsv`.  Phase B turns them into `Besm2Rules`.
    (Level - Ability slots + Disability slots), at least 15 unless No
    Damage; a secondary attack 2 points at the primary's Level, 1 at a
    lower Level (p. 82); a Different Gunner +5 Mecha Points (p. 83); as
-   Personal Gear, 5 damage a Level.  33 Abilities (pp. 83-89), 22
-   Disabilities (pp. 89-92), with their slots (most 1; Aura 2,
+   Personal Gear, 5 damage a Level.  34 Abilities (pp. 83-89), 21
+   Disabilities (pp. 89-92; 33 and 22 here before A2.11 counted the
+   headings), with their slots (most 1; Aura 2,
    Auto-Fire 3, Incapacitating 3, Contagious 3 or 6, Soul Attack 5,
    Self-Destruct 4, Melee 2, ...), maximums and exclusions.  **Auto-Fire
    counts as 3 in its entry (p. 84), but as 1 in the Hellcat (p. 92),
@@ -518,8 +519,46 @@ and `errata.tsv`.  Phase B turns them into `Besm2Rules`.
 10. **Errata** (two pages): the only change of a page is the
     Hellcat's reference (p. 92 says p. 127; it is p. 61); nothing
     changes a cost.
-11. **Every page by machine**: to do (`make check-pages`), from
-    `rules/headings.tsv`: 276 items, 271 bullets, 251 steps.
+11. **Every page by machine** (done, 2026-11-06): `make check-pages`
+    runs `tools/check-pages.py` (about 8 seconds; not part of `make
+    test`, as it needs the PDFs and mutool).  It finds the headings by
+    font again and checks that:
+    - `rules/headings.tsv` is still exactly them (798: 276 items, 271
+      bullets, 251 steps);
+    - each of the tables' 409 names (`attributes.tsv`,
+      `headings-fields.tsv`, `weapon-abilities-disabilities.tsv` and
+      the Skills of `skill-costs.tsv`) is a heading of its kind on its
+      PDF page, and that page is the printed page + 2;
+    - each section's headings, less 9 that are sections inside an
+      entry or notes (Force Field Abilities and Disabilities, Magic
+      Options, the Wealth sample, Hand-Held Weapons and Personal Gear
+      on PDF 85, Combat Value, Health Points, Energy Points), are its
+      table's names in the book's order.
+    Five table names are shorter than their headings, matched as
+    aliases: ECM, Own a Big Mecha, Weapon Attack, A.I. (the headings
+    add the full name or the abbreviation) and Wind Powered (Table
+    2-3's spelling of Wind-Powered).  The counts: **76 Attributes, 13
+    Mecha Attributes, 39 Defects, 10 Mecha-Only Defects, 52 Skills,
+    34 Weapon Attack Abilities and 21 Disabilities** (Linked and
+    Penetrating each have two headings, so 34 Ability headings are 32
+    names).  Every one agrees; nothing in the tables changed.  Shown
+    to fail with four planted bugs: a page, two Abilities swapped, a
+    misspelt Skill, and a PDF page that isn't printed + 2.
+    The bookmarks, checked as a second source, disagreed only where
+    result 1 already said (misspelt titles, Force Field Disabilities
+    at PDF 39, no Linked (Attribute)); the check prints these as
+    notes and passes.  The user then fixed the bookmark list and
+    `BESM2ER_bookmarked.pdf` (2026-11-06): the misspellings and Force
+    Field Disabilities are right now.  Still to fix there, from this
+    check and the outline: no Linked (Attribute) bookmark (PDF 89);
+    "Unique Character Attribute — Wealth" lacks the heading's
+    "Sample"; "Mecha-Only Defects" (PDF 116) and "Step 8: Background
+    Points" (PDF 132, both found by font) have no destination; "Table
+    3-4 Defense Roll modifiers" should have a capital M; and Table 3-5
+    (PDF 148; "Criticals" in the chapter, "Critical Damage" in the
+    book's list of tables) has no bookmark.  Two pages looked at by eye agree with the
+    headings by font: PDF 44 (printed 42; Highly Skilled, Illusion)
+    and PDF 92 (printed 90; Drop Shields to Low Penetration).
 12. **Checked against BESM Retro Second Edition and BESM1E** (AGENTS.md;
     Retro's PDF page is also its printed page + 2).  Retro sides with
     BESM2ER's entries against Table 2-2: Meld 2, 4 or 8 (Retro
