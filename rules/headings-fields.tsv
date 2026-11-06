@@ -1,0 +1,204 @@
+page	pdf	name	cost	type	stat	specializations
+20	22	Animal Friendship	1 point/Level	Normal	Soul	
+21	23	Appearance	1 point/Level	Normal	Body	
+21	23	Art of Distraction	1 point/Level	Normal	Body or Soul	
+22	24	Astral Projection	3 points/Level	Paranormal	None	
+22	24	Aura of Command	1 point/Level	Normal	Soul	
+23	25	Combat Mastery	2 points/Level	Normal	None (uses Combat Value)	
+23	25	Contamination	1 or 2 points/Level	Paranormal, Racial	None	
+24	26	Damn Healthy!	1 point/Level	Normal	None	
+25	27	Dimensional Portal	2, 3 or 4 points/Level	Paranormal, Technological	None	
+26	28	Divine Relationship	1 point/Level	Normal	None	
+26	28	Dynamic Sorcery	4 points/Level	Paranormal	Soul	
+28	30	Elasticity	1 point/Level	Racial, Technological	Body	
+28	30	Electronic Counter-Measures (ECM)	1 point/Level	Technological	Mind	
+29	31	Energy Bonus	1 point/Level	Normal	None	
+29	31	Environmental Control	1-2 points/Level	Paranormal or Technological	Mind	
+31	33	Exorcism	1 point/Level	Paranormal	Soul	
+31	33	Extra Arms	1 point/Level	Racial, Technological	None	
+32	34	Extra Attacks	4 points/Level	Normal	None	
+32	34	Features or Accessories	1 point/Level	Racial, Technological	None	
+33	35	Flight	3 or 4 points/Level	Universal	None	
+34	36	Flunkies	1 point/Level	Normal	Soul	
+35	37	Focused Damage	1 point/Level	Normal	None	
+35	37	Force Field	2, 3 or 4 Points/Level	Paranormal, Technological	None	
+36	38	Force Field Abilities				
+36	38	Force Field Disabilities				
+37	39	Ground Speed	2 points/Level	Technological	Body	
+38	40	Gun Bunny	1 point/Level	Normal	None (Combat Value)	
+39	41	Healing	4 points/Level	Paranormal, Technological	Body or Soul	
+40	42	Heavy Armour	4 points/Level	Technological	None	
+41	43	Heightened Awareness	1 point/Level	Normal	Body or Mind	
+41	43	Heightened Senses	1 point/Level	Racial, Technological	Body	
+42	44	Highly Skilled	1 point/Level	Normal	varies	
+42	44	Illusion	2-6 points/Level	Paranormal	Mind	
+43	45	Insubstantial	4 points/Level	Paranormal	None	
+44	46	Invisibility	3, 5 or 7 points/Level	Paranormal, Technological	None	
+45	47	Item of Power	2 points/Level	Paranormal or Technological	Usually none, but sometimes Soul	
+46	48	Jumping	1 point/Level	Racial, Technological	Body	
+46	48	Kensei	1 point/Level	Normal	None (Combat Value)	
+47	49	Life Support	1 point/Level	Paranormal, Technological	None	
+48	50	Light Armour	1 point/Level	Universal	None	
+48	50	Magic (and Psionics)	4 points/Level	Paranormal	None	
+50	52	Magic Options				
+51	53	Massive Damage	2 points/Level	Normal		
+52	54	Mechanical Genius	2 points/Level	Normal	Mind	
+53	55	Meld	2, 4, or 8 points/Level	Paranormal	None	
+53	55	Metamorphosis	5 points/Level	Paranormal or Technological	None	
+55	57	Mind Control	1-4 points/Level	Paranormal	Mind	
+56	58	Mind Shield	1 point/Level	Paranormal	Mind or Soul	
+57	59	Natural Weapons	1 point/level	Racial	None (Uses Attack Combat Value)	
+58	60	Organizational Ties	1-3 points/Level	Normal	Soul	
+59	61	Own a Big Mecha (OBM)	4 points/Level	Technological	None	
+62	64	Personal Gear	1 point/Level	Normal	None	
+63	65	Place of Power	1 point/Level	Paranormal	None; provides Energy Points	
+63	65	Precognition	1-2 points/level	Paranormal	Soul	
+64	66	Regeneration	4 points/Level	Paranormal, Racial	None	
+64	66	Reincarnation	3 points/Level	Paranormal, Technological	None	
+65	67	Sensors	1 point/Level	Technological (and Paranormal if Indirect)	Mind	
+66	68	Servant	1-2 points/Level	Universal	None	
+66	68	Shape Change	2-3 points/level	Paranormal, Racial	Body	
+67	69	Shield	1 point/Level	Technological	None (Defense Combat Value)	
+68	70	Sixth Sense	1 point/Level	Paranormal	Soul	
+69	71	Size Change	1-2 points/Level	Paranormal	Body	
+70	72	Space Flight	2 points/Level	Technological	None	
+71	73	Special Defense	1 point/Level	Universal	None	
+71	73	Special Movement	1 point/Level	Paranormal, Racial	Body	
+72	74	Speed	1 point/Level	Racial, Technological	Body	
+72	74	Spirit Ward	1 point/Level	Paranormal	Soul	
+73	75	Star Flight	2 points/Level	Technological	None	
+73	75	Stealth	1 point/Level	Paranormal, Technological	None	
+74	76	Super Strength	2 or 3 Points/Level	Racial, Technological	Body	
+74	76	Swarm	2 points/Level	Paranormal	Body	
+75	77	Telekinesis	1-2 points/Level	Paranormal, Technological	None (Attack Combat Value)	
+76	78	Telepathy	1-3 points/Level	Paranormal	Mind	
+78	80	Teleport	5 or 10 points/Level	Paranormal, Technological	Mind	
+78	80	Transmutation	1-4 points/Level	Paranormal	Mind	
+79	81	Tunnelling	2 points/Level	Racial, Technological	None	
+80	82	Unique Character Attribute	1-4 points/Level	Normal, Universal	Varies	
+80	82	Unique Character Attribute Sample — Wealth	3 points/Level	Normal	None	
+81	83	Water Speed	2 or 3 points/Level	Racial, Technological	None	
+81	83	Weapon Attack (or Special Attack)	4 points/Level	Universal	None (uses Attack Combat Value)	
+83	85	Weapon Attack Abilities				
+89	91	Attack Disabilities				
+93	95	Artificial Intelligence (A.I.)	2 points/Level	Mecha Only	Mind	
+94	96	Extra Capacity	1 point/Level	Mecha Only	None	
+94	96	Extra Endurance	1 point/Level	Mecha Only	None	
+94	96	Manoeuvre Bonus	1 point/Level	Mecha Only	Operator’s Body	
+95	97	Mecha Regeneration	4 points/Level	Mecha Only	None	
+95	97	Mechanical Transformation	2 or 4 points/Level	Mecha Only	None	
+96	98	Merging	2 points/Level	Mecha	None	
+97	99	Multiple Mecha Attacks	10 points/Level	Mecha Only	None	
+98	100	Special Equipment	2 points/Level	Mecha	Varies	
+98	100	Subordinate Mecha	1 point/Level	Mecha only	None	
+98	100	Summonable	4 points/Level	Mecha Only	None	
+99	101	Super Transformation	3 or 5 points/Level	Mecha Only	None	
+99	101	Toughness	4 points/Level	Mecha Only	None	
+101	103	Ageism		Normal		
+101	103	Attack Restriction		Normal		
+101	103	Awkward		Normal		
+101	103	Awkward Size		Special		
+102	104	Bane		Special		
+102	104	Cannot Talk		Normal		
+103	105	Conditional Ownership		Special		
+103	105	Cursed		Special		
+103	105	Diminutive		Special		
+104	106	Easily Distracted		Normal		
+104	106	Girl/Guy Magnet		Normal		
+105	107	Hangar Queen		Special		
+105	107	Inept Combat		Normal		
+105	107	Involuntary Physical Change		Special		
+105	107	Magical Restrictions		Special		
+106	108	Marked		Normal		
+106	108	Nemesis		Normal		
+107	109	Not So Fast		Normal		
+107	109	Not So Strong		Normal		
+107	109	Not So Tough		Normal		
+108	110	One Arm/No Arms		Normal		
+108	110	One-Way Transformation		Special		
+108	110	Owned By A Megacorp		Normal		
+108	110	Phobia		Normal		
+109	111	Physically Unappealing		Normal		
+109	111	Recurring Nightmares		Normal		
+109	111	Red Tape		Normal		
+110	112	Restricted Ground Movement		Special		
+110	112	Restricted Path		Special		
+110	112	Sensory Impairment		Normal		
+111	113	Significant Other (S.O.)		Normal		
+111	113	Skeleton in the Closet		Normal		
+112	114	Special Requirement		Special		
+112	114	Unique Character Defect		Normal or Special		
+112	114	Unique Defect Sample — Weak Point		Special		
+112	114	Unskilled		Normal		
+113	115	Volatile		Special		
+113	115	Vulnerability		Special		
+113	115	Wanted		Normal		
+114	116	Crew Requirement		Mecha-Only		
+114	116	Exposed Occupants		Mecha-Only		
+114	116	Limited Endurance		Mecha-Only		
+115	117	Mutual Damage		Mecha-Only		
+115	117	Noisy		Mecha-Only		
+115	117	Poor Manoeuvrability		Mecha-Only		
+115	117	Reduced Capacity		Mecha-Only		
+116	118	Start-Up Time		Mecha-Only		
+116	118	Summoning Object		Mecha-Only		
+116	118	Wind-Powered		Mecha-Only		
+117	119	Skill Point Costs				
+118	120	General vs. Combat Skills				
+118	120	Skills and Specialities				
+118	120	Using Skills				
+120	122	Acrobatics			Body	Balance, Flexibility, Jumps, Tumbling
+120	122	Animal Training			Soul	Any single animal such as dogs, horses, dolphins, etc.
+120	122	Architecture			Mind	Aquatic, Bridges, Small Buildings, Skyscrapers, Fortifications
+121	123	Artisan				Carpentry, Leatherworking, Metalworking, Plumbing, Tailoring, Woodworking
+121	123	Biological Sciences			Mind	Bacteria/Viruses, Botany, Ecology, Genetic Engineering, Physiology, Zoology
+121	123	Boating				Hovercraft, Large Ships, Small Boats, Submarines
+121	123	Burglary			Body or Mind	Breaking-and-Entering, Hot-Wiring, Safe Cracking.
+121	123	Business Management			Mind	Accounting, Banking, Fraud, Marketing, Recruitment, Securities, Small Business
+121	123	Computers			Mind	Artificial Intelligence, Databases, Intrusion/Security, Networks, Programming
+121	123	Controlled Breathing			Body	Cyclic Breathing, Holding Breath, Slow Heart Rate
+121	123	Cooking			Mind or Soul	Ethnic, Exotic, Fast Food, Gourmet, Home
+122	124	Cultural Arts			Mind	Art Appraisal, Archaeology, History, Literature, Occultism, Urban Legends
+122	124	Demolitions			Body or Mind	Artificial Structures, Bomb Disposal, Natural Structures, Safe Cracking, Underwater
+122	124	Disguise			Varies	Costume, Make-up, Prosthetics
+122	124	Driving			Body or Mind	Car, Big Rig (large tractor/trailer trucks), Motorcycle, Small Truck (vans, pick-ups, hi-cubes)
+122	124	Electronics			Mind	Communications, Computers, Consumer Electronics, Robotics, Security, Sensors
+122	124	Forgery			Mind	Electronic Documents, Handwriting, Paper Documents
+122	124	Gaming			Mind or Soul (Body for some video games)	Board Games, Gambling/Card Games, Computer Games, Military Simulations, Role-
+122	124	Interrogation			Mind or Soul	Drugs, Physical, Psychological
+123	125	Intimidation			Body, Mind or Soul	Business, Political, Street.
+123	125	Law			Mind	Civil, Criminal, Customs, Family, International, Political
+123	125	Linguistics			Mind	Any one language, Code Language, Sign Language, Braille
+123	125	Mechanics			Mind (sometimes Body)	Aeronautical, Armourer, Automotive, Gunsmith, Locksmith, Micro, Traps
+123	125	Medical			Mind (sometimes Body)	Acupuncture, Dentistry, Diagnosis, Emergency Response, Homeopathy, Pathology, Pharmacy, Surgery, Veterinary
+123	125	Military Sciences			Mind	Hardware Recognition, Intelligence Analysis, Logistics, Strategy, Tactics
+124	126	Navigation			Mind	Air, Highway, Sea, Urban, Wilderness
+124	126	Performing Arts			Average of Body, Mind and Soul	Comedy, Dance, Drama, Public
+124	126	Physical Sciences			Mind	A s t r o n o m y , B i o c h e m i s t r y, Chemistry, Physics
+124	126	Piloting			Average of Body and Mind	Heavy Airplane (usually multi-engine), Helicopter, Jet Fighter, Light Airplane (usually
+124	126	Poisons			Mind	Natural, Synthetic
+125	127	Police Sciences			Mind	Ballistics, Criminology, Forensics
+125	127	Riding			Body, Mind or Soul	By species (Horse, Camel, etc.).
+125	127	Seduction			Body or Soul, modified by Appearance	Male, Female
+125	127	Sleight of Hand			Body	Card Sharking, Lock Picking, Pick Pocketing, Stage Magic
+125	127	Social Sciences			Mind	Anthropology, Politics, Psychology, Social Work, Sociology, Theology
+125	127	Sports			Body (sometimes Mind or Soul)	Baseball, Basketball, Cricket, Hockey, Volleyball, etc.
+125	127	Stealth			Body (sometimes Mind)	Camouflage, Concealment, Silent Movement
+126	128	Swimming			Body	Competition, Deep-Sea Diving, Free Diving, Scuba, Snorkelling
+126	128	Urban Tracking			Mind	Academic, Corporate, Residential, Underworld
+126	128	Visual Arts			Varies (often the average of all three Stats)	Animation, Drawing, Flower Arranging, Painting, Photography, Sculpting, Video
+126	128	Wilderness Survival			Mind (sometimes Body)	Arctic, Aquatic, Desert, Forest, Jungle, Mountain
+126	128	Wilderness Tracking			Mind (sometimes Soul)	Arctic, Aquatic, Desert, Forest, Jungle, Mountain
+126	128	Writing			Average of Mind and Soul	Academic, Fiction, Journalistic, Poetic, Technical
+127	129	Archery			None (uses Attack Combat Value)	Bow, Crossbow
+127	129	Gun Combat			None (uses Attack Combat Value)	Autofire, Pistol, Rifle
+127	129	Heavy Weapons			None (uses Attack Combat Value)	Artillery (indirect fire weapons such as Howitzers), Gunnery (heavy machine guns, tank guns and other vehicle-mounted direct-fire weapons), Launchers (rocket and missile launchers)
+127	129	Melee Attack			None (uses Attack Combat Value)	Axe, Baton/Club, Knife, Improvised Weapons (chairs, lamps, ladders, etc.), Polearms
+127	129	Melee Defense			None (uses Defense Combat Value)	Axe, Baton/Club, Knife, Improvised Weapons (from the nearby area), Polearms
+127	129	Ranged Defense			None (uses Defense Combat Value)	Personal (on foot), Air Vehicle, Ground Vehicle, Water Vehicle, Space Vehicle.
+128	130	Thrown Weapons			None (uses Attack Combat Value)	Blades, Energy Blasts, Grenade, Rocks
+128	130	Unarmed Attack			None (uses Attack Combat Value)	Strikes, Holds, Throws, Wrestling
+128	130	Unarmed Defense			None (uses Defense Combat Value)	Strikes, Holds, Throws, Wrestling
+129	131	Combat Value				
+129	131	Health Points				
+129	131	Energy Points				

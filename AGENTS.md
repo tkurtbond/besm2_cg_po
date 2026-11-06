@@ -6,6 +6,19 @@ All of these programs should produce the same output, given the same input.
 
 A bookmarked copy of the BESM2ER rulebook is in `~/Reference/RPG/Dyskami/BESM/2E/BESM2ER_bookmarked.pdf`, and a text version created by pdftext is in `~/Reference/RPG/Dyskami/BESM/2E/BESM2ER-nolayout.text` and a text version created by "pdftext -layout" is in `~/Reference/RPG/Dyskami/BESM/2E/BESM2ER-layout.text`.
 
+There is also the BESM Retro 2nd Edition (BESMR2E), which was a republication of BESM2ER with some updates.  The pdf is in `~/Reference/RPG/Dyskami/BESM/2E/dys_besm_retro_second_edition_v1_0_3.pdf`, with text versions in `~/Reference/RPG/Dyskami/BESM/2E/dys_besm_retro_second_edition_v1_0_3-layout.text` and `~/Reference/RPG/Dyskami/BESM/2E/dys_besm_retro_second_edition_v1_0_3-nolayout.text`.  Perhaps this can be used to resolve some of the open questions resulting from BESM2ER's text.
+
+### BESM 1st Edition (BESM1E)
+
+The BESM 1st Edition PDFs are in `~/Reference/RPG/Dyskami/BESM/1E/`, each with `-layout.text` and `-nolayout.text` versions made by `pdftotext` (one form feed per PDF page):
+
+- `Big_Eyes_Small_Mouth_First_Edition.pdf` (87 pages): the 1st Edition rulebook.
+- `GdOr-BESM_FirstEdition.pdf` (87 pages): another copy of it.  Its pages carry the purchaser line, like BESM2ER.pdf's, so filter out `order #` whenever you read it.
+- `Big_Robots_Cool_Starships.pdf` (111 pages): BRCS, the 1st Edition mecha book.  Some fixture characters (the FV2021 Coleopteran) were converted from it to BESM2ER, so it explains names like Armour, Partial Armour and Super-Strength in those files.
+- `Hot_Rods_and_Gun_Bunnies.pdf` (123 pages): the 1st Edition vehicles and weapons book.
+
+Use these only to explain names and numbers in existing files; the rules the programs compute are BESM2ER's.
+
 
 Finally, there is a Peaseblossom Oberon Oberon-2 program ova_cg_po (in `~/Repos/RPG/Tools/ova_cg_po/`) using polibfyaml and pofltk (`~/Repos/Oberon/pofltk/`) that is a character generator for the OVA RPG.
 

@@ -1,0 +1,798 @@
+4	2	step	Foreword
+5	3	step	Table of Contents
+5	3	step	Table of Contents
+7	5	step	Chapter 1: Introduction
+7	5	step	What is Anime?
+7	5	item	Anime Origins
+8	6	step	Chapter 1: Introduction
+8	6	step	Anime Genres
+8	6	bullet	Mecha
+8	6	bullet	Magical Girl
+8	6	bullet	Hero Team (Sentai)
+8	6	bullet	Martial Arts
+9	7	bullet	Sports Anime
+9	7	bullet	Exotic Girlfriend
+9	7	bullet	Interdimensional Exiles
+9	7	step	Chapter 1: Introduction
+10	8	step	Chapter 1: Introduction
+10	8	bullet	Supernatural Action
+10	8	bullet	Samurai or Ninja Action
+10	8	bullet	Swords and Sorcery
+10	8	bullet	Weird Conspiracy
+10	8	bullet	Pet Monster
+11	9	step	Chapter 1: Introduction
+11	9	step	What is a Role-Playing Game?
+11	9	step	Playing Big Eyes, Small Mouth
+12	10	step	The (Revised) Second Edition
+12	10	step	Chapter 1: Introduction
+14	12	step	Chapter 2: Character Creation
+14	12	step	Character Creation Summary
+15	13	step	Step 1: GM Discussion
+15	13	step	Step 2: Character Outline
+15	13	bullet	Is the character human?
+15	13	step	Chapter 2: Character Creation
+16	14	bullet	What are the character’s strengths?
+16	14	bullet	What is the character like?
+16	14	bullet	What is the character’s name?
+16	14	step	Chapter 2: Character Creation
+17	15	step	Step 3: Assign Stats
+17	15	bullet	Body Stat
+17	15	bullet	Mind Stat
+17	15	bullet	Soul Stat
+17	15	step	Chapter 2: Character Creation
+18	16	step	Step 4: Character Attributes
+18	16	step	Chapter 2: Character Creation
+19	17	step	Types of Attributes
+19	17	bullet	Mecha
+19	17	bullet	Normal
+19	17	bullet	Paranormal
+19	17	bullet	Racial
+19	17	bullet	Technological
+19	17	bullet	Universal
+19	17	item	Modifying Attributes and Adjusting Attribute Point Costs
+19	17	step	Chapter 2: Character Creation
+20	18	step	Chapter 2: Character Creation
+21	19	step	Chapter 2: Character Creation
+22	20	item	Animal Friendship
+22	20	step	Chapter 2: Character Creation
+23	21	item	Appearance
+23	21	item	Art of Distraction
+23	21	step	Chapter 2: Character Creation
+24	22	item	Astral Projection
+24	22	item	Aura of Command
+24	22	step	Chapter 2: Character Creation
+25	23	item	Combat Mastery
+25	23	item	Contamination
+25	23	step	Chapter 2: Character Creation
+26	24	item	Damn Healthy!
+26	24	step	Chapter 2: Character Creation
+27	25	item	Dimensional Portal
+27	25	step	Chapter 2: Character Creation
+28	26	item	Divine Relationship
+28	26	item	Dynamic Sorcery
+28	26	step	Chapter 2: Character Creation
+29	27	step	Chapter 2: Character Creation
+30	28	item	Elasticity
+30	28	item	Electronic Counter-Measures (ECM)
+30	28	bullet	Commo Jamming
+30	28	bullet	Missile Jamming
+30	28	bullet	Sensor Jamming
+30	28	step	Chapter 2: Character Creation
+31	29	item	Energy Bonus
+31	29	item	Environmental Control
+31	29	bullet	Light
+31	29	bullet	Darkness
+31	29	step	Chapter 2: Character Creation
+32	30	bullet	Silence
+32	30	bullet	Temperature
+32	30	bullet	Weather
+32	30	step	Chapter 2: Character Creation
+33	31	item	Exorcism
+33	31	item	Extra Arms
+33	31	step	Chapter 2: Character Creation
+34	32	item	Extra Attacks
+34	32	item	Features or Accessories
+34	32	step	Chapter 2: Character Creation
+35	33	item	Flight
+35	33	step	Chapter 2: Character Creation
+36	34	bullet	Skimmer / Hovercraft
+36	34	bullet	Glider
+36	34	item	Flunkies
+36	34	step	Chapter 2: Character Creation
+37	35	item	Focused Damage
+37	35	item	Force Field
+37	35	step	Chapter 2: Character Creation
+38	36	step	Chapter 2: Character Creation
+38	36	item	Force Field Abilities
+38	36	bullet	Blocks Incorporeal
+38	36	bullet	Blocks Teleport
+38	36	bullet	Field-Penetrating
+38	36	bullet	Offensive
+38	36	item	Force Field Disabilities
+38	36	bullet	Both Directions
+38	36	bullet	Internal
+38	36	bullet	Limited
+38	36	bullet	Shield Only
+39	37	bullet	Static
+39	37	bullet	Uses Energy
+39	37	item	Ground Speed
+39	37	step	Chapter 2: Character Creation
+40	38	item	Gun Bunny
+40	38	bullet	Dead Eye
+40	38	bullet	Lightning Draw
+40	38	bullet	One Bullet Left
+40	38	bullet	Portable Armoury
+40	38	bullet	Steady Hand
+40	38	bullet	Two Gun
+40	38	bullet	Weapons Encyclopedia
+40	38	step	Chapter 2: Character Creation
+41	39	item	Healing
+41	39	step	Chapter 2: Character Creation
+42	40	item	Heavy Armour
+42	40	bullet	Partial
+42	40	bullet	Hidden Armour
+42	40	bullet	Optimized Armour
+42	40	step	Chapter 2: Character Creation
+43	41	item	Heightened Awareness
+43	41	item	Heightened Senses
+43	41	step	Chapter 2: Character Creation
+44	42	item	Highly Skilled
+44	42	item	Illusion
+44	42	step	Chapter 2: Character Creation
+45	43	item	Insubstantial
+45	43	bullet	Liquid Form
+45	43	bullet	Gaseous Form
+45	43	step	Chapter 2: Character Creation
+46	44	bullet	Incorporeal Form
+46	44	item	Invisibility
+46	44	step	Chapter 2: Character Creation
+47	45	item	Item of Power
+47	45	step	Chapter 2: Character Creation
+48	46	item	Jumping
+48	46	item	Kensei
+48	46	bullet	Blind Fighting
+48	46	bullet	Chanbara Master
+48	46	bullet	Judge Opponent
+48	46	step	Chapter 2: Character Creation
+49	47	bullet	Katanaspace
+49	47	bullet	Lightning Draw
+49	47	bullet	Precise Stroke
+49	47	bullet	Two Weapons
+49	47	item	Life Support
+49	47	step	Chapter 2: Character Creation
+50	48	item	Light Armour
+50	48	bullet	Partial
+50	48	bullet	Hidden Armour
+50	48	bullet	Optimized
+50	48	item	Magic (and Psionics)
+50	48	step	Chapter 2: Character Creation
+51	49	step	Chapter 2: Character Creation
+52	50	step	Chapter 2: Character Creation
+52	50	item	Magic Options
+52	50	bullet	Focus
+53	51	bullet	Ritual
+53	51	bullet	Silent
+53	51	bullet	Still
+53	51	item	Massive Damage
+53	51	step	Chapter 2: Character Creation
+54	52	item	Mechanical Genius
+54	52	step	Chapter 2: Character Creation
+55	53	item	Meld
+55	53	item	Metamorphosis
+55	53	step	Chapter 2: Character Creation
+56	54	step	Chapter 2: Character Creation
+57	55	item	Mind Control
+57	55	step	Chapter 2: Character Creation
+58	56	item	Mind Shield
+58	56	step	Chapter 2: Character Creation
+59	57	item	Natural Weapons
+59	57	bullet	Claws or Spikes
+59	57	bullet	Fangs, Beak, or Mandibles
+59	57	bullet	Horns
+59	57	bullet	Spines
+59	57	step	Chapter 2: Character Creation
+60	58	bullet	Tail Striker
+60	58	bullet	Tentacles
+60	58	item	Organizational Ties
+60	58	step	Chapter 2: Character Creation
+61	59	item	Own a Big Mecha (OBM)
+61	59	step	Chapter 2: Character Creation
+62	60	step	Chapter 2: Character Creation
+62	60	bullet	Mecha Stats
+62	60	bullet	Multiple Mecha
+62	60	bullet	Shared Mecha
+63	61	bullet	Living vs. Non-Living Mecha
+63	61	bullet	Less Powerful
+63	61	step	Chapter 2: Character Creation
+64	62	item	Personal Gear
+64	62	bullet	Minor
+64	62	bullet	Major
+64	62	bullet	Mundane
+64	62	step	Chapter 2: Character Creation
+65	63	item	Place of Power
+65	63	item	Precognition
+65	63	step	Chapter 2: Character Creation
+66	64	item	Regeneration
+66	64	item	Reincarnation
+66	64	step	Chapter 2: Character Creation
+67	65	item	Sensors
+67	65	bullet	Underwater Sensors
+67	65	bullet	Analytic Sensors
+67	65	bullet	Indirect Sensors
+67	65	step	Chapter 2: Character Creation
+68	66	item	Servant
+68	66	item	Shape Change
+68	66	step	Chapter 2: Character Creation
+69	67	item	Shield
+69	67	step	Chapter 2: Character Creation
+70	68	item	Sixth Sense
+70	68	bullet	Detect Evil
+70	68	bullet	Detect Magic
+70	68	bullet	Detect Virtue
+70	68	step	Chapter 2: Character Creation
+71	69	bullet	Empathy
+71	69	bullet	Sense Spirits
+71	69	bullet	Sense Truth
+71	69	item	Size Change
+71	69	step	Chapter 2: Character Creation
+72	70	item	Space Flight
+72	70	step	Chapter 2: Character Creation
+73	71	item	Special Defense
+73	71	item	Special Movement
+73	71	bullet	Balance
+73	71	bullet	Cat-Like
+73	71	bullet	Light-footed
+73	71	bullet	Untrackable
+73	71	bullet	Wall-Crawling
+73	71	bullet	Water-Walking
+73	71	step	Chapter 2: Character Creation
+74	72	item	Speed
+74	72	item	Spirit Ward
+74	72	step	Chapter 2: Character Creation
+75	73	item	Star Flight
+75	73	item	Stealth
+75	73	step	Chapter 2: Character Creation
+76	74	item	Super Strength
+76	74	item	Swarm
+76	74	step	Chapter 2: Character Creation
+77	75	item	Telekinesis
+77	75	step	Chapter 2: Character Creation
+78	76	bullet	Air
+78	76	bullet	Earth
+78	76	bullet	Metal
+78	76	bullet	Water
+78	76	bullet	Wood
+78	76	item	Telepathy
+78	76	step	Chapter 2: Character Creation
+79	77	step	Chapter 2: Character Creation
+80	78	item	Teleport
+80	78	item	Transmutation
+80	78	step	Chapter 2: Character Creation
+81	79	item	Tunnelling
+81	79	step	Chapter 2: Character Creation
+82	80	item	Unique Character Attribute
+82	80	item	Unique Character Attribute Sample — Wealth
+82	80	step	Chapter 2: Character Creation
+83	81	item	Water Speed
+83	81	item	Weapon Attack (or Special Attack)
+83	81	step	Chapter 2: Character Creation
+84	82	step	Chapter 2: Character Creation
+84	82	bullet	Alternate Attacks
+84	82	bullet	Mecha Weapon Attacks and Different Gunners
+85	83	bullet	Hand-Held Weapons
+85	83	bullet	Personal Gear
+85	83	item	Weapon Attack Abilities
+85	83	bullet	Accurate
+85	83	bullet	Affects Incorporeal
+85	83	step	Chapter 2: Character Creation
+86	84	bullet	Area Effect
+86	84	bullet	Aura
+86	84	bullet	Auto-Fire
+86	84	bullet	Burning
+86	84	step	Chapter 2: Character Creation
+87	85	step	Chapter 2: Character Creation
+87	85	bullet	Concealable
+87	85	bullet	Contagious
+87	85	bullet	Drain Body
+87	85	bullet	Drain Energy
+87	85	bullet	Drain Mind
+87	85	bullet	Drain Soul
+88	86	step	Chapter 2: Character Creation
+88	86	bullet	Flare
+88	86	bullet	Flexible
+88	86	bullet	Homing
+88	86	bullet	Incapacitating
+88	86	bullet	Incurable
+88	86	bullet	Indirect
+89	87	step	Chapter 2: Character Creation
+89	87	bullet	Irritant
+89	87	bullet	Linked (Attack)
+89	87	bullet	Linked (Attribute)
+89	87	bullet	Long Range
+89	87	bullet	Muscle-Powered
+90	88	step	Chapter 2: Character Creation
+90	88	bullet	No Regeneration
+90	88	bullet	Penetrating (Armour)
+90	88	bullet	Penetrating (Force Field)
+90	88	bullet	Quake
+90	88	bullet	Soul Attack
+90	88	bullet	Spreading
+90	88	bullet	Stun
+90	88	bullet	Tangle
+91	89	bullet	Trap
+91	89	bullet	Unique Ability
+91	89	bullet	Vampiric
+91	89	item	Attack Disabilities
+91	89	bullet	Backblast
+91	89	step	Chapter 2: Character Creation
+92	90	step	Chapter 2: Character Creation
+92	90	bullet	Drop Shields
+92	90	bullet	Exposed (Mecha Only)
+92	90	bullet	Extra Energy
+92	90	bullet	Fixed (Mecha Only)
+92	90	bullet	Inaccurate
+92	90	bullet	Internal
+92	90	bullet	Limited Shots
+92	90	bullet	Low Penetration
+93	91	step	Chapter 2: Character Creation
+93	91	bullet	Melee
+93	91	bullet	No Damage
+93	91	bullet	Only In (Environment)
+93	91	bullet	Self-Destruct
+93	91	bullet	Short Range
+93	91	bullet	Slow
+93	91	bullet	Static
+93	91	bullet	Stoppable
+94	92	bullet	Toxic
+94	92	bullet	Unique Weapon Disability
+94	92	bullet	Unreliable
+94	92	bullet	Uses Energy
+94	92	step	Chapter 2: Character Creation
+95	93	step	Mecha-Only Attributes
+95	93	item	Artificial Intelligence (A.I.)
+95	93	bullet	Basic Remote Control
+95	93	bullet	Advanced Remote Control
+95	93	bullet	Semi-Autonomous
+95	93	bullet	Intelligent
+95	93	step	Chapter 2: Character Creation
+96	94	item	Extra Capacity
+96	94	item	Extra Endurance
+96	94	item	Manoeuvre Bonus
+96	94	step	Chapter 2: Character Creation
+97	95	item	Mecha Regeneration
+97	95	item	Mechanical Transformation
+97	95	step	Chapter 2: Character Creation
+98	96	item	Merging
+98	96	step	Chapter 2: Character Creation
+99	97	item	Multiple Mecha Attacks
+99	97	step	Chapter 2: Character Creation
+100	98	item	Special Equipment
+100	98	item	Subordinate Mecha
+100	98	item	Summonable
+100	98	step	Chapter 2: Character Creation
+101	99	item	Super Transformation
+101	99	item	Toughness
+101	99	step	Chapter 2: Character Creation
+102	100	step	Step 5: Character Defects
+102	100	step	Chapter 2: Character Creation
+103	101	item	Ageism
+103	101	item	Attack Restriction
+103	101	item	Awkward
+103	101	item	Awkward Size
+103	101	step	Chapter 2: Character Creation
+104	102	item	Bane
+104	102	item	Cannot Talk
+104	102	step	Chapter 2: Character Creation
+105	103	item	Conditional Ownership
+105	103	item	Cursed
+105	103	item	Diminutive
+105	103	step	Chapter 2: Character Creation
+106	104	item	Easily Distracted
+106	104	item	Girl/Guy Magnet
+106	104	step	Chapter 2: Character Creation
+107	105	item	Hangar Queen
+107	105	item	Inept Combat
+107	105	item	Involuntary Physical Change
+107	105	item	Magical Restrictions
+107	105	step	Chapter 2: Character Creation
+108	106	item	Marked
+108	106	item	Nemesis
+108	106	step	Chapter 2: Character Creation
+109	107	item	Not So Fast
+109	107	item	Not So Strong
+109	107	item	Not So Tough
+109	107	step	Chapter 2: Character Creation
+110	108	item	One Arm/No Arms
+110	108	item	One-Way Transformation
+110	108	item	Owned By A Megacorp
+110	108	item	Phobia
+110	108	step	Chapter 2: Character Creation
+111	109	item	Physically Unappealing
+111	109	item	Recurring Nightmares
+111	109	item	Red Tape
+111	109	step	Chapter 2: Character Creation
+112	110	item	Restricted Ground Movement
+112	110	item	Restricted Path
+112	110	item	Sensory Impairment
+112	110	step	Chapter 2: Character Creation
+113	111	item	Significant Other (S.O.)
+113	111	item	Skeleton in the Closet
+113	111	step	Chapter 2: Character Creation
+114	112	item	Special Requirement
+114	112	item	Unique Character Defect
+114	112	item	Unique Defect Sample — Weak Point
+114	112	item	Unskilled
+114	112	step	Chapter 2: Character Creation
+115	113	item	Volatile
+115	113	item	Vulnerability
+115	113	item	Wanted
+115	113	step	Chapter 2: Character Creation
+116	114	step	Mecha-Only Defects
+116	114	item	Crew Requirement
+116	114	item	Exposed Occupants
+116	114	item	Limited Endurance
+116	114	step	Chapter 2: Character Creation
+117	115	item	Mutual Damage
+117	115	item	Noisy
+117	115	item	Poor Manoeuvrability
+117	115	item	Reduced Capacity
+117	115	step	Chapter 2: Character Creation
+118	116	item	Start-Up Time
+118	116	item	Summoning Object
+118	116	item	Wind-Powered
+118	116	step	Chapter 2: Character Creation
+119	117	step	Step 6: Skill System
+119	117	item	Skill Point Costs
+119	117	step	Chapter 2: Character Creation
+120	118	item	General vs. Combat Skills
+120	118	item	Skills and Specialities
+120	118	item	Using Skills
+120	118	step	Chapter 2: Character Creation
+121	119	step	Chapter 2: Character Creation
+122	120	step	Chapter 2: Character Creation
+122	120	step	Skill Descriptions — General Skills
+122	120	item	Acrobatics
+122	120	item	Animal Training
+122	120	item	Architecture
+123	121	step	Chapter 2: Character Creation
+123	121	item	Artisan
+123	121	item	Biological Sciences
+123	121	item	Boating
+123	121	item	Burglary
+123	121	item	Business Management
+123	121	item	Computers
+123	121	item	Controlled Breathing
+123	121	item	Cooking
+124	122	step	Chapter 2: Character Creation
+124	122	item	Cultural Arts
+124	122	item	Demolitions
+124	122	item	Disguise
+124	122	item	Driving
+124	122	item	Electronics
+124	122	item	Forgery
+124	122	item	Gaming
+124	122	item	Interrogation
+125	123	step	Chapter 2: Character Creation
+125	123	item	Intimidation
+125	123	item	Law
+125	123	item	Linguistics
+125	123	item	Mechanics
+125	123	item	Medical
+125	123	item	Military Sciences
+126	124	step	Chapter 2: Character Creation
+126	124	item	Navigation
+126	124	item	Performing Arts
+126	124	item	Physical Sciences
+126	124	item	Piloting
+126	124	item	Poisons
+127	125	step	Chapter 2: Character Creation
+127	125	item	Police Sciences
+127	125	item	Riding
+127	125	item	Seduction
+127	125	item	Sleight of Hand
+127	125	item	Social Sciences
+127	125	item	Sports
+127	125	item	Stealth
+128	126	step	Chapter 2: Character Creation
+128	126	item	Swimming
+128	126	item	Urban Tracking
+128	126	item	Visual Arts
+128	126	item	Wilderness Survival
+128	126	item	Wilderness Tracking
+128	126	item	Writing
+129	127	step	Chapter 2: Character Creation
+129	127	step	Skill Descriptions — Combat Skills
+129	127	item	Archery
+129	127	item	Gun Combat
+129	127	item	Heavy Weapons
+129	127	item	Melee Attack
+129	127	item	Melee Defense
+129	127	item	Ranged Defense
+130	128	step	Chapter 2: Character Creation
+130	128	item	Thrown Weapons
+130	128	item	Unarmed Attack
+130	128	item	Unarmed Defense
+131	129	step	Step 7: Derived Values
+131	129	item	Combat Value
+131	129	item	Health Points
+131	129	item	Energy Points
+131	129	step	Chapter 2: Character Creation
+132	130	item	Shock Value (Optional)
+132	130	step	Step 8: Background Points
+132	130	step	Chapter 2: Character Creation
+133	131	item	Tabitha Yamamoto
+133	131	step	Chapter 2: Character Creation
+135	133	step	Tri-Stat Game Mechanics
+135	133	step	The Passage of Time
+135	133	step	Taking Action
+135	133	step	Chapter 3: Game Mechanics
+136	134	item	Dice and Dice Rolls
+136	134	item	Stat Checks
+136	134	step	Chapter 3: Game Mechanics
+137	135	step	Chapter 3: Game Mechanics
+138	136	item	Skill Checks
+138	136	step	Chapter 3: Game Mechanics
+139	137	step	Combat Dice Rolls
+139	137	step	Chapter 3: Game Mechanics
+140	138	step	Chapter 3: Game Mechanics
+140	138	item	Using Attributes
+140	138	step	When to Roll Dice
+140	138	bullet	Roll dice when...
+140	138	bullet	Do not roll dice when...
+141	139	step	Chapter 3: Game Mechanics
+141	139	step	Combat
+141	139	step	Combat Flowchart
+141	139	step	Start
+142	140	item	Combat Rounds
+142	140	item	Initiative
+142	140	item	Character Action
+142	140	step	Chapter 3: Game Mechanics
+143	141	step	Chapter 3: Game Mechanics
+143	141	item	Movement in Combat
+144	142	step	Chapter 3: Game Mechanics
+144	142	item	Offensive Actions
+144	142	item	Melee vs. Ranged Attacks
+144	142	bullet	Melee
+144	142	bullet	Short
+145	143	bullet	Medium
+145	143	bullet	Long
+145	143	item	Attack Roll Modifiers
+145	143	step	Chapter 3: Game Mechanics
+146	144	step	Non-Combat Actions
+146	144	step	Chapter 3: Game Mechanics
+147	145	step	Defensive Actions
+147	145	bullet	Indefensible Attacks
+147	145	bullet	Shields and Force Fields (with Shield disability)
+147	145	step	Chapter 3: Game Mechanics
+148	146	step	Damage
+148	146	item	Delivering Damage
+148	146	bullet	Unarmed Combat
+148	146	bullet	Weapon/Special Attack Attribute or Hand-Held Weapons
+148	146	item	Critical Damage
+148	146	step	Chapter 3: Game Mechanics
+149	147	step	Chapter 3: Game Mechanics
+149	147	item	Armour, Force Fields and Damage
+149	147	item	Damage and Health Points
+149	147	item	Effects of Damage to a Character
+149	147	item	Effects of Damage to a Mecha
+149	147	bullet	Crippled Mecha
+149	147	bullet	Destroyed Mecha
+149	147	bullet	Occupant Injuries
+150	148	step	Recovery
+150	148	item	Recovering Health Points
+150	148	item	Recovering Energy Points
+150	148	item	Repairs
+150	148	step	Chapter 3: Game Mechanics
+151	149	step	Chapter 3: Game Mechanics
+151	149	step	Weaponry and Equipment
+151	149	item	Personal Weapons
+152	150	step	Chapter 3: Game Mechanics
+153	151	item	Body Armour
+153	151	bullet	Leather Jacket
+153	151	bullet	Light Mail
+153	151	bullet	Partial Metal Armour
+153	151	bullet	Complete Heavy Metal Armour
+153	151	bullet	Bullet Proof Vest
+153	151	bullet	Tactical Body Armour
+153	151	bullet	Gas Mask
+153	151	bullet	Space Suit
+153	151	step	Chapter 3: Game Mechanics
+155	153	step	Chapter 4:Expanded Game Mechanics
+155	153	step	Expanded Movement Rules
+155	153	item	Acceleration and Deceleration
+155	153	item	Climbing and Diving
+155	153	item	Jumping
+155	153	item	Crashing
+156	154	item	Falling
+156	154	item	Ramming
+156	154	step	Chapter 4:Expanded Game Mechanics
+157	155	step	Chapter 4:Expanded Game Mechanics
+157	155	item	Space Movement
+158	156	step	Chapter 4:Expanded Game Mechanics
+158	156	step	Expanded Combat Rules — Attacks
+158	156	item	Extra Aim
+158	156	item	Attacks With Two Weapons
+158	156	item	Called Shots
+158	156	bullet	Called Shot — Disarming
+158	156	bullet	Called Shot to Vital Spot
+159	157	step	Chapter 4:Expanded Game Mechanics
+159	157	bullet	Called Shot to Weak Point
+159	157	bullet	Called Shot to Partial Armour
+159	157	bullet	Called Shot: Ricochet Attack
+159	157	item	Fast Draw and Attack
+160	158	item	Striking to Wound
+160	158	item	Firing Personal Weapons from within a Mecha
+160	158	item	Range Modifiers
+160	158	item	Throwing Heavy Things
+160	158	item	Total Attack
+160	158	item	Trick Shots
+160	158	step	Chapter 4:Expanded Game Mechanics
+161	159	step	Chapter 4:Expanded Game Mechanics
+161	159	item	Wrestling and Grab Attacks
+161	159	bullet	Tackle
+161	159	bullet	Disarming via Wrestling
+161	159	bullet	Strangling
+161	159	bullet	Throws
+162	160	step	Chapter 4:Expanded Game Mechanics
+162	160	bullet	Pinning
+162	160	bullet	Escaping
+162	160	bullet	Biting
+162	160	step	Expanded Combat Rules — Defending
+162	160	item	Total Defense
+163	161	step	Chapter 4:Expanded Game Mechanics
+163	161	step	Expanded Combat Rules — Damage
+163	161	item	Shock Value
+164	162	step	Chapter 4:Expanded Game Mechanics
+165	163	step	Chapter 4:Expanded Game Mechanics
+165	163	step	Mind Combat
+165	163	step	Psyche
+166	164	item	Supernatural Beings
+166	164	item	Failed Psyche Checks
+166	164	step	Chapter 4:Expanded Game Mechanics
+167	165	step	Destroying Buildings and Planets
+167	165	item	Blowing Up Worlds
+167	165	step	Chapter 4:Expanded Game Mechanics
+168	166	step	Staged Stat Cost — Optional Rule
+168	166	item	Stat Ratings
+168	166	step	Unknown Superhuman Power — Optional Attribute
+168	166	step	Chapter 4:Expanded Game Mechanics
+170	168	step	Chapter 5: Role-Playing in Anime
+170	168	step	Campaigns, Mini-Campaigns, and One-Shots
+170	168	item	Campaigns
+170	168	item	Mini-Campaigns
+170	168	item	One-Shot Adventures
+171	169	step	Chapter 5: Role-Playing in Anime
+171	169	step	Choice of Genre
+171	169	bullet	Alien Visitors
+171	169	bullet	Exotic Girlfriend
+172	170	step	Chapter 5: Role-Playing in Anime
+172	170	bullet	Gun Bunnies
+172	170	bullet	Hero Teams or Magical Girls
+172	170	bullet	Heroic Fantasy
+172	170	bullet	Hot Rods
+172	170	bullet	Idols or Sports
+172	170	bullet	Interdimensional Exiles
+172	170	bullet	Martial Arts
+172	170	bullet	Mecha
+173	171	step	Chapter 5: Role-Playing in Anime
+173	171	bullet	Period Piece
+173	171	bullet	Pet Monster
+173	171	bullet	Science Fiction
+173	171	bullet	School Days
+173	171	bullet	Space Opera
+173	171	bullet	Supernatural
+174	172	step	Chapter 5: Role-Playing in Anime
+174	172	step	Creating a Game Setting
+174	172	item	Period
+174	172	bullet	Samurai Japan
+175	173	step	Chapter 5: Role-Playing in Anime
+175	173	bullet	Other Pre-Industrial Periods
+175	173	bullet	Recent History
+175	173	bullet	Alternate History
+175	173	bullet	Modern Day
+175	173	bullet	Near Future
+176	174	bullet	Far Future
+176	174	bullet	Another World: Fantasy
+176	174	step	Chapter 5: Role-Playing in Anime
+177	175	step	Chapter 5: Role-Playing in Anime
+177	175	bullet	Another Universe: Science Fiction
+177	175	item	Category: Action, Drama, Comedy, and Romance
+177	175	bullet	Action
+177	175	bullet	Drama
+177	175	bullet	Comedy
+177	175	bullet	Romance
+177	175	bullet	Mixed
+178	176	item	Game Concept and Theme
+178	176	item	Journey to the East
+178	176	item	Atlantis Rising
+178	176	step	Chapter 5: Role-Playing in Anime
+179	177	step	Chapter 5: Role-Playing in Anime
+179	177	item	Magical Bug Hunter Keiko!
+179	177	item	Veterans of the Psychic Wars
+180	178	item	Legends of the Galactic Empire
+180	178	item	Voyagers of the New Dawn
+180	178	step	World Building
+180	178	step	Chapter 5: Role-Playing in Anime
+181	179	step	Chapter 5: Role-Playing in Anime
+181	179	step	The Supporting Cast
+181	179	item	Organizations
+181	179	item	Paranormal Powers, High Technology, Non-Human Races
+181	179	step	Designing Adventures
+181	179	item	Story Line
+182	180	item	Character Goals
+182	180	item	Plot Elements
+182	180	step	Chapter 5: Role-Playing in Anime
+183	181	step	Chapter 5: Role-Playing in Anime
+183	181	item	Important NPCs
+183	181	item	Presenting the Villains
+184	182	step	Fan Service
+184	182	bullet	Attack Phrases
+184	182	bullet	Cute Androids
+184	182	bullet	Cat Girls
+184	182	bullet	Bosozoku
+184	182	step	Chapter 5: Role-Playing in Anime
+185	183	step	Chapter 5: Role-Playing in Anime
+185	183	bullet	Bishonen
+185	183	bullet	Ki Powers
+185	183	bullet	Collateral Damage
+185	183	bullet	Cute Pets
+185	183	bullet	The Great Tokyo Earthquake
+185	183	bullet	Dying Speeches
+185	183	bullet	Elves
+186	184	bullet	Face Cuts
+186	184	bullet	Giant Piloted Robots
+186	184	bullet	Ghosts
+186	184	bullet	Hyper-Dimensional Hammer
+186	184	bullet	Idol Singers
+186	184	bullet	Karmic Bonds
+186	184	step	Chapter 5: Role-Playing in Anime
+187	185	step	Chapter 5: Role-Playing in Anime
+187	185	bullet	Kendo
+187	185	bullet	Kitsune
+187	185	bullet	Kyudo
+187	185	bullet	Late for School
+187	185	bullet	Main Gun
+187	185	bullet	Mascots
+187	185	bullet	Mecha Children
+188	186	bullet	Mecha Inventors
+188	186	bullet	Girls Next Door vs. Exotic Girl Friends
+188	186	bullet	Mecha Bases
+188	186	bullet	Naughty Tentacles
+188	186	bullet	Nose Bleeds
+188	186	bullet	Ofuda
+188	186	bullet	Oni
+188	186	bullet	Public Baths and Hot Springs
+188	186	step	Chapter 5: Role-Playing in Anime
+189	187	step	Chapter 5: Role-Playing in Anime
+189	187	bullet	SDF
+189	187	bullet	School Uniforms
+189	187	bullet	Terrible Cooks
+189	187	bullet	Tokyo Tower
+189	187	bullet	Transformation Sequences
+189	187	bullet	Transforming Mecha
+189	187	bullet	Yakuza
+190	188	step	Character Advancement
+190	188	step	Chapter 5: Role-Playing in Anime
+191	189	step	Chapter 5: Role-Playing in Anime
+191	189	step	Advice for the GM
+192	190	step	Advice for the Player
+192	190	step	Chapter 5: Role-Playing in Anime
+193	191	step	Reference: Contributor Biographies
+194	192	step	Reference
+194	192	step	Bibliography
+195	193	step	Reference
+196	194	step	Reference
+197	195	step	Reference
+197	195	item	Books
+197	195	item	Magazines
+197	195	item	Usenet Newsgroups
+197	195	item	World Wide Web
+198	196	step	Reference: Index
+199	197	step	Reference: Index
+200	198	step	Reference: Index
+201	199	step	Reference: Index
+202	200	step	Reference: Index
+203	201	step	Reference: Index
+204	202	step	Reference: Character Sheet
+205	203	step	Reference: Character Sheet
+206	204	step	Reference: Character Sheet

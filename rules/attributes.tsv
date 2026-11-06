@@ -1,0 +1,100 @@
+page	pdf	name	cost-rule	options	max-level	subject	grants	notes
+20	22	Animal Friendship	fixed 1/Level		6	no	Skill Animal Training +1/+1/+2/+2/+3/+3 at Levels 1-6	bonus = ceil(Level/2)
+21	23	Appearance	fixed 1/Level		6	no	Art of Distraction +1/+2/+3 at Levels 4/5/6	
+21	23	Art of Distraction	fixed 1/Level		6	no		stat Body or Soul
+22	24	Astral Projection	fixed 3/Level		6	no		
+22	24	Aura of Command	fixed 1/Level		6	no		
+23	25	Combat Mastery	fixed 2/Level		6	no	Combat Value +1/Level	
+23	25	Contamination	per-Level by ease of spread	difficult=1; easy=2	6	no		option rule on p. 24
+24	26	Damn Healthy!	fixed 1/Level		6	no	Health Points +10/Level	
+25	27	Dimensional Portal	per-Level by portal kind, plus flat extras	fixed portal=2; mobile=3; class of objects=4; each extra aperture=+1 flat	6	yes: dimension	none	repeatable, once per dimension
+26	28	Divine Relationship	fixed 1/Level		6	no		
+26	28	Dynamic Sorcery	per-Level by scope	full=4; one discipline=2; other reality only=1	6	no		not allowed for mecha; items.tsv cost shows only 4
+28	30	Elasticity	fixed 1/Level		2	no		Table 2-2 type Racial; text Racial, Technological
+28	30	ECM	1/Level first type, +1 flat per extra type	Commo Jamming; Missile Jamming; Sensor Jamming	6	yes: jamming types		extra types work at same Level
+29	31	Energy Bonus	fixed 1/Level		6	no	Energy Points +10/Level	
+29	31	Environmental Control	per-Level sum of chosen effects	Light=1; Darkness partial=1; Darkness total=2; Silence barrier=1; Silence zone=2; Temperature one direction=1; Temperature both=2; Weather specific=1; Weather general=2	6	yes: effect(s)		effects combine (costs add) or bought separately; book example Total Darkness L5=10 (p. 30)
+31	33	Exorcism	fixed 1/Level		6	no		
+31	33	Extra Arms	fixed 1/Level		6	no		
+32	34	Extra Attacks	fixed 4/Level		6	no		
+32	34	Features or Accessories	fixed 1/Level		6	yes: list of features		count by Level 1; 2-3; 4-6; 7-12; 13-20; 21-50
+33	35	Flight	per-Level by hover	can hover=4; cannot hover=3; Skimmer/Hovercraft=-1 flat (hover only); Glider=-2 flat	6	no		options on p. 34, Skimmer and Glider exclusive
+34	36	Flunkies	fixed 1/Level		6	no		each flunky 10 CP + Defects; count by Level 1; 2; 3-4; 5-7; 8-12; 13-20; distinct-stat flunky counts as 2
+35	37	Focused Damage	fixed 1/Level		6	yes: one attack	Damage +5/Level to that attack	
+35	37	Force Field	per-Level by coverage	extendable/area=4; self only=3; wall=2	6	no		stops 15/Level; each Ability -15 stop, each Disability +15. Abilities p. 36: Blocks Incorporeal; Blocks Teleport; Field-Penetrating; Offensive (counts 2). Disabilities pp. 36-37: Both Directions; Internal; Limited (minor 1, major 2); Shield Only (counts 2); Static; Uses Energy. Book example L5 extendable + Field-Penetrating=20 pts, stops 60
+37	39	Ground Speed	fixed 2/Level		6	no		
+38	40	Gun Bunny	fixed 1/Level		6	yes: one ability per Level		abilities pp. 38-39: Dead Eye; Lightning Draw; One Bullet Left; Portable Armoury; Steady Hand; Two Gun; Weapons Encyclopedia
+39	41	Healing	fixed 4/Level		6	no		text stat Body or Soul; Table 2-2 Soul
+40	42	Heavy Armour	fixed 4/Level, flat reductions	Partial thin area=-1 flat; Partial unarmoured area=-2 flat; Hidden Armour; Optimized Armour	6	no		10 armour/Level (4 if Hidden); minimum cost 1
+41	43	Heightened Awareness	fixed 1/Level		2	no		
+41	43	Heightened Senses	fixed 1/Level		6	yes: one sense per Level		Hearing; Smell; Vision; Taste; Touch; same sense may be taken twice. Table 2-2 type Universal; text Racial, Technological
+42	44	Highly Skilled	fixed 1/Level		open (e.g. 11)	no	Skill Points +10/Level	stat varies
+42	44	Illusion	per-Level by senses, plus flat extras	1 sense=2; 2=3; 3=4; 4=5; all 5=6; each extra simultaneous illusion=+1 flat	6	no		book example L3 one sense four illusions=9
+43	45	Insubstantial	fixed 4/Level	Liquid; Gaseous; Incorporeal	6	yes at Level 1: the permanent form		Level 2+ needed if used on others or as Magical Power (forms pp. 43-44)
+44	46	Invisibility	per-Level by what it fools	sensors only=3; vision=5; both=7	2	no		
+45	47	Item of Power	fixed 2/Level		6	yes: the item	holds about 5 CP of Attributes per Level (L1 1-5 ... L6 26-30)	cannot hold Item of Power, Magic, Own a Big Mecha; stat usually none, sometimes Soul
+46	48	Jumping	fixed 1/Level		6	no		
+46	48	Kensei	fixed 1/Level		6	yes: one ability per Level		abilities p. 46: Blind Fighting; Chanbara Master; Judge Opponent; p. 47: Katanaspace; Lightning Draw; Precise Stroke; Two Weapons
+47	49	Life Support	fixed 1/Level		2	no		
+48	50	Light Armour	fixed 1/Level, flat reductions	Partial=-1 or -2 flat; Hidden; Optimized	6	no		armour 2/5/7/10/12/15 at L1-6 (Hidden 1-6); minimum cost 1
+48	50	Magic (and Psionics)	4/Level minus Less Powerful	Less Powerful -3 PP=-1 flat; -5 PP=-2 flat; -8 PP=-3 flat; Focus; Ritual; Silent; Still	6	yes: magic type/school	Power Points +10/Level	repeatable; Magical Powers may not be Dynamic Sorcery, Energy Bonus, Magic, Own a Big Mecha; Less Powerful p. 50, Options pp. 50-51; book example L2 at -5 PP=6 pts 15 PP; p. 49 cites Dynamic Sorcery as p. 86 (really p. 26); Table 2-2 name "Magic (or Psionics)"
+51	53	Massive Damage	fixed 2/Level		6	no	Damage +5/Level	stat none (items.tsv empty)
+52	54	Mechanical Genius	fixed 2/Level		6	no	Skills Electronics and Mechanics +1/+1/+2/+2/+3/+3	
+53	55	Meld	per-Level by target	one class of objects=2; any inanimate=4; animate=double (4 or 8)	2	no		Table 2-2 says 2 or 4
+53	55	Metamorphosis	5/Level plus flat per extra form	extra form same Level=+2 flat; extra form lower Level=+1 flat	6	no		self and others = two copies at full cost; change limit 5 pts/Level; Defects added to others count x3
+55	57	Mind Control	per-Level by targets, -1/Level if one control type	anything with a mind=4; broad category=3; narrow category=2; one type of control=-1/Level	6	yes: target category		book examples cost 3 and 1 per Level
+56	58	Mind Shield	fixed 1/Level		6	no	+2/Level to Mind or Soul vs mental attacks	
+57	59	Natural Weapons	fixed 1/Level		6	yes: one weapon per Level		Claws or Spikes; Fangs/Beak/Mandibles; Horns; Spines (p. 57); Tail Striker (needs Extra Arms); Tentacles (p. 58)
+58	60	Organizational Ties	per-Level by organization's power	moderate=1; significant=2; great power=3	6	yes: organization		
+59	61	Own a Big Mecha	4/Level minus Less Powerful	Less Powerful=-1 flat per 5 fewer Mecha Points (repeatable)	6	yes: mecha name	Mecha Points 20/Level (20-120)	minimum cost 1; MP may split among mecha (>=1 each) or pool with players; mecha base 40 HP; sub-Attributes any except Dynamic Sorcery, Magic, Own a Big Mecha, Servant; no Stats/Normal Attributes unless A.I. 4+; Mecha Defects give Mecha Bonus Points usable only on sub-Attributes (also One Arm/No Arms p. 108, Not So Tough p. 107); Less Powerful p. 61; book example L3=12 pts 60 MP, 70 spent with 10 MBP
+62	64	Personal Gear	fixed 1/Level		6	yes: item list	1 major + 4 minor items/Level	1 major may swap for 4 minor
+63	65	Place of Power	fixed 1/Level		6	yes: the place	15 Energy Points/Level	recovers 1/Level/hour
+63	65	Precognition	per-Level by control	uncontrolled=1; deliberate=2	2	no		
+64	66	Regeneration	4/Level, flat reduction	one uncommon unregenerable attack=-1 flat; one common=-2 flat	6	no		
+64	66	Reincarnation	fixed 3/Level		6	no		
+65	67	Sensors	1/Level per sensor kind	Underwater=1/Level (1/10 range); Analytic=1/Level (1/1000 range) or +1 flat on existing Sensors; Indirect=1/Level (1/1000 range, sound or vision)	6	yes: sensor kind		
+66	68	Servant	per-Level by replaceability	single servant=1; replaceable=2	6	yes: the servant	servant built on 5 CP/Level	repeatable; servant may not have Servant, Own a Big Mecha, or Defects Owned by a Megacorp, Red Tape, Significant Other, Unskilled
+66	68	Shape Change	per-Level by target, -1 if one change	self or others=2; both=3; one change only=-1	2	no		2 Levels stated p. 67
+67	69	Shield	fixed 1/Level		6	no		15 armour/Level
+68	70	Sixth Sense	fixed 1/Level		6	yes: one category per Level		Detect Evil; Detect Magic; Detect Virtue (p. 68); Empathy; Sense Spirits; Sense Truth (p. 69)
+69	71	Size Change	per-Level by direction	shrink and grow=2; one direction=1	6	no	Defects by Level (p. 70): grow Awkward Size 1/2/3/4 at L3/4/5/6; shrink Not So Strong 1 at L2, 2 at L3, Diminutive 1 at L4, 2 at L5-6, plus Not So Strong 1 at L6	
+70	72	Space Flight	fixed 2/Level		6	no		
+71	73	Special Defense	fixed 1/Level		2	yes: one ailment		repeatable
+71	73	Special Movement	fixed 1/Level		6	yes: one ability per Level		Balance; Cat-Like; Light-footed; Untrackable; Wall-Crawling; Water-Walking (counts 2). Table 2-2 type Racial; text Paranormal, Racial
+72	74	Speed	fixed 1/Level		6	no		
+72	74	Spirit Ward	fixed 1/Level		6	no		
+73	75	Star Flight	fixed 2/Level		6	no		
+73	75	Stealth	1/Level first sense, +1 flat per extra sense	one sense=1/Level; each extra sense=+1 flat	6	yes: sense(s)		extra senses at same Level
+74	76	Super Strength	per-Level by scope	whole body=3; one limb=2	6	no		
+74	76	Swarm	fixed 2/Level		6	no		
+75	77	Telekinesis	per-Level by matter	any matter=2; one kind=1	6	yes if one kind: Air; Earth; Metal; Water; Wood (p. 76)		
+76	78	Telepathy	per-Level by restriction	quite restricted=1; somewhat restricted=2; universal=3	6	no		cost rule p. 77
+78	80	Teleport	per-Level by target	self or others=5; both=10	6	no		
+78	80	Transmutation	per-Level by scope	anything=4; general class=2; specific category=1	6	yes: class/category		
+79	81	Tunnelling	fixed 2/Level		6	no		
+80	82	Unique Character Attribute	GM-set per Level by usefulness	somewhat useful=1; very useful=2-3; extremely useful=4+; sample Wealth=3	2 or 6 (GM)	yes: user-defined		
+81	83	Water Speed	per-Level by mode	mecha surface=2; mecha underwater=3; character swim=2; character amphibious=3	6	no		stat none (Table 2-2 Body)
+81	83	Weapon Attack	4/Level plus flat extras	Alternate Attack at primary Level=+2 flat; at lower Level=+1 flat; Different Gunner=+5 Mecha Points each; Hand-Held	6	yes: weapon name	damage 15/Level	each Ability -15 damage, each Disability +15, damage minimum 15; Alternate p. 82; Different Gunner p. 83; as Personal Gear 1/3 damage (5/Level); Abilities pp. 83-89, Disabilities pp. 89-92
+93	95	A.I.	fixed 2/Level (Mecha Only)		6	no	L1-2 Basic/Advanced Remote Control; L3 Semi-Autonomous Body+Mind 10; L4 Body+Mind 12; L5 14; L6 Body+Mind+Soul 18	L4+ allows mecha Stats and Normal Attributes
+94	96	Extra Capacity	fixed 1/Level (Mecha Only)		6	no		needs Awkward Size of at least 1/2/2/3/4/5 BP at L1-6
+94	96	Extra Endurance	fixed 1/Level (Mecha Only)		6	no		
+94	96	Manoeuvre Bonus	1/Level per movement type (Mecha Only)	ground; water; flight; space flight	6	yes: movement type		stat operator's Body (Table 2-2 None)
+95	97	Mecha Regeneration	fixed 4/Level (Mecha Only)		6	no		
+95	97	Mechanical Transformation	per-Level by form power, +1 flat for non-sequential	full-powered form=4; half-powered form=2; non-sequential=+1 flat (3+ forms, p. 96)	6	no	one extra form per Level	Table 2-2 says 2-4
+96	98	Merging	fixed 2/Level		6	no		merged mecha = largest's points + ceil(1/3) of others'; items.tsv type Mecha not Mecha Only
+97	99	Multiple Mecha Attacks	fixed 10/Level (Mecha Only)		6	no		
+98	100	Special Equipment	fixed 2/Level		6	yes: one item		each item bought separately; items.tsv type Mecha not Mecha Only
+98	100	Subordinate Mecha	fixed 1/Level (Mecha Only)		6	yes: each sub-mecha	each gets min(10 MP, floor(base MP/10))	may take Mecha Defects for extra MBP (p. 98)
+98	100	Summonable	fixed 4/Level (Mecha Only)		2	no		max stated p. 99; Summoning Object Defect requires it
+99	101	Super Transformation	3 or 5/Level (Mecha Only)	half-powered=3; full-powered=5 (Mechanical Transformation + 1, Retro p. 164)	6	no	one extra form per Level	one point above Mechanical Transformation; split not spelled out
+99	101	Toughness	fixed 4/Level (Mecha Only)		6	no	Health Points +20/Level	
+114	116	Crew Requirement	Mecha-Only Defect 1-6 BP		6	no		
+114	116	Exposed Occupants	Mecha-Only Defect 1-2 BP		2	no		
+114	116	Limited Endurance	Mecha-Only Defect 1-2 BP		2	no		
+115	117	Mutual Damage	Mecha-Only Defect 1-2 BP		2	no		
+115	117	Noisy	Mecha-Only Defect 1-2 BP		2	no		
+115	117	Poor Manoeuvrability	Mecha-Only Defect 1-2 BP		2	no		
+115	117	Reduced Capacity	Mecha-Only Defect 1-2 BP		2	no		
+116	118	Start-Up Time	Mecha-Only Defect 1-2 BP		2	no		
+116	118	Summoning Object	Mecha-Only Defect 1-2 BP		2	no		needs Summonable
+116	118	Wind Powered	Mecha-Only Defect 1-2 BP		2	no		Table 2-3 spells "Wind Powered"

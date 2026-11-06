@@ -413,6 +413,133 @@ descriptions.
     check-pages`); then check a sample by eye. Record the counts of
     Attributes, Defects, Skills, Abilities and Disabilities.
 
+#### A2 results (in progress, 2026-11-06)
+
+The tables are in `rules/` (names, costs, levels, limits and pages
+only, with labels in our own words; nothing quoted, and the purchaser
+line never read): `headings.tsv` (every heading by font, from
+`tools/rulebook-headings.py -a`), `headings-fields.tsv` (each item's
+Cost, Type, Relevant Stat and Specializations fields),
+`attributes.tsv` (how each Attribute's cost is chosen, its maximum
+Level, subject and grants, and the Mecha-Only Defects),
+`weapon-abilities-disabilities.tsv`, `skill-costs.tsv` (Table 2-4)
+and `errata.tsv`.  Phase B turns them into `Besm2Rules`.
+
+1. **Page offset** (done): printed = PDF - 2 on all 195 numbered
+   pages; the unnumbered ones (PDF 1-3, 6, 13, 134, 154, 169,
+   204-210) are the cover, chapter openers and sheets, and shift
+   nothing.  The bookmarks agree with the headings for 370 entries;
+   the ones that don't, for the user to fix in the bookmark list:
+   "Force Field Disabilities" goes to PDF 39 (the heading is PDF 38,
+   p. 36); "Mecha-Only Defects" and "Step 8: Background Points" have
+   no destination; Linked (Attribute) (p. 87, PDF 89) has no bookmark;
+   and these titles are misspelt (their pages are right): Forward,
+   Small Mount, Attiributes, Insubstatial, Organization Ties, Size
+   Changge, Unique Character Arribute (twice), Manoevre Bonus, Hanger
+   Queen, Skills and Specialties, "Table 4-6 blowing Up Worlds".
+2. **Creation** (pp. 12-16, 100, 117, 130): starting Character
+   Points 15/20/25 (low), 30/35 (average), 40/45 (high), 50/55 (very
+   high), 60+ (extremely high) (p. 13); each Stat 1-12 at 1 point a
+   point, only one Stat at 12 (p. 16); Attributes Level 1-6 (a few
+   1-2) (p. 16); no more than 8 Defects recommended (p. 100);
+   20 Skill Points, +10 a Level of Highly Skilled, -10 or -20 for
+   Unskilled (p. 117); 1-3 Background Points (p. 130).
+3. **Derived values** (pp. 129-130): ACV = (Body + Mind + Soul) div 3;
+   DCV = ACV - 2; HP = (Body + Soul) x 5; EP = (Mind + Soul) x 5;
+   SV = HP div 5.  Changed by Combat Mastery (ACV and DCV +1 a
+   Level, p. 130's example), Damn Healthy! and Toughness (HP), Energy
+   Bonus and Place of Power (EP), Not So Tough and Diminutive (HP).
+   **The fixtures by hand:** Enyon Boase comes out exactly (stats 20
+   + attributes 18 - defects 3 = 35; ACV 6 + 3 = 9, DCV 7, HP 70,
+   EP 60, SV 14); the FV2021 Coleopteran too (Own a Big Mecha 2 =
+   40 Mecha Points = attributes 44 - defects 4; HP 40 + Toughness 2
+   x 20 = 80).  But the fixtures use names from BESM 2nd edition or
+   Big Robots, Cool Starships, not the Revised rulebook (Armour, AR,
+   Partial Armour, Super-Strength, Accessories, `Weapon:`, "Hanger
+   Queen", "Unique Defect"), so the programs need aliases and must
+   accept unknown names (open question 11).  Enyon's own odd names
+   (Extra Actions, Leadership, Political Sciences) and his 25 SP were
+   bugs, a botched conversion of his 4th Edition self, and are fixed
+   (see "Decided": the Red Planet Blue Helmets characters).
+4. **Attributes** (pp. 20-99, Table 2-2 pp. 18-19): 89, all in Table
+   2-2 at the same page.  About 30 have a cost per Level that depends
+   on an option, and some add flat points (attributes.tsv).  Maximum
+   Level 6, except 2 for Elasticity, Heightened Awareness,
+   Invisibility, Life Support, Meld, Precognition, Shape Change,
+   Special Defense and Summonable; Highly Skilled has none; Unique
+   Character Attribute's cost and maximum are the GM's.  Grants:
+   Highly Skilled 10 Skill Points a Level; Own a Big Mecha 20 Mecha
+   Points a Level (p. 59); Magic Power Points; Size Change Defects.
+   Table 2-2 against the entries: Meld 2 or 4 (entry 2, 4 or 8);
+   Mechanical Transformation 2-4 (entry can reach 5); types and
+   Stats of Elasticity, Heightened Senses, Special Movement, Healing,
+   Water Speed and Manoeuvre Bonus differ; Table 2-2's "Magic (or
+   Psionics)" is headed "(and Psionics)"; Magic (p. 49) sends
+   Dynamic Sorcery to p. 86, which is p. 26.  The entries win.
+   Super Transformation is Mechanical Transformation's cost + 1 a
+   Level (Retro p. 164), so 3 for a half-powered form and 5 for a
+   full-powered one, as Mechanical Transformation's 2 and 4.
+5. **Weapon Attack** (pp. 81-92): 4 points a Level; damage 15 x
+   (Level - Ability slots + Disability slots), at least 15 unless No
+   Damage; a secondary attack 2 points at the primary's Level, 1 at a
+   lower Level (p. 82); a Different Gunner +5 Mecha Points (p. 83); as
+   Personal Gear, 5 damage a Level.  33 Abilities (pp. 83-89), 22
+   Disabilities (pp. 89-92), with their slots (most 1; Aura 2,
+   Auto-Fire 3, Incapacitating 3, Contagious 3 or 6, Soul Attack 5,
+   Self-Destruct 4, Melee 2, ...), maximums and exclusions.  **Auto-Fire
+   counts as 3 in its entry (p. 84), but as 1 in the Hellcat (p. 92),
+   the errata's Grey Typhoon, and the Coleopteran's Rocket Pod** (open
+   question 12).  Other slips: the Vulcan Cannon is priced 16 for
+   Level 3; Keiko's Bug Spray (p. 51) does 0 without No Damage;
+   "Limited Uses" and "Area" in two exclusions mean Limited Shots and
+   Area Effect.  Expanded Combat (pp. 156-161) changes no cost.
+6. **Defects** (pp. 101-116, Table 2-3 p. 100): 39 Normal and Special,
+   10 Mecha-Only; all 1-2 BP a rank except Awkward Size and Crew
+   Requirement (1-6) and Diminutive (3 or 6); the entries' ranks agree
+   with Table 2-3.  Table 2-3 writes "Owned by a Megacorp" and "Wind
+   Powered" (headings: Owned By A Megacorp, Wind-Powered).
+7. **Skills** (pp. 117-128): 52, all in Table 2-4 (p. 119), whose
+   genres are Cyberpunk, Hot Rods and Guns, Martial Arts, Medieval
+   Fantasy, Modern Military, Occult Horror, Space Opera and Teenage
+   Romance, at 1-6 Skill Points a Level, "-" where a Skill isn't
+   offered.  Levels 1-6; one specialisation comes with the Skill, and
+   each extra costs 1 Skill Point (p. 118).  Combat Value, Health
+   Points and Energy Points are headed like Skills but are the
+   derived values (p. 129).  Some Relevant Stat and Specializations
+   fields (Artisan, Boating; Gaming, Piloting, Heavy Weapons) are cut
+   short by the extraction and need reading by eye.
+8. **Mecha** (pp. 59-61, 93-99, 114-116): 20 Mecha Points a Level of
+   Own a Big Mecha, shared among the owner's mecha or pooled with
+   other players; a mecha starts with 40 HP; Mecha Defects give Mecha
+   Bonus Points spent only on the mecha.
+9. **Staged Stat Cost** (p. 166, Table 4-7, optional): Stat 1-5 cost
+   their value; 6 = 7, 7 = 9, 8 = 11, 9 = 14, 10 = 17, 11 = 20,
+   12 = 24.  Variable Damage (p. 162) changes no cost.
+10. **Errata** (two pages): the only change of a page is the
+    Hellcat's reference (p. 92 says p. 127; it is p. 61); nothing
+    changes a cost.
+11. **Every page by machine**: to do (`make check-pages`), from
+    `rules/headings.tsv`: 276 items, 271 bullets, 251 steps.
+12. **Checked against BESM Retro Second Edition and BESM1E** (AGENTS.md;
+    Retro's PDF page is also its printed page + 2).  Retro sides with
+    BESM2ER's entries against Table 2-2: Meld 2, 4 or 8 (Retro
+    p. 95), Mechanical Transformation 2 or 4 (p. 159), Elasticity and
+    Heightened Senses Species/Technological, Special Movement
+    Paranormal/Species (Retro's table, pp. 64, 80, 121; "Racial" is
+    "Species" there).  Auto-Fire ("Autofire") counts as 3 in Retro
+    too, and Retro's Hellcat stat block now agrees (Quad Laser Cannon,
+    Level 2, 30 damage: Autofire against Fixed, Low Penetration and
+    Unreliable); only its worked example still counts 1.  Keiko's Bug
+    Spray is still 0 damage without No Damage in Retro, so the
+    generator warns rather than refuses below 15.  The Coleopteran is
+    from Big Robots, Cool Starships (PDF 95), converted by the user, so
+    its Armour, Partial Armour, Super-Strength and AR are BRCS's;
+    "Hanger Queen" is a misspelling (BRCS and BESM2ER both say
+    Hangar).  Extra Actions, Leadership, Persuasion and Political
+    Sciences (Enyon Boase) are in none of BESM1E, BRCS, Hot Rods and
+    Gun Bunnies, BESM2ER or Retro as items; they came from his 4th
+    Edition version, and are now fixed or a house rule (see "Decided").
+
 ### A3. Where the calculations live (decided, 2026-11-06)
 
 Two ways to have every number computed:
@@ -598,18 +725,34 @@ On a character entity:
 creation:
   character-points: 40      # the campaign's (p. 13)
   background-points: 2      # 0-3 (p. 130)
-  genre: Mecha              # one of the Skill table's genres (p. 117)
+  genre: Modern Military    # one of Table 2-4's eight genres (p. 119)
   skill-points: 30          # only when the GM's number differs from the rule
   options:                  # the optional rules in use (A2.9)
     staged-stat-cost: true
     stat-ceiling: 10
     bonus-point-ceiling: 8
+  house-skills:             # the campaign's own Skills (house rules)
+    - name: Persuasion
+      costs: {Modern Military: 3}   # SP a Level, per genre
 ```
 
 Totals that follow from these (points spent, Bonus Points, Skill
 Points left) are not stored: they are computed and shown. Formatters
 ignore `creation` (open question 2 asks whether one should print a
 summary line).
+
+`house-skills` (2026-11-06, from the user's Persuasion house rule in
+Red Planet Blue Helmets): each a `name` and `costs`, a mapping from
+Table 2-4's genre names to SP a Level; a genre left out means the
+Skill isn't available in it, as "—" in the table.  A house Skill may
+also have `stat` (its Relevant Stat) and `specializations` (example
+names); specialisations cost as in the book (the first free, each
+other 1 SP, p. 118).  A house Skill with a rulebook Skill's name
+replaces that Skill's costs.  Shown as "Persuasion (house rule)", with
+no page and no PDF button.  It lives in each character's `creation`,
+so a file stays complete on its own; the generator can copy the
+`house-skills` (and the rest of `creation`) from another character or
+a campaign file, to start a new character in the same campaign.
 
 #### Overrides: `overrides`
 
@@ -853,6 +996,21 @@ from the user's PDF at test time and keep none of it.
     (with a `TestOut`), committed in pobesm2_fmt2, before besm2_cg_po
     copies its modules (A1.5). Proposed: yes, in Phase 4.
 
+11. **Names the rulebook doesn't have** (A2 results, 3): the fixtures
+    use BESM 2nd edition and Big Robots, Cool Starships names.
+    Proposed: keep a table of aliases (`Weapon` = Weapon Attack,
+    Accessories = Features or Accessories, Hanger Queen = Hangar
+    Queen, ...), and accept any other name as a custom item whose
+    numbers the user types (an `overrides` entry), with a `--check`
+    warning.  (Enyon Boase's names were bugs, now fixed, not aliases;
+    Pawl Cardynham's "Unarmed Defence" is the British spelling of
+    Unarmed Defense and may be an alias.)
+12. **Auto-Fire: 3 slots or 1** (A2 results, 5 and 12): the entry
+    says 3, and so do Retro's rule and its corrected Hellcat; BESM2ER's
+    examples and the Coleopteran use 1.  Proposed: 3, with a
+    `creation.options` switch for 1, and the Coleopteran file marks
+    its damage as overridden.
+
 Decided (2026-11-06, by the user unless it says otherwise):
 
 - ~~How pages are shown~~: both the printed page and the PDF page,
@@ -869,3 +1027,16 @@ Decided (2026-11-06, by the user unless it says otherwise):
   commit there, with the user's go-ahead); `--check` reports a number
   outside −999..999 as an error and an alias as a warning; the
   generator never writes either (A1 results, A3).
+- ~~The Red Planet Blue Helmets characters~~ (2026-11-06): the campaign
+  uses Table 2-4's Modern Military costs (p. 119, PDF 121), with
+  Persuasion a house rule at 3 SP a Level (`creation.house-skills`,
+  A4).  Enyon Boase's differences were bugs from his 4th Edition
+  version: Extra Actions is Extra Attacks (p. 32, PDF 34), "+1 Extra
+  Attack"; Leadership is the specialisation of Military Sciences 1
+  (p. 123, PDF 125; 5 SP); and Political Sciences is Social Sciences 1
+  (p. 125, PDF 127; Politics, 2 SP).  So he has 20 SP like the others.
+  The other PCs' slips were fixed to Modern Military costs (Vyvyan,
+  Jope and Kitto, each 20 SP), and every "Extra Action" detail now
+  says "Extra Attack".  Fixed in the campaign's files and in the
+  fixtures and goldens of besm2_fmt, obesm2_fmt, obesm2_fmt2,
+  pobesm2_fmt2 and the Scheme programs (not the 4th Edition files).
