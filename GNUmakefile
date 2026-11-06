@@ -59,7 +59,7 @@ PROGSRC := $(wildcard src/*.Mod src/*.c)
 # modules): TESTS need no display, GUITESTS do.  More come
 # with the modules of PLAN.md, Part B.
 TESTSUPPORT := test/Check.Mod
-TESTS       := TestRules TestCalc TestOut
+TESTS       := TestRules TestCalc TestOut TestSpawn TestViewer
 GUITESTS    := TestWindow
 TESTBINS    := $(TESTS:%=$(OBJ)/%)
 GUITESTBINS := $(GUITESTS:%=$(OBJ)/%)
@@ -74,7 +74,7 @@ ifneq ($(if $(MAKECMDGOALS),$(filter-out clean uninstall print-%,$(MAKECMDGOALS)
 $(foreach l,$(SHAREDLIBS),$(if $(wildcard $(POCLIBDIR)/*/OC/$(l).library),,$(error the $(l) library is not in $(POCLIBDIR); install it from its repo (AGENTS.md))))
 endif
 
-.PHONY: all tests test check-pages test-gui test-headless test-sway valgrind valgrind-headless valgrind-sway \
+.PHONY: all tests test check-pages test-viewers test-gui test-headless test-sway valgrind valgrind-headless valgrind-sway \
   display install uninstall clean
 .NOTPARALLEL:
 
@@ -131,6 +131,15 @@ BOOKMARKED ?= $(HOME)/Reference/RPG/Dyskami/BESM/2E/BESM2ER_bookmarked.pdf
 check-pages: $(OBJ)/rules.txt
 	@tools/check-pages.py $(RULEBOOK) $(BOOKMARKED) rules $(OBJ)/rules.txt
 
+# Besm2Viewer with the real viewers, okular, evince and mupdf, on a
+# headless sway of test/viewer.sh's own, on a private D-Bus session bus,
+# with a scratch HOME (PLAN.md, Part B, step 5).  Not part of make test:
+# it needs the viewers, and takes a minute or two.
+$(OBJ)/OpenPage: test/OpenPage.Mod $(PROGSRC) $(SHAREDLIBMANIFESTS) | $(OBJ)
+	$(POC) $(POCFLAGS) $(IMPORTS) -import-path test -output-dir $(OBJ) $(LINK) -o $@ $<
+test-viewers: $(OBJ)/OpenPage
+	test/viewer.sh $(OBJ)/OpenPage
+
 # FLTK needs a display even for windows never shown.  An agent never
 # runs these on the user's desktop (AGENTS.md): use test-headless or
 # test-sway.
@@ -172,7 +181,9 @@ test-sway: tests
 # decorations under Wayland) leaks by design.  pofltk's vg-check.sh fails
 # instead on any leak whose allocator is pofltk's (a widget never
 # deleted); test/poc-gc.supp holds the collector's stack-scan reports
-# (pofltk's AGENTS.md, "Valgrind").
+# (pofltk's AGENTS.md, "Valgrind").  A child Besm2Spawn forks reports
+# nothing: it only execs or exits (_exit, leaving its copy of the
+# argument vector), and what it runs isn't ours to check.
 POFLTK ?= $(HOME)/Repos/Oberon/pofltk
 VALGRIND ?= valgrind --leak-check=full --show-leak-kinds=all --errors-for-leak-kinds=none \
   --error-exitcode=99 --child-silent-after-fork=yes --suppressions=$(CURDIR)/test/poc-gc.supp

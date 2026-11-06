@@ -1306,6 +1306,37 @@ saved YAML holds names as the formatters expect them, without pages.
    with `%f` the file and `%p` the PDF page; reusing a running viewer);
    `TestViewer` with fake viewers, `make test-viewers` with the real
    ones on a headless sway.
+
+   *Done 2026-11-06.* `src/Besm2Viewer.Mod`, `src/Besm2Spawn.Mod` and
+   `src/Besm2Spawn.c` are ova_cg_po's `OvaViewer`, `OvaSpawn` and
+   `OvaSpawn.c`, copied (open question 3) with the names changed
+   (`Ova` to `Besm2`, the C functions `ova_spawn_` to
+   `besm2_spawn_`).  Besm2Spawn is otherwise unchanged.  Besm2Viewer's
+   changes:
+   - **No `%l`.**  The PDF has no page labels ("The rulebook and its
+     pages"), so a template has `%f` (the PDF) and `%p` (the PDF page,
+     `Besm2Rules.PdfIndex`, the printed page + 2) only; a `%l` stays
+     as written, as any other `%` does.  okular gets `-p`, evince `-i`
+     and mupdf the page argument, all the PDF page, as in ova_cg_po;
+     evince's `--page-label` is never used.
+   - **The PDF:** `--rulebook`, then `BESM2_RULEBOOK`, then the saved
+     path, then `~/Reference/RPG/Dyskami/BESM/2E/BESM2ER_bookmarked.pdf`,
+     made absolute (AGENTS.md, "The PDFs").
+   - **xdg-open's message** gives both pages through
+     `Besm2Rules.PagesText`: "xdg-open can't turn to a page: turn to
+     p. 60, PDF 62".
+   - `Open` still takes the printed page, so callers pass an item's
+     page as Besm2Rules holds it.
+   Tests: `test/TestSpawn.Mod`, `test/TestViewer.Mod` (both in
+   `TESTS`, with the fakes `test/fake-viewer.sh` and
+   `test/fake-gdbus.sh`), and `test/OpenPage.Mod` with
+   `test/viewer.sh` for `make test-viewers`, all ova_cg_po's, adapted
+   as above.  Planted bugs caught: sending the printed page instead of
+   the PDF page (5 TestViewer failures), and a child that doesn't
+   `setsid` (TestSpawn: "the viewer is in a session of its own").
+   `make test` passes, `make test-viewers` passes all 29 checks with
+   the real okular, evince and mupdf, and TestSpawn and TestViewer are
+   clean under valgrind.
 6. **The window: Character tab.** Name, tagline, size, Stats, derived
    values with their override boxes, the points summary; File New,
    Open, Save, Save As with the save-first question; Rulebook > Open,
@@ -1332,8 +1363,8 @@ saved YAML holds names as the formatters expect them, without pages.
 ### Testing
 
 - `make test` (no display): `TestRules`, `TestCalc`, `TestFiles`,
-  `TestModel`, `TestViewer` (fake viewers), `test/cli.sh`, and
-  `besm2_calc_po` against every fixture.
+  `TestModel`, `TestSpawn`, `TestViewer` (fake viewers),
+  `test/cli.sh`, and `besm2_calc_po` against every fixture.
 - `make test-headless` / `make test-sway`: the window tests, on Xvfb
   or a headless sway, never on the user's desktop.
 - `make test-viewers`: the real viewers on a private sway and D-Bus.
