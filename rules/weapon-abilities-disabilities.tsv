@@ -3,7 +3,7 @@ ability	83	85	Accurate	1 per time	yes/3	no	x1 -2; x2 -4; x3 -6 to attack roll	Li
 ability	83	85	Affects Incorporeal	1	no	no		not Personal Gear	
 ability	84	86	Area Effect	1 per time	yes/unlimited	no	each time doubles radius	Vampiric	base radius m = damage/3; optional secondary (x2 radius, dmg/3) and tertiary (x4 radius, dmg/15, if damage>=75) areas
 ability	84	86	Aura	2	no	no		Backblast; Melee; Short Range; Quake	Quake exclusion is stated under Quake
-ability	84	86	Auto-Fire	3	no	no			hits 1-5; book examples p.92 and errata count it as 1
+ability	84	86	Auto-Fire	3	no	no			hits 1-5; book examples p.92 and errata count it as 1 (creation.options auto-fire-slots: 1, or counts-as: 1 on one weapon)
 ability	84	86	Burning	1	no	no	normal (1/10 basic dmg x5 rounds); slow burn (1/5 basic dmg daily)		
 ability	85	87	Concealable	1	no	no		only hand-held, mecha, or Personal Gear weapons	
 ability	85	87	Contagious	3 mild; 6 high	yes/2 (mild then high)	stat for resist (Body/Mind/Soul)	mild; highly		often paired with Toxic

@@ -680,9 +680,14 @@ computed from it. Formatters keep printing the Bonus Points from
 ```
 
 - `abilities` and `disabilities`: each item a name, or a mapping of
-  `name`, `counts-as` (the times taken, the same key ova_fmt uses for
-  repeated Perks and Flaws and besm2_fmt for enhancement counts) and
-  `detail`.
+  `name`, `counts-as` (the same key ova_fmt uses for repeated Perks
+  and Flaws and besm2_fmt for enhancement counts) and `detail`.
+  `counts-as` is the slots the item counts as (2026-11-06, open
+  question 12): left out, the book's slots for taking it once (Aura 2,
+  Auto-Fire 3); for an item taken more than once, its slots in all
+  (Limited Shots ×2 is 2); and `{name: Auto-Fire, counts-as: 1}` for
+  a weapon priced the way the book's examples price it.  Formatters
+  print `×N` only when `counts-as` is 2 or more.
 - `damage`: computed (15 a level, less 15 for each Ability, more 15 for
   each Disability, counting repeats; A2 confirms there are no
   exceptions), written like `points`.
@@ -731,6 +736,7 @@ creation:
     staged-stat-cost: true
     stat-ceiling: 10
     bonus-point-ceiling: 8
+    auto-fire-slots: 1      # 3 by default (p. 84); 1 as the examples (question 12)
   house-skills:             # the campaign's own Skills (house rules)
     - name: Persuasion
       costs: {Modern Military: 3}   # SP a Level, per genre
@@ -1088,6 +1094,20 @@ from the user's PDF at test time and keep none of it.
     examples and the Coleopteran use 1.  Proposed: 3, with a
     `creation.options` switch for 1, and the Coleopteran file marks
     its damage as overridden.
+    Decided (2026-11-06, by the user): Auto-Fire takes **3 slots**, as
+    its entry says (p. 84, PDF 86).  The switch
+    `creation.options: {auto-fire-slots: 1}` (default 3) prices every
+    Auto-Fire of that character, and its mecha, as 1 slot, the way the
+    examples do.  A single weapon converted from those examples says
+    so on its own Ability, `{name: Auto-Fire, counts-as: 1}`, not with
+    `overrides`, so its damage stays computed and `--check` passes.
+    The campaign's FV2021 Coleopteran Rocket Pod (Level 2: Auto-Fire,
+    Area Effect, Limited Shots ×2, Stoppable) is written that way:
+    15 × (2 − 2 + 3) = 45, as its file says now.  It gets the keys
+    when the formatters learn the Weapon Attack keys (A4), since
+    today they would ignore them.  So `counts-as` is the slots an
+    Ability or Disability counts as (A4, Weapon Attacks): left out,
+    it is the book's slots times one.
 
 Decided (2026-11-06, by the user unless it says otherwise):
 
