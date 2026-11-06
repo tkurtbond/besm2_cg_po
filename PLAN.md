@@ -201,8 +201,8 @@ ignoring case).
 
 **A1.2, the departures** (besm2-rst against besm2_fmt; the Oberon
 ports follow besm2_fmt). The new programs copy pobesm2_fmt2's
-modules, so they take **besm2_fmt's side** on all of them. That is the
-proposal in open question 1.
+modules, so they take **besm2_fmt's side** on all of them (open
+question 1, decided 2026-11-06).
 
 | Departure | besm2-rst | besm2_fmt | Recorded in |
 |---|---|---|---|
@@ -613,8 +613,9 @@ files up to the new keys and check them. The shared modules import no
 pofltk, so the command-line program doesn't link FLTK.
 
 Whether the shared modules later move to a library of their own
-(with ova_cg_po's viewer, spawn and path modules, open question 3) is
-left until both programs work.
+is left until both programs work.  ova_cg_po's viewer, spawn,
+widgets and path modules are copied, not shared (open question 3,
+decided 2026-11-06).
 
 ### A4. The YAML extensions (decided, 2026-11-06)
 
@@ -708,8 +709,9 @@ computed from it. Formatters keep printing the Bonus Points from
 - `enhancements` and `limiters` (the 4E shapes) **stay as they are**,
   printed as today, for the files that use them; the new programs
   read them but don't compute with them, and `--upgrade` doesn't
-  convert them (a 4E enhancement's count is not a 2E Ability). Open
-  question 2 asks the user whether they should be deprecated.
+  convert them (a 4E enhancement's count is not a 2E Ability). They are
+  deprecated for 2E files: `--check` warns about them (open question
+  2, decided 2026-11-06).
 
 #### Mecha
 
@@ -744,8 +746,8 @@ creation:
 
 Totals that follow from these (points spent, Bonus Points, Skill
 Points left) are not stored: they are computed and shown. Formatters
-ignore `creation` (open question 2 asks whether one should print a
-summary line).
+ignore `creation`; none prints a summary line (open question 2,
+decided 2026-11-06).
 
 `house-skills` (2026-11-06, from the user's Persuasion house rule in
 Red Planet Blue Helmets): each a `name` and `costs`, a mapping from
@@ -794,8 +796,9 @@ As in ova_cg_po: any mapping holding a computed number may hold
 `overrides: [value]`). On loading, a listed key's number is the
 override; any other number that disagrees with the rules is kept as an
 override with a notice, never silently replaced. Formatters ignore
-`overrides` (open question 2: or mark an overridden number with `*`,
-as ova_fmt does).
+`overrides` except in the terse and grid formats, which mark an
+overridden number with `*`, as ova_fmt does (open question 2, decided
+2026-11-06).
 
 #### Sub-choices
 
@@ -941,7 +944,8 @@ saved YAML holds names as the formatters expect them, without pages.
 3. **The YAML extensions** (A4, "Rolling it out") in the formatters,
    before either program writes them.
 4. **Files and `besm2_calc_po`.** First `ToRope`/`TakeRope` in
-   pobesm2_fmt2's `Besm2Out` (open question 10); then `Besm2Entities`,
+   pobesm2_fmt2's `Besm2Out` (open question 10, decided), with a
+   `TestOut`, committed in pobesm2_fmt2; then `Besm2Entities`,
    `Besm2Out` and the other modules of A1.5 copied;
    `Besm2Character.Load`/`LoadAll`; `Besm2Save`; `Besm2Upgrade`;
    `--check`, `--fill`, `--upgrade`, and formatting. `TestFiles`: each
@@ -1003,30 +1007,45 @@ from the user's PDF at test time and keep none of it.
 
 ## Open questions
 
-1. **Which side of the known besm-rst / besm2_fmt differences** the
-   new programs follow (proposed: besm2_fmt's).
-2. **Printing the new keys**: confirm the Weapon Attack format (the
-   book's order, so upgraded files change there); whether `creation`
-   gets a summary line in any format; whether an overridden number is
-   marked (`*`, as ova_fmt does); and whether `enhancements` and
-   `limiters` are deprecated for 2E files.
-3. **Share or copy** ova_cg_po's viewer, spawn, widgets and paths
-   modules (a library both generators use, or a copy as ova_cg_po
-   copies ova_fmt_po's).
-4. **Keep the Scheme programs in step** with the new keys, or only the
-   Ada and Oberon-2 ones.
-5. **Mecha**: one file holding the owner and the mecha (as
-   `composite-2e.yaml` does), or the mecha in a file of its own too.
-6. **Non-character entities** (templates, items): do the programs
-   compute and edit them too, or only characters and mecha.
-7. **The window's tabs** (A5).
-8. **`besm2_calc_po`'s name**, and whether `--fill` without `-o`
-   rewrites in place.
+1. ~~Which side of the known besm-rst / besm2_fmt differences~~ the
+   new programs follow.  Decided: besm2_fmt's (A1.2); the Oberon-2
+   ports already match it byte for byte.
+2. ~~Printing the new keys~~.  Decided:
+   - Weapon Attacks print in the book's order (p. 92, PDF 94), so a
+     file `--upgrade`d to the structured keys prints differently there;
+     that change is accepted.
+   - `creation` gets no summary line in any format; it is for the
+     generator and `besm2_calc_po`.
+   - An overridden number is marked `*` in the terse and grid formats,
+     as ova_fmt does; the other formats print it unmarked.
+   - `enhancements` and `limiters` are deprecated for 2E files:
+     `--check` warns about them, the formatters keep printing them,
+     and `--upgrade` leaves them alone (A4).
+3. ~~Share or copy~~ ova_cg_po's viewer, spawn, widgets and paths
+   modules.  Decided: copy them, as ova_cg_po copies ova_fmt_po's, so
+   a change in one generator can't break the other.
+4. ~~Keep the Scheme programs in step~~ with the new keys.  Decided:
+   yes, last, after the Ada and the Oberon-2 ports (AGENTS.md); `notes`
+   already went in that way.
+5. ~~Mecha~~: one file or two.  Decided: both are read.  The generator
+   saves the owner and the mecha in one file, as `composite-2e.yaml`
+   does; `--check` looks for the mecha in the same file and, when it
+   isn't there, gives the notice of A4 ("Mecha").
+6. ~~Non-character entities~~ (templates, items).  Decided: the
+   programs compute and edit characters and mecha first; other
+   entities are loaded and printed by the formatters as now, and are
+   left for later.
+7. ~~The window's tabs~~ (A5).  Decided: a layout is drafted from
+   ova_cg_po's tabs when Part B reaches the window, and brought to the
+   user then.
+8. ~~`besm2_calc_po`'s name~~, and `--fill` without `-o`.  Decided:
+   the name stays; without `-o`, `--fill` and `--upgrade` write to
+   standard output, so a file is never rewritten unasked.
 9. ~~The two undocumented Ada/Oberon departures~~: decided, see
    below.
-10. **Port `OvaOut.ToRope`/`TakeRope` into pobesm2_fmt2's `Besm2Out`**
+10. ~~Port `OvaOut.ToRope`/`TakeRope` into pobesm2_fmt2's `Besm2Out`~~
     (with a `TestOut`), committed in pobesm2_fmt2, before besm2_cg_po
-    copies its modules (A1.5). Proposed: yes, in Phase 4.
+    copies its modules (A1.5).  Decided: yes, in Phase 4.
 
 11. **Names the rulebook doesn't have** (A2 results, 3): the fixtures
     use BESM 2nd edition and Big Robots, Cool Starships names.
@@ -1109,7 +1128,8 @@ from the user's PDF at test time and keep none of it.
     Ability or Disability counts as (A4, Weapon Attacks): left out,
     it is the book's slots times one.
 
-Decided (2026-11-06, by the user unless it says otherwise):
+Decided (2026-11-06, by the user unless it says otherwise; questions
+1-8 and 10 by the user taking Claude's suggestions):
 
 - ~~How pages are shown~~: both the printed page and the PDF page,
   everywhere ("The rulebook and its pages", "Pages beside names").
@@ -1119,7 +1139,7 @@ Decided (2026-11-06, by the user unless it says otherwise):
 - ~~How the free text becomes structured~~: `subject`, a Defect's
   `level`, the Weapon Attack keys, the mecha link through `subject`,
   `creation`, `overrides` (A4; decided by Claude at the user's
-  request, the printing still open in question 2).
+  request; the printing decided in question 2).
 - ~~YAML aliases and overflow in a total~~ (question 9): not fixed in
   the formatters; recorded in obesm2_fmt's ADA-DIFFERENCES.md (a
   commit there, with the user's go-ahead); `--check` reports a number
