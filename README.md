@@ -224,6 +224,10 @@ libraries installed in `~/.local/lib/poc` (`POCLIBDIR`):
   Ropes);
 - polibfyaml and pofltk (`make install`).
 
+The tests need a poc from Peaseblossom commit 834fb98 on, which emits a
+string literal in an array index; 0.11.0 doesn't. `POC` names another
+poc, e.g. `make POC=~/Repos/Oberon/Peaseblossom/build/bin/poc test`.
+
 ```
 make                  # besm2_cg_po and besm2_calc_po
 make install          # both, to ~/local/bin (PREFIX, BINDIR; DESTDIR to stage)

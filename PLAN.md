@@ -1511,7 +1511,10 @@ saved YAML holds names as the formatters expect them, without pages.
      (`a[F("x")]`) is never emitted, and the link fails ("use of
      undefined value '@.str...'").  The tests compute such an index
      first.  Reported as Peaseblossom's PLAN.md item 18 (22396a9);
-     the workaround stays until it is fixed.
+     the workaround stays until it is fixed.  (Fixed in Peaseblossom
+     834fb98, 2026-11-06, and the workaround taken out of
+     `test/TestModel.Mod`: the tests now need a poc from that commit
+     on; 0.11.0's RPM fails on TestModel.)
    Tests:
    - `test/TestModel.Mod` (in `TESTS`, no display): the edits on an
      entity built by hand: options kept or dropped by ChangeAttr,

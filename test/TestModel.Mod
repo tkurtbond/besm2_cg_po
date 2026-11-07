@@ -52,7 +52,6 @@ BEGIN
 END Opt;
 
 PROCEDURE Attributes;
-  VAR i, hover: INTEGER;
 BEGIN
   e := Ch.New(); es := Ch.One(e);
   a := Ch.NewAttr(R.Find("Flight"), 2, NIL, Rp("  wings  "));
@@ -60,7 +59,7 @@ BEGIN
   Check.Check((e.attrs = a) & e.hasAttributes & Is(a.name, "Flight") & ~a.hasSubject & Is(a.details, "wings"),
     "NewAttr, InsertAttr: the rulebook's name, details trimmed, no subject");
   Check.Check(C.Value(a.points) = 8, "Flight 2: the first of its required choice, can hover, 4 a Level (p. 33)");
-  i := Opt(a.item, "cannot hover"); a.times[i] := 1; i := Opt(a.item, "skimmer or hovercraft"); a.times[i] := 1;
+  a.times[Opt(a.item, "cannot hover")] := 1; a.times[Opt(a.item, "skimmer or hovercraft")] := 1;
   Ch.ComputeAll(es);
   Check.Check(C.Value(a.points) = 5, "cannot hover, a skimmer: 3 a Level, -1 on the total");
 
@@ -68,9 +67,9 @@ BEGIN
   Check.Check((Count(e.attrs) = 2) & (e.attrs.next = a2) & ~a2.hasSubject & ~a2.hasDetails, "a second: last; blank is none");
   Check.Check(e.attrTotal = 9, "both in the total");
 
-  keep := a; hover := Opt(a.item, "cannot hover");
+  keep := a;
   Ch.ChangeAttr(e, a, a.item, 3, Rp("Sky"), NIL); Ch.ComputeAll(es);
-  Check.Check((a = keep) & (a.level = 3) & Is(a.subject, "Sky") & ~a.hasDetails & (a.times[hover] = 1),
+  Check.Check((a = keep) & (a.level = 3) & Is(a.subject, "Sky") & ~a.hasDetails & (a.times[Opt(a.item, "cannot hover")] = 1),
     "ChangeAttr, the same name: the same record, its options kept");
   Check.Check(C.Value(a.points) = 8, "and priced at its new Level");
 
@@ -240,9 +239,9 @@ BEGIN
 END Weapons;
 
 PROCEDURE SaveLoad;
-  VAR b: Ch.Entity; ba: Ch.Attr; glider: INTEGER;
+  VAR b: Ch.Entity; ba: Ch.Attr;
 BEGIN
-  a := Ch.NewAttr(R.Find("Flight"), 2, NIL, NIL); glider := Opt(a.item, "glider"); a.times[glider] := 1; Ch.InsertAttr(e, a);
+  a := Ch.NewAttr(R.Find("Flight"), 2, NIL, NIL); a.times[Opt(a.item, "glider")] := 1; Ch.InsertAttr(e, a);
   Ch.ComputeAll(es);
   ok := Besm2Save.SaveAll(es, SavePath, msg);
   Check.Check(ok, "saved");
@@ -252,7 +251,7 @@ BEGIN
     b := back[0]; ba := b.attrs.next(Ch.Attr);
     Check.Check((b.creation.genre = R.Cyberpunk) & (b.defects # NIL) & Is(b.skills(Ch.Skill).name, "Driving")
       & (b.skills.specs = 2), "the genre, the Defect, the Skill and its specialisations");
-    Check.Check((ba.item = a.item) & (ba.times[glider] = 1) & (C.Value(ba.points) = C.Value(a.points))
+    Check.Check((ba.item = a.item) & (ba.times[Opt(a.item, "glider")] = 1) & (C.Value(ba.points) = C.Value(a.points))
       & ~ba.points.overridden, "the option taken, and the points the same, not an override");
     Check.Check(Is(b.attrs(Ch.Attr).subject, "Other") & (b.defects(Ch.Defect).rank = 1), "the subject, the rank")
   END
