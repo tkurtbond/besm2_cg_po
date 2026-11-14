@@ -182,8 +182,7 @@ END DialogConfirm;
 PROCEDURE Chosen(c: FlDialogs.NativeFileChooser; VAR p: Rope): BOOLEAN;
   VAR name: Fl.String;
 BEGIN
-  IF c.Show() # FlDialogs.Chosen THEN RETURN FALSE END;
-  name := c.Name(0);
+  name := c.Choose();
   IF name = NIL THEN RETURN FALSE END;
   p := Ropes.FromString(name^);
   RETURN p # NIL
@@ -570,7 +569,7 @@ BEGIN
   IF showing THEN RETURN END;
   FOR i := 0 TO C.NStats - 1 DO
     IF w = statValue[i] THEN
-      entity.stat[i] := SHORT(ENTIER(statValue[i].Value() + 0.5));
+      entity.stat[i] := statValue[i].IntValue();
       Ch.UseStat(entity, i)
     END
   END;
@@ -599,7 +598,7 @@ BEGIN
   n := Count();
   entityChoice.Clear;
   FOR i := 0 TO n - 1 DO
-    s := Besm2Text.Chars(EntityLabel(i)); entityChoice.AddText(s^, NIL, {})
+    s := Besm2Text.Chars(EntityLabel(i)); entityChoice.AppendText(s^)
   END;
   entityChoice.Choose(current);
   bar.SetItemActive(creationItem, ~entity.isMecha OR (entity.owner # NIL));

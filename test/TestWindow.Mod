@@ -152,7 +152,7 @@ BEGIN
   ok := Shows(W.derived[Ch.ACV], e.acv) & Shows(W.derived[Ch.DCV], e.dcv) & Shows(W.derived[Ch.HP], e.hp)
     & Shows(W.derived[Ch.EP], e.ep) & Shows(W.derived[Ch.SV], e.sv) & Shows(W.derived[Ch.AR], e.ar);
   FOR i := 0 TO C.NStats - 1 DO
-    ok := ok & Shows(W.statPoints[i], e.statPoints[i]) & (ENTIER(W.statValue[i].Value() + 0.5) = e.stat[i])
+    ok := ok & Shows(W.statPoints[i], e.statPoints[i]) & (W.statValue[i].IntValue() = e.stat[i])
   END;
   RETURN ok
 END AllShown;
@@ -497,7 +497,7 @@ BEGIN
 
   flight := R.Find("Flight");
   ChooseItem(p, flight);
-  p.choice.ItemLabel(p.choice.Value(), label);
+  p.choice.ItemText(p.choice.Value(), label);
   Check.Check((label = "Flight (p. 33, PDF 35)") & (p.help.page = 33), "a name chosen: shown with both pages; ? turns to its page");
   Check.Check(p.options.Active() & (p.options.Count() = flight.nOptions) & Holds(p.options, 1, "(x) ")
     & Holds(p.options, OptLine(flight, "cannot hover"), "( ) cannot hover"), "its options, the first of a choice counted");
@@ -520,7 +520,7 @@ BEGIN
     & (Warning("Character Points") > 0) & TabWarnings(), "the totals and warnings, here and on every tab, as you go");
 
   keep := a; p.Blank; FlTest.SelectLine(p.browser, 3);
-  Check.Check((p.choice.Value() >= 0) & (p.Item() = flight) & (ENTIER(p.spinner.Value() + 0.5) = 2)
+  Check.Check((p.choice.Value() >= 0) & (p.Item() = flight) & (p.spinner.IntValue() = 2)
     & Holds(p.options, OptLine(flight, "cannot hover"), "(x) cannot hover"), "a line selected: its name, Level and options loaded");
   p.spinner.SetValue(3); p.change.DoCallback;
   a := e.attrs.next.next(Ch.Attr);
@@ -548,7 +548,7 @@ BEGIN
   n := R.Count(p.kind);
   FOR i := 0 TO p.Offered() - 1 DO
     IF i < n THEN it := R.Get(p.kind, i) ELSE it := R.Get(p.second, i - n) END;
-    R.Label(it, want); p.choice.ItemLabel(i, label);
+    R.Label(it, want); p.choice.ItemText(i, label);
     IF label # want THEN RETURN FALSE END
   END;
   RETURN TRUE
@@ -601,7 +601,7 @@ BEGIN
   C.AddHouseSkill(e.creation, h);
   p.Show(e);
   p.ChooseIndex(p.Offered()); p.choice.DoCallback;
-  p.choice.ItemLabel(p.Offered(), label);
+  p.choice.ItemText(p.Offered(), label);
   Check.Check((label = "Mecha Piloting (house rule)") & (p.House() = h) & (p.help.page = 0), "a house Skill offered after the rulebook's");
   p.spinner.SetValue(1); p.add.DoCallback;
   Check.Check((e.skills.next # NIL) & (e.skills.next(Ch.Skill).house = h) & Holds(p.browser, 2, "5 SP")
@@ -691,7 +691,7 @@ END Inactive;
 PROCEDURE ChoiceIs(i: INTEGER; want: ARRAY OF CHAR): BOOLEAN;
   VAR label: ARRAY 128 OF CHAR;
 BEGIN
-  W.entityChoice.ItemLabel(i, label);
+  W.entityChoice.ItemText(i, label);
   IF label # want THEN Out.String("    choice: "); Out.String(label); Out.Ln END;
   RETURN label = want
 END ChoiceIs;
@@ -755,8 +755,8 @@ BEGIN
     & Is(a.subject, "Hopper") & (hopper.owner = pilot) & (hopper.available = 20) & TitleIs(" - window-several.yaml (3 of 3) *"),
     "New Mecha, the name asked: the subject given it, the mecha last, shown, tied");
   FlTest.Fill(W.nameIn, "Hop & Skip");
-  Check.Check(ChoiceIs(2, "3. Hop && Skip (mecha)") & Is(a.subject, "Hop & Skip") & (a.mecha = hopper),
-    "an & shown as itself (FLTK holds it doubled)");
+  Check.Check(ChoiceIs(2, "3. Hop & Skip (mecha)") & Is(a.subject, "Hop & Skip") & (a.mecha = hopper),
+    "an & shown as itself");
 
   Pick(W.duplicateItem); copy := W.entity;
   Check.Check((LEN(W.entities^) = 4) & (W.current = 3) & (copy # hopper) & Is(copy.name, "Hop & Skip") & (copy.owner = NIL)
@@ -766,7 +766,7 @@ BEGIN
     "Duplicate: the copy last, shown; a mecha of a name already tied, so no owner");
   Pick(W.moveUpItem);
   Check.Check((W.current = 2) & (W.entities[2] = copy) & (W.entities[3] = hopper) & (a.mecha = copy) & (hopper.owner = NIL)
-    & ChoiceIs(2, "3. Hop && Skip (mecha)"), "Move Up: swapped, still shown; the first of the name is the one tied");
+    & ChoiceIs(2, "3. Hop & Skip (mecha)"), "Move Up: swapped, still shown; the first of the name is the one tied");
   confirmed := FALSE; before := confirms; Pick(W.removeItem);
   Check.Check((confirms = before + 1) & Is(question, "Remove Hop & Skip from the file?") & (LEN(W.entities^) = 4),
     "Remove..., cancelled: asked, nothing removed");
@@ -828,7 +828,7 @@ END DialogWarning;
 (* ---- Creation (step 10) ---- *)
 
 PROCEDURE Spun(v: FlValuators.Spinner): INTEGER;
-BEGIN RETURN SHORT(ENTIER(v.Value() + 0.5))
+BEGIN RETURN v.IntValue()
 END Spun;
 
 PROCEDURE LabelIs(b: Fl.Widget; want: ARRAY OF CHAR): BOOLEAN;
@@ -939,7 +939,7 @@ BEGIN
   Check.Check((added # pilot) & (added.creation.genre = R.ModernMilitary) & (added.creation.backgroundPoints = 1)
     & (added.creationKeys = pilot.creationKeys) & added.hasCreation, "Add Character: the shown one's creation");
   Pick(W.creationItem);
-  Cr.copyChoice.ItemLabel(0, label);
+  Cr.copyChoice.ItemText(0, label);
   Check.Check(Cr.copyChoice.Active() & (Cr.copyChoice.Length() = 2) & (label = "Pilot"), "Copy from: the other character");
   Cr.SetGenre(R.Cyberpunk); Cr.SetCharacterPoints(TRUE, 50);
   Cr.Copy(0);
@@ -1035,7 +1035,7 @@ BEGIN
   Check.Check(Pv.text = NIL, "Preview: nothing made before the tab is shown");
   ShowTab(W.previewTab);
   Check.Check((Pv.text # NIL) & Displayed(), "shown: made, and displayed");
-  Pv.format.ItemLabel(0, label);
+  Pv.format.ItemText(0, label);
   Check.Check((Pv.format.Value() = Pv.Grid) & (label = "reST grid tables") & Pv.format.IsItem(3) & ~Pv.format.IsItem(4),
     "four formats, grid tables first");
   chosen := NIL; suggestedName := Rp("x"); Pv.Save;
@@ -1093,7 +1093,7 @@ BEGIN
   ChooseItem(p, wa); p.spinner.SetValue(4); p.text.SetValue("Sword"); p.add.DoCallback;
   a := e.attrs(Ch.Attr); was := W.modified;
   W.weaponButton.DoCallback;
-  Check.Check((D.dialog # NIL) & (D.attr = a) & (D.help.page = 81) & (ENTIER(D.level.Value() + 0.5) = 4)
+  Check.Check((D.dialog # NIL) & (D.attr = a) & (D.help.page = 81) & (D.level.IntValue() = 4)
     & ~D.primary.Active() & D.primary.Value(), "Weapon...: its dialog, ? at p. 81, its Level; the only one, the primary");
   D.title.GetLabel(label);
   Check.Check(label = "Weapon Attack (p. 81, PDF 83)", "its name, with both pages");
@@ -1101,14 +1101,14 @@ BEGIN
     "its damage and points");
 
   ChooseItem(D.abilities, R.FindKind(R.Ability, "Accurate"));
-  Check.Check((D.abilities.help.page = 83) & (ENTIER(D.abilities.spinner.Value() + 0.5) = 1), "an Ability chosen: ? at its page, its slots");
+  Check.Check((D.abilities.help.page = 83) & (D.abilities.spinner.IntValue() = 1), "an Ability chosen: ? at its page, its slots");
   D.abilities.add.DoCallback;
   Check.Check((D.abilities.browser.Count() = 1) & Holds(D.abilities.browser, 1, "Accurate") & Holds(D.abilities.browser, 1, "1 slot")
     & Holds(D.abilities.browser, 1, "p. 83, PDF 85") & (C.Value(a.damage) = 45) & Shows(D.damage, a.damage) & W.modified,
     "Add: listed, with its slots and both pages; the damage follows");
 
   ChooseItem(D.disabilities, R.FindKind(R.Disability, "Melee"));
-  Check.Check(ENTIER(D.disabilities.spinner.Value() + 0.5) = 2, "Melee: its 2 slots");
+  Check.Check(D.disabilities.spinner.IntValue() = 2, "Melee: its 2 slots");
   D.disabilities.spinner.SetValue(1); D.disabilities.text.SetValue(" sword "); D.disabilities.add.DoCallback;
   m := a.disabilities(Ch.Mod);
   Check.Check((m # NIL) & (m.countsAs = 1) & Holds(D.disabilities.browser, 1, "Melee (sword)") & Holds(D.disabilities.browser, 1, "1 slot")

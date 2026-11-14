@@ -110,5 +110,11 @@ run "$calc" < /dev/null
 check "besm2_calc_po reads standard input, here empty, and exits 0, with no display" test $st -eq 0
 check "and needs no display" test ! -s "$out/stderr"
 
+# Named but gone, as a tmux pane may keep it: both name nothing, so
+# neither back end can reach a real display.
+env -u TMUX DISPLAY=:9999 WAYLAND_DISPLAY=no-such-wayland-display "$prog" >"$out/stdout" 2>"$out/stderr"; st=$?
+check "a display named but gone exits 1" test $st -eq 1
+check "and says so" grep -qx "besm2_cg_po: no display: the one DISPLAY or WAYLAND_DISPLAY names can't be opened" "$out/stderr"
+
 if [ $status -eq 0 ]; then echo "All checks passed."; else echo "Some checks failed."; fi
 exit $status

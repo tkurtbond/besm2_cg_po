@@ -83,7 +83,7 @@ BEGIN RETURN Ropes.FromString(s)
 END Rp;
 
 PROCEDURE Int(s: FlValuators.Spinner): INTEGER;
-BEGIN RETURN SHORT(ENTIER(s.Value() + 0.5))
+BEGIN RETURN s.IntValue()
 END Int;
 
 PROCEDURE Enable(w: Fl.Widget; on: BOOLEAN);
@@ -296,10 +296,10 @@ BEGIN
   Label(s, "Genre, Table 2-4", R.SkillCostsPage, y);
   NEW(b); Fl.OpenBox(b, 10, y, LabelW - 120, Row, s); b.SetAlign(Fl.AlignLeft + Fl.AlignInside);
   NEW(genre); FlMenus.OpenChoice(genre, LabelW - 110, y, 195, Row, "");
-  genre.AddText("(none)", NIL, {});
+  genre.AppendText("(none)");
   FOR g := 0 TO R.NGenres - 1 DO
     R.GenreName(g, s);
-    genre.AddText(s, NIL, {})
+    genre.AppendText(s)
   END;
   genre.action := ControlAction;
   y := y + Row + Gap;
@@ -330,7 +330,7 @@ BEGIN
   WHILE others[n] # NIL DO
     label := Besm2Text.Trim(others[n].name);
     IF label = NIL THEN label := Rp("(no name)") END;
-    t := Besm2Text.Chars(label); copyChoice.AddText(t^, NIL, {});
+    t := Besm2Text.Chars(label); copyChoice.AppendText(t^);
     INC(n)
   END;
   IF n > 0 THEN copyChoice.Choose(0) END;

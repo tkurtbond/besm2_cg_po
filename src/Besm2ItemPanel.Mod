@@ -151,7 +151,7 @@ BEGIN
 END Fit;
 
 PROCEDURE (p: ItemPanel) Level(): INTEGER;
-BEGIN RETURN SHORT(ENTIER(p.spinner.Value() + 0.5))
+BEGIN RETURN p.spinner.IntValue()
 END Level;
 
 PROCEDURE (p: ItemPanel) Changed*;
@@ -507,7 +507,7 @@ BEGIN
   WHILE h # NIL DO
     r := Besm2Text.Trim(h(Ch.HouseSkill).name); Besm2Text.Add(r, HouseLabel);
     s := Besm2Text.Chars(r);
-    p.choice.AddText(s^, NIL, {});
+    p.choice.AppendText(s^);
     h := h.next
   END
 END FillMore;
@@ -641,10 +641,10 @@ BEGIN
   OpenItemPanel(p, x, y, w, h, R.Skill, -1, 1, "Skills", "Level", "specialisations");
   NEW(p.genre); FlMenus.OpenChoice(p.genre, x + LabelW, p.extraY, 250, Row, "genre");
   p.genre.panel := p;
-  p.genre.AddText("(none)", NIL, {});
+  p.genre.AppendText("(none)");
   FOR g := 0 TO R.NGenres - 1 DO
     R.GenreName(g, name);
-    p.genre.AddText(name, NIL, {})
+    p.genre.AppendText(name)
   END;
   p.genre.Choose(0);
   R.PageLabel("Table 2-4", R.SkillCostsPage, label); Strings.Append(": the Skills' costs by genre", label);

@@ -54,8 +54,7 @@ BEGIN
   NEW(c); FlDialogs.OpenNativeFileChooser(c, FlDialogs.BrowseSaveFile);
   c.SetTitle("Save the preview as"); c.SetOptions(FlDialogs.SaveAsConfirm);
   IF suggested # NIL THEN s := Besm2Text.Chars(suggested); c.SetPresetFile(s^) END;
-  ok := c.Show() = FlDialogs.Chosen;
-  IF ok THEN path := c.Name(0); ok := path # NIL END;
+  path := c.Choose(); ok := path # NIL;
   IF ok THEN p := Ropes.FromString(path^); ok := p # NIL END;
   c.Close;
   RETURN ok
@@ -186,10 +185,10 @@ END Save;
 PROCEDURE Build*(x, y, w, h: INTEGER);
 BEGIN
   NEW(format); FlMenus.OpenChoice(format, x + 60, y, 200, Row, "Format:");
-  format.AddText("reST grid tables", NIL, {});
-  format.AddText("terse reST", NIL, {});
-  format.AddText("groff tbl in raw ms", NIL, {});
-  format.AddText("h-m-m outline", NIL, {});
+  format.AppendText("reST grid tables");
+  format.AppendText("terse reST");
+  format.AppendText("groff tbl in raw ms");
+  format.AppendText("h-m-m outline");
   format.Choose(Grid);
   format.action := FormatAction;
   format.SetTooltip("how to print the file's characters and mecha, as the formatters do");

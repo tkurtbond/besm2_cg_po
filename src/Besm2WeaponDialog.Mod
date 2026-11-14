@@ -205,7 +205,7 @@ BEGIN
 END Load;
 
 PROCEDURE (p: ModPanel) Slots(): INTEGER;
-BEGIN RETURN SHORT(ENTIER(p.spinner.Value() + 0.5))
+BEGIN RETURN p.spinner.IntValue()
 END Slots;
 
 PROCEDURE (p: ModPanel) Add*(): INTEGER;
@@ -256,7 +256,7 @@ END Panel;
 
 PROCEDURE LevelAction(w: Fl.Widget);
 BEGIN
-  Ch.ChangeAttr(entity, attr, attr.item, SHORT(ENTIER(level.Value() + 0.5)), attr.subject, attr.details);
+  Ch.ChangeAttr(entity, attr, attr.item, level.IntValue(), attr.subject, attr.details);
   Recompute
 END LevelAction;
 
