@@ -1599,7 +1599,8 @@ saved YAML holds names as the formatters expect them, without pages.
    The window gained a **Character** menu (Add Character, Add Mecha,
    Duplicate, Remove..., Move Up, Move Down, Next on Ctrl+PgDn,
    Previous on Ctrl+PgUp) and a Choice of the file's entities at the
-   menu bar's right ("2. Walker (mecha)", `&` doubled); the title ends
+   menu bar's right ("2. Walker (mecha)", `&` doubled; shown as
+   itself since step 13); the title ends
    "(i of n)" when the file has more than one.
    `src/Besm2Character.Mod` gained `ReadText` and `NewMecha`,
    `src/Besm2Save.Mod` `Copy` (the entity written and read again),
@@ -1786,6 +1787,29 @@ saved YAML holds names as the formatters expect them, without pages.
     depend on no file of the build tree.  `make test` and
     `test-headless` pass after the last change (a stale comment in
     `Besm2Window.Build`).
+13. **pofltk 0.2.0's API** (2026-11-14).  The window now needs pofltk
+    0.2.0 (`Fl.PofltkApiVersion` 200), whose additions remove the
+    workarounds besm2 had for 0.1.0, so the code says what it means:
+    - Choices are filled with `AddText`, which takes a label as it is.
+      `Add` read `/` as a submenu and `&` as a shortcut, so
+      `Besm2Text.MenuText` doubled them, and is gone.  FillChoice used
+      `Add` without it: "Girl/Guy Magnet" and "One Arm/No Arms" were
+      submenus of the Defects Choice, moving every later item's index
+      (a bug, now fixed, and tested in TestWindow's Defects).  House
+      Skill names with `/` or `&` were cut up the same way.
+    - The Creation dialog's title is a Box, which draws `&&` as two;
+      it showed a doubled `&` from MenuText.  Fixed.
+    - `Choose`, `Browser.SetSelected` and `SetItemActive` are procedures,
+      so no more `IF x THEN END` around a function called for its effect,
+      and no `Activate` helper.
+    - Text comes back whole as an `Fl.String`: `Input.Text`,
+      `TextBuffer.Text`, `Preferences.Text`, `NativeFileChooser.Name` and
+      `FlDialogs.InputText` (NIL on Cancel).  The 4096-byte buffers are
+      gone, and with them the silent cut of a longer text, file name or
+      preference.  `Besm2Window.Chosen` shows a chooser and gives its path.
+    - File filters are added with `AddFilter`, not built by hand.
+    The menu bar keeps `Add`, since its labels are paths with shortcuts.
+    Planted bug, caught: FillChoice back on `Add`.
 
 ### Testing
 
@@ -1801,6 +1825,7 @@ saved YAML holds names as the formatters expect them, without pages.
   of every fixture).
 - Oracles: the fixture characters for calculations; pobesm2_fmt2 and
   the Ada besm2_fmt for files and formatting.
+- The window needs pofltk 0.2.0 (`Fl.PofltkApiVersion` 200; step 13).
 - Every new test is shown to fail with a planted bug before it is
   trusted, as in ova_cg_po.
 

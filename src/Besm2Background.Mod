@@ -41,10 +41,8 @@ VAR
 
 (* What input i holds, trimmed; NIL if blank. *)
 PROCEDURE InputText(i: FlInputs.Input): Rope;
-  VAR s: Besm2Text.String;
-BEGIN
-  NEW(s, i.Length() + 1); i.Value(s^);
-  RETURN Besm2Text.Trim(Ropes.FromString(s^))
+  VAR s: Fl.String;
+BEGIN s := i.Text(); RETURN Besm2Text.Trim(Ropes.FromString(s^))
 END InputText;
 
 PROCEDURE SetInput(i: FlInputs.Input; r: Rope);
@@ -66,10 +64,10 @@ END DialogTell;
 (* The text, trimmed as the loader trims it, so what is saved loads the
    same; blank is empty, but a key the entity had stays. *)
 PROCEDURE (b: DescriptionBuffer) Modified*(pos, inserted, deleted, restyled: INTEGER);
-  VAR s: Besm2Text.String; r: Rope;
+  VAR s: Fl.String; r: Rope;
 BEGIN
   IF filling OR (entity = NIL) OR (inserted = 0) & (deleted = 0) THEN RETURN END;
-  NEW(s, b.Length() + 1); b.GetText(s^);
+  s := b.Text();
   r := Besm2Text.Trim(Ropes.FromString(s^));
   entity.description := r; entity.hasDescription := entity.hasDescription OR (r # NIL);
   Changed
@@ -85,7 +83,7 @@ BEGIN
   notes.Clear;
   FOR i := 0 TO entity.notes.n - 1 DO s := Besm2Text.Chars(entity.notes.items[i]); notes.Add(s^) END;
   IF (line > 0) & (line <= notes.Count()) THEN
-    IF notes.Select(line, TRUE) THEN END;
+    notes.SetSelected(line, TRUE);
     SetInput(noteIn, entity.notes.items[line - 1])
   ELSE noteIn.SetValue("")
   END

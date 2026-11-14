@@ -145,10 +145,8 @@ END Rp;
 
 (* What input i holds; NIL if empty. *)
 PROCEDURE InputText(i: FlInputs.Input): Rope;
-  VAR s: Besm2Text.String;
-BEGIN
-  NEW(s, i.Length() + 1); i.Value(s^);
-  RETURN Ropes.FromString(s^)
+  VAR s: Fl.String;
+BEGIN s := i.Text(); RETURN Ropes.FromString(s^)
 END InputText;
 
 PROCEDURE SetInput(i: FlInputs.Input; r: Rope);
@@ -180,8 +178,19 @@ BEGIN
   RETURN FlDialogs.Choice(q^, y^, "Cancel", "") = 0
 END DialogConfirm;
 
+(* Shows c: whether a file was chosen, its path in p. *)
+PROCEDURE Chosen(c: FlDialogs.NativeFileChooser; VAR p: Rope): BOOLEAN;
+  VAR name: Fl.String;
+BEGIN
+  IF c.Show() # FlDialogs.Chosen THEN RETURN FALSE END;
+  name := c.Name(0);
+  IF name = NIL THEN RETURN FALSE END;
+  p := Ropes.FromString(name^);
+  RETURN p # NIL
+END Chosen;
+
 PROCEDURE DialogPath(save: BOOLEAN; VAR p: Rope): BOOLEAN;
-  VAR c: FlDialogs.NativeFileChooser; name: ARRAY 4096 OF CHAR; filter: ARRAY 32 OF CHAR; ok: BOOLEAN;
+  VAR c: FlDialogs.NativeFileChooser; ok: BOOLEAN;
 BEGIN
   NEW(c);
   IF save THEN
@@ -191,35 +200,30 @@ BEGIN
     FlDialogs.OpenNativeFileChooser(c, FlDialogs.BrowseFile);
     c.SetTitle("Open a character")
   END;
-  filter := "YAML *.{yaml,yml}"; filter[4] := 9X;  (* FLTK's "name<tab>pattern" *)
-  c.SetFilter(filter);
-  ok := c.Show() = FlDialogs.Chosen;
-  IF ok THEN c.FileName(0, name); p := Ropes.FromString(name); ok := p # NIL END;
+  c.AddFilter("YAML", "*.{yaml,yml}");
+  ok := Chosen(c, p);
   c.Close;
   RETURN ok
 END DialogPath;
 
 PROCEDURE DialogPdf(VAR p: Rope): BOOLEAN;
-  VAR c: FlDialogs.NativeFileChooser; name: ARRAY 4096 OF CHAR; filter: ARRAY 16 OF CHAR; ok: BOOLEAN;
+  VAR c: FlDialogs.NativeFileChooser; ok: BOOLEAN;
 BEGIN
   NEW(c); FlDialogs.OpenNativeFileChooser(c, FlDialogs.BrowseFile);
   c.SetTitle("The rulebook's PDF");
-  filter := "PDF *.pdf"; filter[3] := 9X;  (* FLTK's "name<tab>pattern" *)
-  c.SetFilter(filter);
-  ok := c.Show() = FlDialogs.Chosen;
-  IF ok THEN c.FileName(0, name); p := Ropes.FromString(name); ok := p # NIL END;
+  c.AddFilter("PDF", "*.pdf");
+  ok := Chosen(c, p);
   c.Close;
   RETURN ok
 END DialogPdf;
 
 PROCEDURE DialogText(prompt: Rope; VAR text: Rope): BOOLEAN;
-  VAR s: Besm2Text.String; value: ARRAY 4096 OF CHAR; ok: BOOLEAN;
+  VAR s, v: Besm2Text.String; value: Fl.String;
 BEGIN
-  s := Besm2Text.Chars(text); COPY(s^, value);
-  s := Besm2Text.Chars(prompt);
-  ok := FlDialogs.Input(s^, value);
-  IF ok THEN text := Ropes.FromString(value) END;
-  RETURN ok
+  s := Besm2Text.Chars(prompt); v := Besm2Text.Chars(text);
+  value := FlDialogs.InputText(s^, v^);
+  IF value # NIL THEN text := Ropes.FromString(value^) END;
+  RETURN value # NIL
 END DialogText;
 
 (* ---- The rulebook ---- *)
@@ -236,15 +240,15 @@ END Keep;
 
 (* What the preferences hold under name; NIL for nothing. *)
 PROCEDURE Kept(name: ARRAY OF CHAR): Rope;
-  VAR s: Besm2Text.String;
+  VAR s: Fl.String;
 BEGIN
-  NEW(s, preferences.TextLength(name) + 1); preferences.GetText(name, "", s^);
+  s := preferences.Text(name, "");
   RETURN Besm2Text.Trim(Ropes.FromString(s^))
 END Kept;
 
 (* Asks for a campaign file, starting where the last one kept was. *)
 PROCEDURE DialogCampaign(save: BOOLEAN; VAR p: Rope): BOOLEAN;
-  VAR c: FlDialogs.NativeFileChooser; name: ARRAY 4096 OF CHAR; filter: ARRAY 32 OF CHAR; ok: BOOLEAN;
+  VAR c: FlDialogs.NativeFileChooser; name: Besm2Text.String; ok: BOOLEAN;
     last: Rope; i, slash: LONGINT;
 BEGIN
   NEW(c);
@@ -255,21 +259,19 @@ BEGIN
     FlDialogs.OpenNativeFileChooser(c, FlDialogs.BrowseFile);
     c.SetTitle("Load a campaign")
   END;
-  filter := "YAML *.{yaml,yml}"; filter[4] := 9X;  (* FLTK's "name<tab>pattern" *)
-  c.SetFilter(filter);
+  c.AddFilter("YAML", "*.{yaml,yml}");
   last := NIL; IF preferences # NIL THEN last := Kept("campaign") END;
   IF last # NIL THEN
     (* Where the last one was, and its name. *)
-    Ropes.ToString(last, name);
+    name := Besm2Text.Chars(last);
     slash := -1; i := 0;
     WHILE name[i] # 0X DO IF name[i] = "/" THEN slash := i END; INC(i) END;
     IF slash >= 0 THEN
-      c.SetPresetFile(name);   (* whole, before the directory is cut off *)
-      name[slash + 1] := 0X; c.SetDirectory(name)
+      c.SetPresetFile(name^);   (* whole, before the directory is cut off *)
+      name[slash + 1] := 0X; c.SetDirectory(name^)
     END
   END;
-  ok := c.Show() = FlDialogs.Chosen;
-  IF ok THEN c.FileName(0, name); p := Ropes.FromString(name); ok := p # NIL END;
+  ok := Chosen(c, p);
   c.Close;
   RETURN ok
 END DialogCampaign;
@@ -578,25 +580,16 @@ END StatAction;
 (* ---- The file's entities ---- *)
 
 (* Entity i's label in the Choice: its number and name, " (mecha)" for
-   a mecha, any "&" doubled so that FLTK shows it. *)
+   a mecha.  The Choice takes it as it is (AddText). *)
 PROCEDURE EntityLabel(i: INTEGER): Rope;
   VAR r, name: Rope;
 BEGIN
   r := Besm2Text.Int(i + 1); Besm2Text.Add(r, ". ");
   name := Besm2Text.Trim(entities[i].name);
-  IF name = NIL THEN Besm2Text.Add(r, "(no name)") ELSE r := Ropes.Cat(r, Besm2Text.MenuText(name)) END;
+  IF name = NIL THEN Besm2Text.Add(r, "(no name)") ELSE r := Ropes.Cat(r, name) END;
   IF entities[i].isMecha THEN Besm2Text.Add(r, " (mecha)") END;
   RETURN r
 END EntityLabel;
-
-(* Item i of the menu bar active if on. *)
-PROCEDURE Activate(i: INTEGER; on: BOOLEAN);
-  VAR f: SET;
-BEGIN
-  f := bar.ItemFlags(i);
-  IF on THEN f := f - FlMenus.MenuInactive ELSE f := f + FlMenus.MenuInactive END;
-  bar.SetItemFlags(i, f)
-END Activate;
 
 (* The Choice lists the entities again, current chosen, and the
    Character menu's items are active where they can do something. *)
@@ -606,14 +599,13 @@ BEGIN
   n := Count();
   entityChoice.Clear;
   FOR i := 0 TO n - 1 DO
-    IF entityChoice.Add("-", 0, {}, NIL, {}) >= 0 THEN END;
-    s := Besm2Text.Chars(EntityLabel(i)); entityChoice.SetItemLabel(i, s^)
+    s := Besm2Text.Chars(EntityLabel(i)); entityChoice.AddText(s^, NIL, {})
   END;
-  IF entityChoice.SetValue(current) THEN END;
-  Activate(creationItem, ~entity.isMecha OR (entity.owner # NIL));
-  Activate(removeItem, n > 1);
-  Activate(moveUpItem, current > 0); Activate(previousItem, current > 0);
-  Activate(moveDownItem, current < n - 1); Activate(nextItem, current < n - 1)
+  entityChoice.Choose(current);
+  bar.SetItemActive(creationItem, ~entity.isMecha OR (entity.owner # NIL));
+  bar.SetItemActive(removeItem, n > 1);
+  bar.SetItemActive(moveUpItem, current > 0); bar.SetItemActive(previousItem, current > 0);
+  bar.SetItemActive(moveDownItem, current < n - 1); bar.SetItemActive(nextItem, current < n - 1)
 END ShowEntities;
 
 (* Shows entity i. *)

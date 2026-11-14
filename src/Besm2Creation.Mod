@@ -125,7 +125,7 @@ BEGIN
   pointsOn.SetValue(c.characterPoints > 0);
   IF c.characterPoints > 0 THEN pointsIn.SetValue(c.characterPoints) END;
   backgroundIn.SetValue(c.backgroundPoints);
-  IF genre.SetValue(c.genre + 1) THEN END;
+  genre.Choose(c.genre + 1);
   skillOn.SetValue(c.skillPoints # C.Unset);
   IF c.skillPoints # C.Unset THEN skillIn.SetValue(c.skillPoints) END;
   stagedOn.SetValue(c.stagedStatCost);
@@ -296,10 +296,10 @@ BEGIN
   Label(s, "Genre, Table 2-4", R.SkillCostsPage, y);
   NEW(b); Fl.OpenBox(b, 10, y, LabelW - 120, Row, s); b.SetAlign(Fl.AlignLeft + Fl.AlignInside);
   NEW(genre); FlMenus.OpenChoice(genre, LabelW - 110, y, 195, Row, "");
-  IF genre.Add("(none)", 0, {}, NIL, {}) >= 0 THEN END;
+  genre.AddText("(none)", NIL, {});
   FOR g := 0 TO R.NGenres - 1 DO
     R.GenreName(g, s);
-    IF genre.Add(s, 0, {}, NIL, {}) >= 0 THEN END
+    genre.AddText(s, NIL, {})
   END;
   genre.action := ControlAction;
   y := y + Row + Gap;
@@ -329,12 +329,11 @@ BEGIN
   n := 0;
   WHILE others[n] # NIL DO
     label := Besm2Text.Trim(others[n].name);
-    IF label = NIL THEN label := Rp("(no name)") ELSE label := Besm2Text.MenuText(label) END;
-    IF copyChoice.Add("-", 0, {}, NIL, {}) >= 0 THEN END;
-    t := Besm2Text.Chars(label); copyChoice.SetItemLabel(n, t^);
+    IF label = NIL THEN label := Rp("(no name)") END;
+    t := Besm2Text.Chars(label); copyChoice.AddText(t^, NIL, {});
     INC(n)
   END;
-  IF n > 0 THEN IF copyChoice.SetValue(0) THEN END END;
+  IF n > 0 THEN copyChoice.Choose(0) END;
   NEW(copyButton); FlButtons.OpenButton(copyButton, 345, y, 70, Row, "Copy");
   copyButton.action := CopyAction;
   copyButton.SetTooltip("the whole creation, house Skills too, of the character chosen");
@@ -373,7 +372,7 @@ BEGIN
   others[n] := NIL;
   r := Rp("The creation of ");
   IF Besm2Text.Trim(target.name) = NIL THEN Besm2Text.Add(r, "the character (no name)")
-  ELSE r := Ropes.Cat(r, Besm2Text.MenuText(Besm2Text.Trim(target.name)))
+  ELSE r := Ropes.Cat(r, Besm2Text.Trim(target.name))
   END;
   IF e.isMecha THEN Besm2Text.Add(r, ", which prices the mecha") END;
   Ropes.ToString(r, titleText);
@@ -410,7 +409,7 @@ END SetBackgroundPoints;
 
 (* g: a Besm2Rules genre, or C.NoGenre. *)
 PROCEDURE SetGenre*(g: INTEGER);
-BEGIN IF genre.SetValue(g + 1) THEN END; Take
+BEGIN genre.Choose(g + 1); Take
 END SetGenre;
 
 PROCEDURE SetSkillPoints*(on: BOOLEAN; n: INTEGER);
@@ -434,7 +433,7 @@ BEGIN autoFireOn.SetValue(on); Take
 END SetAutoFireOne;
 
 PROCEDURE Copy*(n: INTEGER);
-BEGIN IF copyChoice.SetValue(n) THEN END; CopyAction(copyButton)
+BEGIN copyChoice.Choose(n); CopyAction(copyButton)
 END Copy;
 
 PROCEDURE SetStatPointsCeiling*(on: BOOLEAN; n: INTEGER);

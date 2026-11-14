@@ -243,7 +243,7 @@ END Changed;
 (* Chooses Choice entry i (-1: none), and sets the ? button. *)
 PROCEDURE (p: Panel) ChooseIndex*(i: INTEGER);
 BEGIN
-  IF p.choice.SetValue(i) THEN END;
+  p.choice.Choose(i);
   p.Chosen
 END ChooseIndex;
 
@@ -278,7 +278,7 @@ BEGIN
     IF (i = n - 1) & (i < last) OR (i = last) & (p.More() > 0) THEN flags := FlMenus.MenuDivider
     ELSE flags := {}
     END;
-    IF p.choice.Add(label, 0, {}, NIL, flags) >= 0 THEN END
+    p.choice.AddText(label, NIL, flags)
   END;
   p.FillMore
 END FillChoice;
@@ -308,7 +308,7 @@ BEGIN
   p.browser.Clear;
   p.Fill;
   IF (line > 0) & (line <= p.browser.Count()) THEN
-    IF p.browser.Select(line, TRUE) THEN END;
+    p.browser.SetSelected(line, TRUE);
     p.Load(line)
   END
 END Refresh;

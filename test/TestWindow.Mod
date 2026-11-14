@@ -26,7 +26,7 @@ MODULE TestWindow; (* Besm2Window: the Character tab, driven as a user would, an
    File > Save gone wrong can't change it.  poc drops a string literal
    inside an array index (a[F("x")]), so none is written there. *)
 
-IMPORT Check, Fl, FlBrowsers, FlMenus, FlText, FlValuators, C := Besm2Calc, Ch := Besm2Character, R := Besm2Rules, Besm2Background,
+IMPORT Check, Fl, FlBrowsers, FlText, FlValuators, C := Besm2Calc, Ch := Besm2Character, R := Besm2Rules, Besm2Background,
   Besm2ItemPanel, MP := Besm2MechaPanel, Besm2Save, Besm2Text, Besm2Viewer, Besm2Widgets, D := Besm2WeaponDialog, Cr := Besm2Creation, Pv := Besm2Preview, W := Besm2Window, Out, Ropes;
 
 CONST
@@ -246,7 +246,7 @@ END Holds;
 
 (* Selects line line of browser b, as a click does. *)
 PROCEDURE Select(b: FlBrowsers.Browser; line: INTEGER);
-BEGIN IF b.Select(line, TRUE) THEN END; b.DoCallback
+BEGIN b.SetSelected(line, TRUE); b.DoCallback
 END Select;
 
 (* Chooses it in p's Choice, as the user does. *)
@@ -550,14 +550,33 @@ BEGIN
   Check.Check((tells = before) & (p.browser.Count() = 2), "Change and Remove with no line: nothing")
 END Attributes;
 
+(* Whether p's Choice offers each of the rulebook's names as its label
+   gives it, one item each, in order: a "/" in a name ("Girl/Guy
+   Magnet") is no submenu. *)
+PROCEDURE Offers(p: Besm2Widgets.Panel): BOOLEAN;
+  VAR i, n: INTEGER; it: R.Item; want, label: ARRAY 128 OF CHAR;
+BEGIN
+  IF p.choice.Length() # p.Offered() + p.More() + 1 THEN RETURN FALSE END;
+  n := R.Count(p.kind);
+  FOR i := 0 TO p.Offered() - 1 DO
+    IF i < n THEN it := R.Get(p.kind, i) ELSE it := R.Get(p.second, i - n) END;
+    R.Label(it, want); p.choice.ItemLabel(i, label);
+    IF label # want THEN RETURN FALSE END
+  END;
+  RETURN TRUE
+END Offers;
+
 PROCEDURE Defects;
-  VAR p: Besm2ItemPanel.DefectPanel; d: Ch.Defect;
+  VAR p: Besm2ItemPanel.DefectPanel; d: Ch.Defect; magnet: R.Item;
 BEGIN
   p := W.defectPanel;
   Check.Check((p.browser.Count() = 1) & Holds(p.browser, 1, "1 Unique Character Defect: Stubborn") & Holds(p.browser, 1, "1 BP"),
     "Defects: listed, rank, name: subject, Bonus Points");
   ChooseItem(p, R.Find("Easily Distracted"));
   Check.Check(p.help.page = 104, "? at its page");
+  magnet := R.Find("Girl/Guy Magnet"); ChooseItem(p, magnet);
+  Check.Check(Offers(p) & (p.Item() = magnet), "every name offered as it is, a / too");
+  ChooseItem(p, R.Find("Easily Distracted"));
   p.spinner.SetValue(2); p.details.SetValue("cats"); p.add.DoCallback;
   d := e.defects.next(Ch.Defect);
   Check.Check((d # NIL) & (d.rank = 2) & Is(d.details, "cats") & Holds(p.browser, 2, "2 Easily Distracted (cats)")
@@ -578,7 +597,7 @@ BEGIN
     & Holds(p.browser, 1, "8 SP") & Holds(p.browser, 1, "p. 122, PDF 124"), "Skills: the genre, and the Skill at its cost");
   Check.Check(p.genreHelp.page = R.SkillCostsPage, "the genre's ? at Table 2-4");
   Pick(W.saveItem);
-  IF p.genre.SetValue(R.Cyberpunk + 1) THEN END; p.genre.DoCallback;
+  p.genre.Choose(R.Cyberpunk + 1); p.genre.DoCallback;
   Check.Check((e.creation.genre = R.Cyberpunk) & (C.Value(e.skills.points) = 6) & Holds(p.browser, 1, "6 SP") & W.modified
     & Line(W.SkillPoints, "Skill Points: 6 of 20", FALSE) & TabLine(W.SkillsList, W.SkillPoints),
     "another genre: every Skill priced again (p. 119)");
@@ -615,7 +634,7 @@ BEGIN
   Besm2Background.noteIn.SetValue("second"); Besm2Background.addNote.DoCallback;
   Check.Check((e.notes.n = 2) & Is(e.notes.items[0], "first") & e.hasNotes & (Besm2Background.notes.Count() = 2)
     & (Besm2Background.notes.Value() = 2), "notes added, last, trimmed");
-  before := tells; IF Besm2Background.notes.Select(2, FALSE) THEN END; Besm2Background.removeNote.DoCallback;
+  before := tells; Besm2Background.notes.SetSelected(2, FALSE); Besm2Background.removeNote.DoCallback;
   Check.Check((tells = before + 1) & Is(told, "Choose a note first."), "Remove with none selected: said so");
   Select(Besm2Background.notes, 1); Besm2Background.noteIn.SetValue("one"); Besm2Background.changeNote.DoCallback;
   Check.Check((e.notes.n = 2) & Is(e.notes.items[0], "one") & Is(e.notes.items[1], "second"), "Change: in place");
@@ -677,7 +696,7 @@ END Rulebook;
 
 (* Whether menu item i is inactive. *)
 PROCEDURE Inactive(i: INTEGER): BOOLEAN;
-BEGIN RETURN FlMenus.MenuInactive * W.bar.ItemFlags(i) # {}
+BEGIN RETURN ~W.bar.ItemActive(i)
 END Inactive;
 
 (* Whether the Choice's item i reads want. *)
@@ -690,7 +709,7 @@ BEGIN
 END ChoiceIs;
 
 PROCEDURE Choose(i: INTEGER);
-BEGIN IF W.entityChoice.SetValue(i) THEN END; W.entityChoice.DoCallback
+BEGIN W.entityChoice.Choose(i); W.entityChoice.DoCallback
 END Choose;
 
 (* The Attr of e tied to m; NIL for none. *)
@@ -749,7 +768,7 @@ BEGIN
     "New Mecha, the name asked: the subject given it, the mecha last, shown, tied");
   W.nameIn.SetValue("Hop & Skip"); W.nameIn.DoCallback;
   Check.Check(ChoiceIs(2, "3. Hop && Skip (mecha)") & Is(a.subject, "Hop & Skip") & (a.mecha = hopper),
-    "the Choice doubles an &");
+    "an & shown as itself (FLTK holds it doubled)");
 
   Pick(W.duplicateItem); copy := W.entity;
   Check.Check((LEN(W.entities^) = 4) & (W.current = 3) & (copy # hopper) & Is(copy.name, "Hop & Skip") & (copy.owner = NIL)

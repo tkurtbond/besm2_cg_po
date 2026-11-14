@@ -76,10 +76,8 @@ BEGIN RETURN Ropes.FromString(s)
 END Rp;
 
 PROCEDURE InputText(i: FlInputs.Input): Rope;
-  VAR s: Besm2Text.String;
-BEGIN
-  NEW(s, i.Length() + 1); i.Value(s^);
-  RETURN Besm2Text.Trim(Ropes.FromString(s^))
+  VAR s: Fl.String;
+BEGIN s := i.Text(); RETURN Besm2Text.Trim(Ropes.FromString(s^))
 END InputText;
 
 PROCEDURE SetInput(i: FlInputs.Input; r: Rope);

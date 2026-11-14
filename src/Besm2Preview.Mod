@@ -49,13 +49,14 @@ BEGIN s := Besm2Text.Chars(text); FlDialogs.Message(s^)
 END DialogTell;
 
 PROCEDURE DialogPath(suggested: Rope; VAR p: Rope): BOOLEAN;
-  VAR c: FlDialogs.NativeFileChooser; path: ARRAY 4096 OF CHAR; s: Besm2Text.String; ok: BOOLEAN;
+  VAR c: FlDialogs.NativeFileChooser; path: Fl.String; s: Besm2Text.String; ok: BOOLEAN;
 BEGIN
   NEW(c); FlDialogs.OpenNativeFileChooser(c, FlDialogs.BrowseSaveFile);
   c.SetTitle("Save the preview as"); c.SetOptions(FlDialogs.SaveAsConfirm);
   IF suggested # NIL THEN s := Besm2Text.Chars(suggested); c.SetPresetFile(s^) END;
   ok := c.Show() = FlDialogs.Chosen;
-  IF ok THEN c.FileName(0, path); p := Ropes.FromString(path); ok := p # NIL END;
+  IF ok THEN path := c.Name(0); ok := path # NIL END;
+  IF ok THEN p := Ropes.FromString(path^); ok := p # NIL END;
   c.Close;
   RETURN ok
 END DialogPath;
@@ -169,7 +170,7 @@ END SaveAction;
 
 (* Test hooks: the format chosen, Copy, and Save.... *)
 PROCEDURE SetFormat*(f: INTEGER);
-BEGIN IF format.SetValue(f) THEN END; FormatAction(format)
+BEGIN format.Choose(f); FormatAction(format)
 END SetFormat;
 
 PROCEDURE Copy*;
@@ -185,11 +186,11 @@ END Save;
 PROCEDURE Build*(x, y, w, h: INTEGER);
 BEGIN
   NEW(format); FlMenus.OpenChoice(format, x + 60, y, 200, Row, "Format:");
-  IF format.Add("reST grid tables", 0, {}, NIL, {}) >= 0 THEN END;
-  IF format.Add("terse reST", 0, {}, NIL, {}) >= 0 THEN END;
-  IF format.Add("groff tbl in raw ms", 0, {}, NIL, {}) >= 0 THEN END;
-  IF format.Add("h-m-m outline", 0, {}, NIL, {}) >= 0 THEN END;
-  IF format.SetValue(Grid) THEN END;
+  format.AddText("reST grid tables", NIL, {});
+  format.AddText("terse reST", NIL, {});
+  format.AddText("groff tbl in raw ms", NIL, {});
+  format.AddText("h-m-m outline", NIL, {});
+  format.Choose(Grid);
   format.action := FormatAction;
   format.SetTooltip("how to print the file's characters and mecha, as the formatters do");
   NEW(copy); FlButtons.OpenButton(copy, x + 270, y, 80, Row, "Copy");

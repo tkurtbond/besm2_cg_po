@@ -107,10 +107,8 @@ VAR
 
 (* What input i holds, trimmed; NIL if blank. *)
 PROCEDURE InputText(i: FlInputs.Input): Rope;
-  VAR s: Besm2Text.String;
-BEGIN
-  NEW(s, i.Length() + 1); i.Value(s^);
-  RETURN Besm2Text.Trim(Ropes.FromString(s^))
+  VAR s: Fl.String;
+BEGIN s := i.Text(); RETURN Besm2Text.Trim(Ropes.FromString(s^))
 END InputText;
 
 PROCEDURE SetInput(i: FlInputs.Input; r: Rope);
@@ -259,7 +257,7 @@ BEGIN
     IF o.perLevel THEN Besm2Text.Add(r, " a Level") END;
     AddLine(p.options, r)
   END;
-  IF (line > 0) & (line <= p.options.Count()) THEN IF p.options.Select(line, TRUE) THEN END END
+  IF (line > 0) & (line <= p.options.Count()) THEN p.options.SetSelected(line, TRUE) END
 END ShowOptions;
 
 (* After the Choice changes: the options of the name chosen, none
@@ -509,7 +507,7 @@ BEGIN
   WHILE h # NIL DO
     r := Besm2Text.Trim(h(Ch.HouseSkill).name); Besm2Text.Add(r, HouseLabel);
     s := Besm2Text.Chars(r);
-    IF p.choice.Add(s^, 0, {}, NIL, {}) >= 0 THEN END;
+    p.choice.AddText(s^, NIL, {});
     h := h.next
   END
 END FillMore;
@@ -617,7 +615,7 @@ END Remove;
 
 (* The genre shown: Choice entry 0 is none, then Besm2Rules' genres. *)
 PROCEDURE (p: SkillPanel) ShowGenre;
-BEGIN IF p.genre.SetValue(p.entity.creation.genre + 1) THEN END
+BEGIN p.genre.Choose(p.entity.creation.genre + 1)
 END ShowGenre;
 
 PROCEDURE (c: GenreChoice) Callback*;
@@ -643,12 +641,12 @@ BEGIN
   OpenItemPanel(p, x, y, w, h, R.Skill, -1, 1, "Skills", "Level", "specialisations");
   NEW(p.genre); FlMenus.OpenChoice(p.genre, x + LabelW, p.extraY, 250, Row, "genre");
   p.genre.panel := p;
-  IF p.genre.Add("(none)", 0, {}, NIL, {}) >= 0 THEN END;
+  p.genre.AddText("(none)", NIL, {});
   FOR g := 0 TO R.NGenres - 1 DO
     R.GenreName(g, name);
-    IF p.genre.Add(name, 0, {}, NIL, {}) >= 0 THEN END
+    p.genre.AddText(name, NIL, {})
   END;
-  IF p.genre.SetValue(0) THEN END;
+  p.genre.Choose(0);
   R.PageLabel("Table 2-4", R.SkillCostsPage, label); Strings.Append(": the Skills' costs by genre", label);
   NEW(p.genreHelp); Besm2Widgets.OpenHelpButton(p.genreHelp, x + LabelW + 255, p.extraY, R.SkillCostsPage);
   p.genreHelp.SetTooltip(label)

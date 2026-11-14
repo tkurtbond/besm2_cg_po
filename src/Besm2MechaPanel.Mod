@@ -146,7 +146,7 @@ BEGIN
     END;
     Put(r)
   END;
-  IF (line >= 1) & (line <= n) THEN IF list.Select(line, TRUE) THEN END END;
+  IF (line >= 1) & (line <= n) THEN list.SetSelected(line, TRUE) END;
   IF entity.isMecha THEN showButton.SetLabel("Show Owner"); newButton.Deactivate
   ELSE showButton.SetLabel("Show Mecha"); newButton.Activate
   END;
