@@ -2,8 +2,9 @@ MODULE TestWindow; (* Besm2Window: the Character tab, driven as a user would, an
 
 (* Needs a display: run by make test-gui, under make test-headless or
    make test-sway (AGENTS.md: never on the desktop).  Widgets are driven
-   directly, as pofltk's tests do: a value set, then DoCallback; a menu
-   item picked, so File > Quit is checked on Wayland too, where
+   as pofltk's tests drive them, with FlTest: a field filled, a line
+   selected, a Choice's item chosen by its label; a button's callback
+   run; a menu item picked, so File > Quit is checked on Wayland too, where
    test/quit.sh can't send keys.  What would wait for the user (a
    message, a question, a file chooser, a line of text) is answered by
    the procedures here.
@@ -26,8 +27,9 @@ MODULE TestWindow; (* Besm2Window: the Character tab, driven as a user would, an
    File > Save gone wrong can't change it.  poc drops a string literal
    inside an array index (a[F("x")]), so none is written there. *)
 
-IMPORT Check, Fl, FlBrowsers, FlText, FlValuators, C := Besm2Calc, Ch := Besm2Character, R := Besm2Rules, Besm2Background,
-  Besm2ItemPanel, MP := Besm2MechaPanel, Besm2Save, Besm2Text, Besm2Viewer, Besm2Widgets, D := Besm2WeaponDialog, Cr := Besm2Creation, Pv := Besm2Preview, W := Besm2Window, Out, Ropes;
+IMPORT Check, Fl, FlBrowsers, FlText, FlValuators, FlTest, C := Besm2Calc, Ch := Besm2Character, R := Besm2Rules,
+  Besm2Background, Besm2ItemPanel, MP := Besm2MechaPanel, Besm2Save, Besm2Text, Besm2Viewer, Besm2Widgets,
+  D := Besm2WeaponDialog, Cr := Besm2Creation, Pv := Besm2Preview, W := Besm2Window, Out, Ropes;
 
 CONST
   SavePath = "../obj/window-test.yaml";
@@ -168,16 +170,6 @@ BEGIN
   RETURN 0
 END Warning;
 
-(* Sets Stat i's spinner to v, as the user does. *)
-PROCEDURE SetStat(i, v: INTEGER);
-BEGIN W.statValue[i].SetValue(v); W.statValue[i].DoCallback
-END SetStat;
-
-(* Types text into box b and leaves it. *)
-PROCEDURE Type(b: Besm2Widgets.NumberBox; text: ARRAY OF CHAR);
-BEGIN b.entry.SetValue(text); b.entry.DoCallback
-END Type;
-
 PROCEDURE Pick(item: INTEGER);
 BEGIN W.bar.Pick(item)
 END Pick;
@@ -244,14 +236,10 @@ BEGIN
   RETURN Ropes.Find(Rp(text), s, 0) >= 0
 END Holds;
 
-(* Selects line line of browser b, as a click does. *)
-PROCEDURE Select(b: FlBrowsers.Browser; line: INTEGER);
-BEGIN b.SetSelected(line, TRUE); b.DoCallback
-END Select;
-
 (* Chooses it in p's Choice, as the user does. *)
 PROCEDURE ChooseItem(p: Besm2Widgets.Panel; it: R.Item);
-BEGIN p.Choose(it); p.choice.DoCallback
+  VAR label: ARRAY 64 OF CHAR;
+BEGIN R.Label(it, label); IF ~FlTest.Choose(p.choice, label) THEN HALT(98) END
 END ChooseItem;
 
 (* The line of option label of it (from 1). *)
@@ -316,34 +304,34 @@ PROCEDURE Editing;
   VAR e: Ch.Entity; label: ARRAY 128 OF CHAR;
 BEGIN
   e := W.entity;
-  SetStat(C.Body, 5);
+  FlTest.Change(W.statValue[C.Body], 5);
   Check.Check((e.stat[C.Body] = 5) & (C.Value(e.statPoints[C.Body]) = 5) & AllShown(),
     "a Stat's spinner sets it, and its points, and every number shown follows");
   Check.Check(Line(W.CharacterPoints, "Character Points: Stats 7 + Attributes 0 - Bonus Points 0 = 7 (no limit set)", FALSE),
     "and the Character Points");
   Check.Check(W.modified, "a change marks the character changed");
   Check.Check(TitleIs(" *"), "and the title says so");
-  W.nameIn.SetValue("Kei Tanaka"); W.nameIn.DoCallback;
+  FlTest.Fill(W.nameIn, "Kei Tanaka");
   Check.Check(e.hasName & Is(e.name, "Kei Tanaka"), "the name typed is the character's");
-  W.taglineIn.SetValue("  Pilot  "); W.taglineIn.DoCallback;
+  FlTest.Fill(W.taglineIn, "  Pilot  ");
   Check.Check(e.hasTagline & Is(e.tagline, "Pilot"), "the tagline typed, trimmed");
-  W.sizeIn.SetValue("Medium"); W.sizeIn.DoCallback;
+  FlTest.Fill(W.sizeIn, "Medium");
   Check.Check(e.hasSize & Is(e.size, "Medium"), "the size typed");
 
-  Type(W.derived[Ch.HP], "99");
+  FlTest.Fill(W.derived[Ch.HP].entry, "99");
   Check.Check(e.hp.overridden & (C.Value(e.hp) = 99) & AllShown(), "a number typed in HP's box overrides it");
-  Type(W.statPoints[C.Mind], "4");
+  FlTest.Fill(W.statPoints[C.Mind].entry, "4");
   Check.Check(e.statPoints[C.Mind].overridden & (e.statTotal = 10) & (e.spent = 10),
     "an override of a Stat's points counts in the Character Points");
-  Type(W.statPoints[C.Mind], "");
+  FlTest.Fill(W.statPoints[C.Mind].entry, "");
   Check.Check(~e.statPoints[C.Mind].overridden & (e.statTotal = 7), "and emptied, the computed points count again");
   before := tells;
-  Type(W.derived[Ch.SV], "lots");
+  FlTest.Fill(W.derived[Ch.SV].entry, "lots");
   Check.Check((tells = before + 1) & ~e.sv.overridden & AllShown(), "text that isn't a number is refused, and said so");
   Check.Check(Ends(told, "SV: a whole number. The computed number is used."), "naming the box");
-  Type(W.statPoints[C.Soul], "x");
+  FlTest.Fill(W.statPoints[C.Soul].entry, "x");
   Check.Check(Ends(told, "Soul's points: a whole number. The computed number is used."), "or the Stat");
-  Type(W.derived[Ch.AR], "3");
+  FlTest.Fill(W.derived[Ch.AR].entry, "3");
   Check.Check(e.ar.overridden & W.derived[Ch.AR].Visible(), "an override of AR shows it")
 END Editing;
 
@@ -370,7 +358,7 @@ BEGIN
   Check.Check((es # NIL) & es[0].hp.overridden & (C.Value(es[0].hp) = 99) & es[0].ar.overridden
     & (C.Value(es[0].ar) = 3) & ~es[0].sv.overridden,
     "with its overrides, and only those");
-  SetStat(C.Mind, 3);
+  FlTest.Change(W.statValue[C.Mind], 3);
   answer := W.Discard; asked := 0; e := W.entity;
   Pick(W.newItem);
   Check.Check((asked = 1) & Is(question, "Save the changes to the character first?") & (W.entity # e) & ~W.modified,
@@ -399,13 +387,13 @@ BEGIN
     "Character Points: of the creation block's");
   Check.Check(Line(W.SkillPoints, "Skill Points: 8 of 20", FALSE), "Skill Points: of the creation block's");
   Check.Check(W.warnings.Count() = 0, "no warnings");
-  SetStat(C.Body, 6);
+  FlTest.Change(W.statValue[C.Body], 6);
   Check.Check(Line(W.CharacterPoints, "Character Points: Stats 14 + Attributes 8 - Bonus Points 1 = 21 of 20", TRUE),
     "one point over: red");
   Check.Check(Warning("spent 21 Character Points of 20 (p. 13, PDF 15)") > 0, "and a warning says so, with both pages");
-  SetStat(C.Body, 13);
+  FlTest.Change(W.statValue[C.Body], 13);
   Check.Check(Warning("Body (p. 15, PDF 17): 13 is outside 1 to 12 (p. 16, PDF 18)") > 0, "a Stat above 12: warned");
-  SetStat(C.Body, 6);
+  FlTest.Change(W.statValue[C.Body], 6);
   Check.Check(Warning("outside 1 to 12") = 0, "and back: not");
 
   chosen := Rp(SavePath2);
@@ -416,12 +404,12 @@ BEGIN
   Check.Check((es # NIL) & (LEN(es^) = 2) & Is(es[0].name, "Walker") & es[0].isMecha & Is(es[1].name, "Pilot")
     & (es[1].stat[C.Body] = 6) & (C.Value(es[1].statPoints[C.Body]) = 6),
     "every entity saved, in order, with the change");
-  SetStat(C.Soul, 5); chosen := NIL;
+  FlTest.Change(W.statValue[C.Soul], 5); chosen := NIL;
   Pick(W.saveItem);
   es := Reload(SavePath2);
   Check.Check(~W.modified & (es # NIL) & (es[1].stat[C.Soul] = 5), "File > Save: to the same file, without asking");
 
-  SetStat(C.Soul, 4); answer := W.Cancel; asked := 0;
+  FlTest.Change(W.statValue[C.Soul], 4); answer := W.Cancel; asked := 0;
   Pick(W.quitItem);
   Check.Check((asked = 1) & Is(question, "Save the changes to window-two.yaml first?") & W.window.Shown(),
     "File > Quit with changes asks, naming the file; Cancel: still shown");
@@ -445,8 +433,8 @@ PROCEDURE Bare;
 BEGIN
   e := W.entity;
   Check.Check(e.fromFile & ~e.hasStats & ~e.hasDerived, "a file's character without Stats or derived values");
-  SetStat(C.Mind, 3);
-  Type(W.derived[Ch.EP], "7");
+  FlTest.Change(W.statValue[C.Mind], 3);
+  FlTest.Fill(W.derived[Ch.EP].entry, "7");
   chosen := Rp(SavePath);
   Pick(W.saveAsItem);
   es := Reload(SavePath);
@@ -515,11 +503,11 @@ BEGIN
     & Holds(p.options, OptLine(flight, "cannot hover"), "( ) cannot hover"), "its options, the first of a choice counted");
   before := tells; p.plus.DoCallback;
   Check.Check((tells = before + 1) & Is(told, "Choose an option first."), "+ with no option: said so");
-  line := OptLine(flight, "cannot hover"); Select(p.options, line); p.plus.DoCallback;
-  Select(p.options, 1); p.plus.DoCallback;
+  line := OptLine(flight, "cannot hover"); FlTest.SelectLine(p.options, line); p.plus.DoCallback;
+  FlTest.SelectLine(p.options, 1); p.plus.DoCallback;
   Check.Check(Holds(p.options, 1, "(x) ") & Holds(p.options, line, "( ) cannot hover"), "+ on another of a choice: it, not the one before");
-  Select(p.options, line); p.plus.DoCallback;
-  line := OptLine(flight, "skimmer or hovercraft"); Select(p.options, line); p.plus.DoCallback;
+  FlTest.SelectLine(p.options, line); p.plus.DoCallback;
+  line := OptLine(flight, "skimmer or hovercraft"); FlTest.SelectLine(p.options, line); p.plus.DoCallback;
   Check.Check(Holds(p.options, 1, "( ) ") & Holds(p.options, OptLine(flight, "cannot hover"), "(x) cannot hover")
     & Holds(p.options, line, "[x] skimmer"), "+: one of a choice, the others not; an option alone taken");
   p.spinner.SetValue(2); p.details.SetValue("  wings ");
@@ -531,18 +519,18 @@ BEGIN
     & TabLine(W.AttributesList, W.CharacterPoints) & TabLine(W.DefectsList, W.CharacterPoints)
     & (Warning("Character Points") > 0) & TabWarnings(), "the totals and warnings, here and on every tab, as you go");
 
-  keep := a; p.Blank; Select(p.browser, 3);
+  keep := a; p.Blank; FlTest.SelectLine(p.browser, 3);
   Check.Check((p.choice.Value() >= 0) & (p.Item() = flight) & (ENTIER(p.spinner.Value() + 0.5) = 2)
     & Holds(p.options, OptLine(flight, "cannot hover"), "(x) cannot hover"), "a line selected: its name, Level and options loaded");
   p.spinner.SetValue(3); p.change.DoCallback;
   a := e.attrs.next.next(Ch.Attr);
   Check.Check((a = keep) & (a.level = 3) & (C.Value(a.points) = 8) & (p.browser.Value() = 3) & Holds(p.browser, 3, "3 Flight (wings)"),
     "Change: the same Attribute, at its new Level");
-  Select(p.browser, 1); p.text.SetValue("Nobody"); p.change.DoCallback;
+  FlTest.SelectLine(p.browser, 1); p.text.SetValue("Nobody"); p.change.DoCallback;
   Check.Check((e.attrs(Ch.Attr).mecha = NIL) & Is(e.attrs(Ch.Attr).subject, "Nobody"), "Own a Big Mecha's subject changed: unlinked");
-  Select(p.browser, 1); p.text.SetValue("Walker"); p.change.DoCallback;
+  FlTest.SelectLine(p.browser, 1); p.text.SetValue("Walker"); p.change.DoCallback;
   Check.Check(e.attrs(Ch.Attr).mecha = W.entities[0], "and named again: linked to its mecha");
-  Select(p.browser, 3); p.remove.DoCallback;
+  FlTest.SelectLine(p.browser, 3); p.remove.DoCallback;
   Check.Check((p.browser.Count() = 2) & (p.browser.Value() = 0) & (p.choice.Value() < 0)
     & Line(W.CharacterPoints, "Character Points: Stats 13 + Attributes 8 - Bonus Points 1 = 20 of 20", FALSE)
     & TabLine(W.AttributesList, W.CharacterPoints), "Remove: gone, nothing selected, the totals back");
@@ -583,9 +571,9 @@ BEGIN
     & Holds(p.browser, 2, "2 BP") & (e.bonusPoints = 3), "Add: its rank, and its Bonus Points");
   Check.Check(Line(W.CharacterPoints, "Character Points: Stats 13 + Attributes 8 - Bonus Points 3 = 18 of 20", FALSE)
     & TabLine(W.DefectsList, W.CharacterPoints) & TabLine(W.DefectsList, W.BonusPoints), "and the totals");
-  Select(p.browser, 2); p.spinner.SetValue(1); p.change.DoCallback;
+  FlTest.SelectLine(p.browser, 2); p.spinner.SetValue(1); p.change.DoCallback;
   Check.Check((e.defects.next = d) & (d.rank = 1) & (e.bonusPoints = 2), "Change: its rank");
-  Select(p.browser, 2); p.remove.DoCallback;
+  FlTest.SelectLine(p.browser, 2); p.remove.DoCallback;
   Check.Check((e.defects.next = NIL) & (e.bonusPoints = 1), "Remove")
 END Defects;
 
@@ -601,11 +589,11 @@ BEGIN
   Check.Check((e.creation.genre = R.Cyberpunk) & (C.Value(e.skills.points) = 6) & Holds(p.browser, 1, "6 SP") & W.modified
     & Line(W.SkillPoints, "Skill Points: 6 of 20", FALSE) & TabLine(W.SkillsList, W.SkillPoints),
     "another genre: every Skill priced again (p. 119)");
-  Select(p.browser, 1); p.text.SetValue(" Cars, , Trucks "); p.change.DoCallback;
+  FlTest.SelectLine(p.browser, 1); p.text.SetValue(" Cars, , Trucks "); p.change.DoCallback;
   s := e.skills(Ch.Skill);
   Check.Check((s.specs = 2) & Is(s.specialisations.items[1], "Trucks") & Holds(p.browser, 1, "2 Driving (Cars, Trucks)")
     & (C.Value(s.points) = 7), "specialisations: split at commas, trimmed, blanks dropped; the second 1 SP");
-  p.text.SetValue(""); Select(p.browser, 1); p.text.Value(label);
+  p.text.SetValue(""); FlTest.SelectLine(p.browser, 1); p.text.Value(label);
   Check.Check(label = "Cars, Trucks", "selected: its specialisations loaded, joined by commas");
 
   NEW(h); C.InitHouseSkill(h); h.name := Rp("Mecha Piloting"); h.cost[R.Cyberpunk] := 5;
@@ -618,7 +606,7 @@ BEGIN
   p.spinner.SetValue(1); p.add.DoCallback;
   Check.Check((e.skills.next # NIL) & (e.skills.next(Ch.Skill).house = h) & Holds(p.browser, 2, "5 SP")
     & Holds(p.browser, 2, "house rule") & (e.skillSpent = 12), "Add: priced at its genre's cost");
-  Select(p.browser, 2); p.remove.DoCallback;
+  FlTest.SelectLine(p.browser, 2); p.remove.DoCallback;
   Check.Check((e.skills.next = NIL) & (e.skillSpent = 7), "Remove")
 END Skills;
 
@@ -636,13 +624,13 @@ BEGIN
     & (Besm2Background.notes.Value() = 2), "notes added, last, trimmed");
   before := tells; Besm2Background.notes.SetSelected(2, FALSE); Besm2Background.removeNote.DoCallback;
   Check.Check((tells = before + 1) & Is(told, "Choose a note first."), "Remove with none selected: said so");
-  Select(Besm2Background.notes, 1); Besm2Background.noteIn.SetValue("one"); Besm2Background.changeNote.DoCallback;
+  FlTest.SelectLine(Besm2Background.notes, 1); Besm2Background.noteIn.SetValue("one"); Besm2Background.changeNote.DoCallback;
   Check.Check((e.notes.n = 2) & Is(e.notes.items[0], "one") & Is(e.notes.items[1], "second"), "Change: in place");
-  Select(Besm2Background.notes, 2); Besm2Background.removeNote.DoCallback;
+  FlTest.SelectLine(Besm2Background.notes, 2); Besm2Background.removeNote.DoCallback;
   Check.Check((e.notes.n = 1) & (Besm2Background.notes.Count() = 1), "Remove");
 
   ChooseItem(W.attrPanel, R.Find("Flight"));
-  glider := OptLine(R.Find("Flight"), "glider"); Select(W.attrPanel.options, glider); W.attrPanel.plus.DoCallback;
+  glider := OptLine(R.Find("Flight"), "glider"); FlTest.SelectLine(W.attrPanel.options, glider); W.attrPanel.plus.DoCallback;
   W.attrPanel.add.DoCallback;
   Pick(W.saveItem);
   es := Reload("../obj/lists.yaml");
@@ -747,7 +735,7 @@ BEGIN
     "on the mecha: its owner, and its Mecha Points of what that gives");
   Check.Check((p.kind = R.MechaAttribute) & (p.second = R.Attribute) & (W.defectPanel.kind = R.MechaDefect),
     "a mecha's lists offer the Mecha Attributes and Defects first");
-  W.nameIn.SetValue("Strider"); W.nameIn.DoCallback;
+  FlTest.Fill(W.nameIn, "Strider");
   Check.Check(Is(pilot.attrs(Ch.Attr).subject, "Strider") & (pilot.attrs.mecha = walker) & ChoiceIs(0, "1. Strider (mecha)")
     & W.modified, "the mecha renamed: its owner's Own a Big Mecha follows, still tied; the Choice too");
   MP.showButton.DoCallback;
@@ -759,14 +747,14 @@ BEGIN
   before := tells; MP.newButton.DoCallback;
   Check.Check((tells = before + 1) & Is(told, "Choose an Own a Big Mecha first.") & (LEN(W.entities^) = 2),
     "New Mecha, two lines, none chosen: said so");
-  Select(MP.list, 1); before := tells; MP.newButton.DoCallback;
+  FlTest.SelectLine(MP.list, 1); before := tells; MP.newButton.DoCallback;
   Check.Check((tells = before + 1) & (LEN(W.entities^) = 2), "New Mecha on one with its mecha: said so");
-  Select(MP.list, 2); typed := Rp("  Hopper "); MP.newButton.DoCallback; typed := NIL;
+  FlTest.SelectLine(MP.list, 2); typed := Rp("  Hopper "); MP.newButton.DoCallback; typed := NIL;
   hopper := W.entity; a := TiedTo(pilot, hopper);
   Check.Check((LEN(W.entities^) = 3) & (W.current = 2) & hopper.isMecha & Is(hopper.name, "Hopper") & (a # NIL)
     & Is(a.subject, "Hopper") & (hopper.owner = pilot) & (hopper.available = 20) & TitleIs(" - window-several.yaml (3 of 3) *"),
     "New Mecha, the name asked: the subject given it, the mecha last, shown, tied");
-  W.nameIn.SetValue("Hop & Skip"); W.nameIn.DoCallback;
+  FlTest.Fill(W.nameIn, "Hop & Skip");
   Check.Check(ChoiceIs(2, "3. Hop && Skip (mecha)") & Is(a.subject, "Hop & Skip") & (a.mecha = hopper),
     "an & shown as itself (FLTK holds it doubled)");
 
@@ -1056,9 +1044,9 @@ BEGIN
   Copy("data/window.yaml", PreviewPath);
   chosen := Rp(PreviewPath); Pick(W.openItem);
   Check.Check(Contains(Pv.text, "Pilot") & Contains(Pv.text, "Walker") & Displayed(), "a file opened: all its entities, shown");
-  W.nameIn.SetValue("Test Pilot"); W.nameIn.DoCallback;
+  FlTest.Fill(W.nameIn, "Test Pilot");
   Check.Check(Contains(Pv.text, "Test Pilot") & Displayed(), "the name typed: the preview follows");
-  W.taglineIn.SetValue("Previewed"); W.taglineIn.DoCallback;
+  FlTest.Fill(W.taglineIn, "Previewed");
   Check.Check(Contains(Pv.text, "Previewed"), "the tagline too");
   chosen := Rp(PreviewPath); Pick(W.saveItem);
 
@@ -1079,7 +1067,7 @@ BEGIN
 
   before := Pv.text;
   ShowTab(W.characterTab);
-  W.nameIn.SetValue("Hidden Pilot"); W.nameIn.DoCallback;
+  FlTest.Fill(W.nameIn, "Hidden Pilot");
   Check.Check(Pv.text = before, "the tab not shown: not made again");
   ShowTab(W.previewTab);
   Check.Check(Contains(Pv.text, "Hidden Pilot"), "shown again: made again");
@@ -1126,7 +1114,7 @@ BEGIN
   Check.Check((m # NIL) & (m.countsAs = 1) & Holds(D.disabilities.browser, 1, "Melee (sword)") & Holds(D.disabilities.browser, 1, "1 slot")
     & (C.Value(a.damage) = 60), "counting as 1: counts-as, its detail, the damage");
 
-  Select(D.abilities.browser, 1);
+  FlTest.SelectLine(D.abilities.browser, 1);
   Check.Check(D.abilities.Item() = R.FindKind(R.Ability, "Accurate"), "a line selected: loaded");
   D.abilities.spinner.SetValue(2); D.abilities.change.DoCallback;
   Check.Check(Holds(D.abilities.browser, 1, "Accurate x2") & Holds(D.abilities.browser, 1, "2 slots") & (C.Value(a.damage) = 45),
@@ -1135,7 +1123,7 @@ BEGIN
   D.SetLevel(5);
   Check.Check((a.level = 5) & (C.Value(a.damage) = 60) & (C.Value(a.points) = 20) & Shows(D.points, a.points)
     & Holds(p.browser, 1, "5 Weapon Attack: Sword") & Holds(p.browser, 1, "20 pts"), "the Level: damage, points, and the list, follow");
-  Type(D.damage, "50");
+  FlTest.Fill(D.damage.entry, "50");
   Check.Check(a.damage.overridden & (C.Value(a.damage) = 50) & Shows(D.damage, a.damage), "the damage overridden");
   D.SetGunner(TRUE);
   Check.Check(a.differentGunner & (C.Value(a.points) = 25) & (DialogWarning("Different Gunner") > 0), "a different gunner: +5, and warned on a character");
@@ -1149,7 +1137,7 @@ BEGIN
   ChooseItem(D.disabilities, R.FindKind(R.Disability, "Melee")); D.disabilities.spinner.SetValue(1); D.disabilities.add.DoCallback;
   ChooseItem(D.abilities, R.FindKind(R.Ability, "Area Effect")); D.abilities.add.DoCallback;
   D.subjectIn.SetValue(" Spear ");
-  Select(D.abilities.browser, 1); D.abilities.remove.DoCallback;
+  FlTest.SelectLine(D.abilities.browser, 1); D.abilities.remove.DoCallback;
   Check.Check((D.abilities.browser.Count() = 0) & (a.abilities = NIL), "Remove");
   ChooseItem(D.abilities, R.FindKind(R.Ability, "Area Effect")); D.abilities.add.DoCallback;
   D.Ok;
@@ -1159,16 +1147,16 @@ BEGIN
   ChooseItem(p, wa); p.spinner.SetValue(4); p.text.SetValue("Bow"); p.add.DoCallback;
   a2 := a.next(Ch.Attr);
   Check.Check(a.isPrimary & (C.Value(a2.points) = 2), "a second at the same Level: 2 points");
-  Select(p.browser, 1); W.weaponButton.DoCallback;
+  FlTest.SelectLine(p.browser, 1); W.weaponButton.DoCallback;
   Check.Check(D.primary.Active() & D.primary.Value(), "two: primary can be changed");
   before := tells; D.SetPrimary(FALSE);
   Check.Check((tells = before + 1) & a.isPrimary & D.primary.Value(), "unmarked: still the primary, and said why");
-  Select(D.disabilities.browser, 1); D.disabilities.spinner.SetValue(2); D.disabilities.change.DoCallback;
+  FlTest.SelectLine(D.disabilities.browser, 1); D.disabilities.spinner.SetValue(2); D.disabilities.change.DoCallback;
   Check.Check(a.disabilities.countsAs = 0, "Melee changed to its own 2 slots: counts-as left out");
   D.Cancel;
   Check.Check((a.disabilities # NIL) & (a.disabilities.countsAs = 1) & (C.Value(a.damage) = 60) & ~a.primary,
     "Cancel: a changed Disability as it was");
-  Select(p.browser, 2); W.weaponButton.DoCallback;
+  FlTest.SelectLine(p.browser, 2); W.weaponButton.DoCallback;
   D.SetPrimary(TRUE);
   Check.Check(a2.primary & a2.isPrimary & ~a.isPrimary & (C.Value(a2.points) = 16) & (C.Value(a.points) = 2)
     & Holds(p.browser, 1, "2 pts"), "the second marked: the primary, priced so, and the first a secondary");
@@ -1179,7 +1167,7 @@ BEGIN
   Check.Check((es # NIL) & (es[0].attrs.disabilities # NIL) & (es[0].attrs.disabilities.countsAs = 1)
     & es[0].attrs.next.primary & ~es[0].attrs.primary, "saved and loaded again: counts-as 1, the primary");
 
-  Select(p.browser, 1); W.weaponButton.DoCallback;
+  FlTest.SelectLine(p.browser, 1); W.weaponButton.DoCallback;
   D.SetLevel(6)  (* left open: W.Close cancels it *)
 END Weapons;
 
