@@ -246,7 +246,7 @@ BEGIN
   ELSE
     Besm2Widgets.OpenPanel(p, x, y, PanelW, PanelH, R.Disability, -1, 0, "Disabilities", "slots", "detail")
   END;
-  widths[0] := PanelW - SlotsW - PageW; widths[1] := SlotsW; widths[2] := 0;
+  widths[0] := -1; widths[1] := SlotsW; widths[2] := PageW;
   p.browser.SetColumnWidths(widths, 3);
   p.spinner.SetBounds(1, MaxSlots); p.spinner.SetValue(1);
   p.ChooseIndex(-1)
@@ -318,8 +318,7 @@ PROCEDURE Build;
   VAR b: FlButtons.Button; y, x2: INTEGER;
 BEGIN
   NEW(dialog); Fl.OpenDoubleWindow(dialog, Width, Height, "Weapon Attack");
-  NEW(title); Fl.OpenBox(title, 10, 10, 300, Row, titleText);
-  title.SetAlign(Fl.AlignLeft + Fl.AlignInside); title.SetLabelFont(Fl.Bold);
+  NEW(title); Fl.OpenLabel(title, 10, 10, 300, Row, titleText); title.SetLabelFont(Fl.Bold);
   NEW(help); Besm2Widgets.OpenHelpButton(help, 315, 10, attr.item.page);
   NEW(level); FlValuators.OpenSpinner(level, 420, 10, 60, Row, "Level");
   level.SetBounds(1, 99); level.SetStep(1); level.action := LevelAction;

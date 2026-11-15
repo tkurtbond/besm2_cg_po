@@ -283,18 +283,17 @@ PROCEDURE Build;
   VAR b: Fl.Box; s: ARRAY 96 OF CHAR; y, g, n: INTEGER; label: Rope; t: Besm2Text.String;
 BEGIN
   NEW(dialog); Fl.OpenDoubleWindow(dialog, Width, Height, "Creation");
-  NEW(title); Fl.OpenBox(title, 10, 8, Width - 20, Row, titleText);
-  title.SetAlign(Fl.AlignLeft + Fl.AlignInside); title.SetLabelFont(Fl.Bold);
+  NEW(title); Fl.OpenLabel(title, 10, 8, Width - 20, Row, titleText); title.SetLabelFont(Fl.Bold);
   y := Top;
   Check(pointsOn, "Character Points", CharacterPointsPage, y);
   Spinner(pointsIn, 1, MaxPoints, DefaultCharacterPoints, y);
   y := y + Row + Gap;
   Label(s, "Background Points", R.BackgroundPointsPage, y);
-  NEW(b); Fl.OpenBox(b, 10, y, LabelW, Row, s); b.SetAlign(Fl.AlignLeft + Fl.AlignInside);
+  NEW(b); Fl.OpenLabel(b, 10, y, LabelW, Row, s);
   Spinner(backgroundIn, 0, MaxBackground, 0, y);
   y := y + Row + Gap;
   Label(s, "Genre, Table 2-4", R.SkillCostsPage, y);
-  NEW(b); Fl.OpenBox(b, 10, y, LabelW - 120, Row, s); b.SetAlign(Fl.AlignLeft + Fl.AlignInside);
+  NEW(b); Fl.OpenLabel(b, 10, y, LabelW - 120, Row, s);
   NEW(genre); FlMenus.OpenChoice(genre, LabelW - 110, y, 195, Row, "");
   genre.AppendText("(none)");
   FOR g := 0 TO R.NGenres - 1 DO
@@ -322,8 +321,7 @@ BEGIN
   Check(statPointsFloorOn, "A floor on the Stats' total cost", StatCeilingPage, y);
   Spinner(statPointsFloorIn, 1, MaxPoints, DefaultStatPointsFloor, y);
   y := y + Row + Gap;
-  NEW(summary); Fl.OpenBox(summary, 10, y, Width - 20, Row, "");
-  summary.SetAlign(Fl.AlignLeft + Fl.AlignInside);
+  NEW(summary); Fl.OpenLabel(summary, 10, y, Width - 20, Row, "");
   y := y + Row + Gap;
   NEW(copyChoice); FlMenus.OpenChoice(copyChoice, 90, y, 250, Row, "Copy from");
   n := 0;

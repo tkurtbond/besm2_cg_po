@@ -937,15 +937,13 @@ END Quit;
 PROCEDURE Label(x, y, w: INTEGER; text: ARRAY OF CHAR);
   VAR b: Fl.Box;
 BEGIN
-  NEW(b); Fl.OpenBox(b, x, y, w, Row, text);
-  b.SetAlign(Fl.AlignLeft + Fl.AlignInside); b.SetLabelFont(Fl.Bold)
+  NEW(b); Fl.OpenLabel(b, x, y, w, Row, text); b.SetLabelFont(Fl.Bold)
 END Label;
 
 PROCEDURE Plain(x, y, w: INTEGER; text: ARRAY OF CHAR);
   VAR b: Fl.Box;
 BEGIN
-  NEW(b); Fl.OpenBox(b, x, y, w, Row, text);
-  b.SetAlign(Fl.AlignLeft + Fl.AlignInside)
+  NEW(b); Fl.OpenLabel(b, x, y, w, Row, text)
 END Plain;
 
 PROCEDURE Help(x, y, page: INTEGER);
@@ -1008,8 +1006,7 @@ BEGIN
   Label(LeftX, y, 300, label); Help(LeftX + 310, y, CharacterPointsPage);
   y := y + Row;
   FOR i := 0 TO NPointLines - 1 DO
-    NEW(points[i]); Fl.OpenBox(points[i], LeftX, y, ColumnW, Row, "");
-    points[i].SetAlign(Fl.AlignLeft + Fl.AlignInside);
+    NEW(points[i]); Fl.OpenLabel(points[i], LeftX, y, ColumnW, Row, "");
     y := y + Row
   END;
 
@@ -1024,8 +1021,7 @@ PROCEDURE BuildTotals(t, y: INTEGER);
   VAR i: INTEGER; b: FlBrowsers.Browser;
 BEGIN
   FOR i := 0 TO NPointLines - 1 DO
-    NEW(tabPoints[t][i]); Fl.OpenBox(tabPoints[t][i], LeftX, y, ColumnW, Row, "");
-    tabPoints[t][i].SetAlign(Fl.AlignLeft + Fl.AlignInside);
+    NEW(tabPoints[t][i]); Fl.OpenLabel(tabPoints[t][i], LeftX, y, ColumnW, Row, "");
     y := y + Row
   END;
   y := y + 25;

@@ -146,8 +146,7 @@ END Show;
 PROCEDURE Heading(x, y, w: INTEGER; text: ARRAY OF CHAR);
   VAR b: Fl.Box;
 BEGIN
-  NEW(b); Fl.OpenBox(b, x, y, w, 20, text);
-  b.SetAlign(Fl.AlignLeft + Fl.AlignInside); b.SetLabelFont(Fl.Bold)
+  NEW(b); Fl.OpenLabel(b, x, y, w, 20, text); b.SetLabelFont(Fl.Bold)
 END Heading;
 
 PROCEDURE Button(VAR b: FlButtons.Button; x, y: INTEGER; label: ARRAY OF CHAR);

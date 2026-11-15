@@ -142,14 +142,6 @@ END AddLine;
 
 (* ---- What every list does ---- *)
 
-(* Sets the columns' widths from the browser's width, as it is now. *)
-PROCEDURE (p: ItemPanel) Fit*;
-  VAR widths: ARRAY 4 OF INTEGER;
-BEGIN
-  widths[0] := p.browser.W() - PointsW - PageW; widths[1] := PointsW; widths[2] := 0;
-  p.browser.SetColumnWidths(widths, 3)
-END Fit;
-
 PROCEDURE (p: ItemPanel) Level(): INTEGER;
 BEGIN RETURN p.spinner.IntValue()
 END Level;
@@ -173,11 +165,14 @@ END Blank;
 
 PROCEDURE OpenItemPanel(p: ItemPanel; x, y, w, h, kind, second, extraRows: INTEGER;
                         title, spinLabel, textLabel: ARRAY OF CHAR);
+  VAR widths: ARRAY 3 OF INTEGER;
 BEGIN
   p.entity := NIL; p.changed := NIL;
   Besm2Widgets.OpenPanel(p, x, y, w, h, kind, second, extraRows, title, spinLabel, textLabel);
   p.spinner.SetBounds(1, MaxLevel); p.spinner.SetValue(1);
-  p.Fit
+  (* The name takes what the points and the page leave, as the browser is resized. *)
+  widths[0] := -1; widths[1] := PointsW; widths[2] := PageW;
+  p.browser.SetColumnWidths(widths, 3)
 END OpenItemPanel;
 
 (* ---- Attributes ---- *)
@@ -192,7 +187,6 @@ PROCEDURE (p: AttrPanel) Fill*;
 BEGIN
   p.n := 0;
   IF p.entity = NIL THEN RETURN END;
-  p.Fit;
   a := p.entity.attrs; WHILE a # NIL DO INC(p.n); a := a.next END;
   NEW(p.shown, p.n + 1);
   p.n := 0; a := p.entity.attrs;
@@ -388,7 +382,7 @@ BEGIN
   FlBrowsers.OpenHoldBrowser(p.options, x + LabelW + 20, yy, w - LabelW - 20 - 75, OptionRows * (Row + Gap) - Gap,
     "options");
   p.options.SetAlign(Fl.AlignLeftTop); p.options.SetFormatChar(0X);
-  widths[0] := w - LabelW - 20 - 75 - 80; widths[1] := 0; p.options.SetColumnWidths(widths, 2);
+  widths[0] := -1; widths[1] := 80; p.options.SetColumnWidths(widths, 2);
   p.plus := OptionButtonAt(p, x + w - 70, yy, 1, "+");
   p.minus := OptionButtonAt(p, x + w - 35, yy, -1, "-");
   p.plus.SetTooltip("take the option chosen once more"); p.minus.SetTooltip("take it once less");
@@ -406,7 +400,6 @@ PROCEDURE (p: DefectPanel) Fill*;
 BEGIN
   p.n := 0;
   IF p.entity = NIL THEN RETURN END;
-  p.Fit;
   d := p.entity.defects; WHILE d # NIL DO INC(p.n); d := d.next END;
   NEW(p.shown, p.n + 1);
   p.n := 0; d := p.entity.defects;
@@ -536,7 +529,6 @@ PROCEDURE (p: SkillPanel) Fill*;
 BEGIN
   p.n := 0;
   IF p.entity = NIL THEN RETURN END;
-  p.Fit;
   s := p.entity.skills; WHILE s # NIL DO INC(p.n); s := s.next END;
   NEW(p.shown, p.n + 1);
   p.n := 0; s := p.entity.skills;
