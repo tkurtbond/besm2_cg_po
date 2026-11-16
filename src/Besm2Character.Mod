@@ -656,7 +656,11 @@ BEGIN
   IF ~Mapping(costs) THEN RETURN FALSE END;
   costs.Pairs(pit);
   WHILE pit.Next(k, v) DO
-    IF ~Genre(k, g) OR ~v.IntegerValue(cost, yamlError) THEN RETURN FALSE END;
+    IF ~Genre(k, g) THEN RETURN FALSE END;
+    (* IntegerValue halts on a node that isn't a scalar (Fyaml.AssertKind):
+       a programmer error to the binding, but here it's bad input. *)
+    IF ~v.IsScalar() THEN RETURN Fail(v, "not a scalar") END;
+    IF ~v.IntegerValue(cost, yamlError) THEN RETURN FALSE END;
     IF cost < 1 THEN RETURN Fail(v, "a Skill's cost must be positive") END;
     h.cost[g] := cost
   END;

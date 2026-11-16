@@ -47,8 +47,55 @@ binding treats a call on the wrong kind of node as a programmer error,
 so this is a bug here, not in the binding. Item 0 and the applies-to
 items go through `Scalar`, which reports "not a scalar".
 
-**Status.** Open. A likely fix: `IF ~part.IsScalar() THEN RETURN
-Fail(part, "not a scalar") END` before the `IntegerValue` call, and a
-case in `test/cli.sh`. besm2_cg_po copied `Besm2Entities` from
-pobesm2_fmt2, which has the same bug (its bug 2), as does obesm2_fmt2
-(its bug 2). Fix it there and bring the fix across.
+**Fix.** `Customizer` checks `part.IsScalar()` before
+`IntegerValue`, and reports `not a scalar` with the node's path, as in
+pobesm2_fmt2 and obesm2_fmt2 (their bug 2). `test/cli.sh` has two new
+`besm2_calc_po --check` cases: an enhancement whose counts-as is a
+mapping, and a limiter whose counts-as is a sequence.
+
+**Verified** 2026-11-16: the repro gives
+
+```
+besm2_calc_po: error processing enh.yaml: /1/attributes/0/enhancements/0/1: not a scalar
+```
+
+and status 1. `make test` passes.
+
+
+## 2. A house Skill's cost that isn't a scalar halts the program
+
+**Symptom.** A house Skill in a creation's `house-skills` whose cost for
+a genre is a mapping or a sequence stops the program with `assertion
+failed (62)` on standard error and status 10, instead of an error for
+the file. Found 2026-11-16 while fixing bug 1, by looking for other
+`IntegerValue` calls on nodes not known to be scalars.
+
+**Repro** (besm2_cg_po at dd6fbab), `house.yaml`:
+
+```yaml
+- name: Campaign
+  creation:
+    genre: Cyberpunk
+    house-skills:
+      - {name: Mecha Piloting, costs: {Cyberpunk: [5]}}
+```
+
+```sh
+besm2_calc_po --check house.yaml; echo "rc=$?"
+```
+
+**Cause.** The same as bug 1: `ReadHouseSkill`
+(`src/Besm2Character.Mod:659`) calls `v.IntegerValue` on each cost
+without checking that it is a scalar.
+
+**Fix.** `ReadHouseSkill` checks the genre key first, as before, then
+`v.IsScalar()` before `IntegerValue`, and reports `not a scalar` with
+the node's path. `test/cli.sh` has a new `besm2_calc_po --check` case.
+
+**Verified** 2026-11-16: the repro gives
+
+```
+besm2_calc_po: error processing house.yaml: /0/creation/house-skills/0/costs/Cyberpunk: not a scalar
+```
+
+and status 1. `make test` passes.

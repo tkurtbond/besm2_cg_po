@@ -106,6 +106,21 @@ run "$calc" --campaign test/data/mecha.yaml test/data/window.yaml
 check "besm2_calc_po: a --campaign of only mecha exits 1" test $st -eq 1
 check "and says so" grep -qx 'besm2_calc_po: test/data/mecha.yaml has no character to copy from, only mecha' "$out/stderr"
 
+# A number that is a mapping or a sequence is an input error, not a
+# halt in IntegerValue (BESM2_CG_PO-BUGS.md, bugs 1 and 2).
+printf -- '- name: Good\n  stats: [{name: Body, value: 4, points: 8}]\n- name: Short\n  attributes: [{name: A, level: 1, points: 2, enhancements: [[Foo, {a: 1}]]}]\n' >"$out/enh.yaml"
+run "$calc" --check "$out/enh.yaml"
+check "besm2_calc_po: an enhancement's counts-as that is a mapping exits 1" test $st -eq 1
+check "and says where" grep -qx "besm2_calc_po: error processing $out/enh.yaml: /1/attributes/0/enhancements/0/1: not a scalar" "$out/stderr"
+printf -- '- name: Good\n  stats: [{name: Body, value: 4, points: 8}]\n- name: Short\n  attributes: [{name: A, level: 1, points: 2, limiters: [[Foo, [1]]]}]\n' >"$out/lim.yaml"
+run "$calc" --check "$out/lim.yaml"
+check "besm2_calc_po: a limiter's counts-as that is a sequence exits 1" test $st -eq 1
+check "and says where" grep -qx "besm2_calc_po: error processing $out/lim.yaml: /1/attributes/0/limiters/0/1: not a scalar" "$out/stderr"
+printf -- '- name: Campaign\n  creation:\n    genre: Cyberpunk\n    house-skills:\n      - {name: Mecha Piloting, costs: {Cyberpunk: [5]}}\n' >"$out/house.yaml"
+run "$calc" --check "$out/house.yaml"
+check "besm2_calc_po: a house Skill's cost that is a sequence exits 1" test $st -eq 1
+check "and says where" grep -qx "besm2_calc_po: error processing $out/house.yaml: /0/creation/house-skills/0/costs/Cyberpunk: not a scalar" "$out/stderr"
+
 run "$calc" < /dev/null
 check "besm2_calc_po reads standard input, here empty, and exits 0, with no display" test $st -eq 0
 check "and needs no display" test ! -s "$out/stderr"
