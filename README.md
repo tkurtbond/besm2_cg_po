@@ -1,13 +1,20 @@
 # besm2_cg_po - a BESM2ER character generator in Oberon-2, built with poc
 
+This project is developed with the use of AI.
+
 `besm2_cg_po` builds characters, and their mecha, for Big Eyes Small
 Mouth, 2nd Edition Revised (BESM2ER), in a window. You pick Stats,
 Attributes, Defects, Skills and Weapon Attacks by name, and it keeps
 track of Character Points, Bonus Points, Skill Points and Mecha Points
-and works out the derived values as you go. It holds no rules text.
-Each name shows its rulebook page, both printed and PDF, e.g. `Highly
-Skilled (p. 42, PDF 44)`, and the program can open the rulebook's PDF
-at that page in your PDF viewer.
+and works out the derived values as you go.
+
+It includes no text quoted from the BESM2ER rules. It holds only lists
+of the names of the Stats, Attributes, Weapon Attack Abilities and
+Disabilities, Defects and Skills, with the costs, levels and limits
+the rules give them and the page each is described on. Each name shows
+its rulebook page, both printed and PDF, e.g. `Highly Skilled (p. 42,
+PDF 44)`, and the program can open the rulebook's PDF at that page in
+your PDF viewer.
 
 `besm2_calc_po` is its command-line companion, and shares its
 calculations. It checks, fills in, upgrades and formats existing
