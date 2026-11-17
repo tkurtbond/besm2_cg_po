@@ -266,3 +266,18 @@ compare against pobesm2_fmt2's binary and fixtures, in
 `~/Repos/RPG/Tools/pobesm2_fmt2` (`POBESM2_FMT2`), which they only
 read. `check-pages` needs `BESM2ER.pdf` and `BESM2ER_bookmarked.pdf`
 (`RULEBOOK`, `BOOKMARKED`) and mutool.
+
+## BESM and the rulebook
+
+*Big Eyes, Small Mouth*, Second Edition Revised, is © 2002 Guardians
+of Order, Inc. BESM and the Tri-Stat System now belong to Dyskami
+Publishing Company, whose Tri-Stat® System is a registered trademark.
+This project is not affiliated with or endorsed by either. It holds
+none of the rulebook's descriptions: it knows the names of the rules'
+Stats, Attributes, Defects, Skills and Weapon Attack Abilities and
+Disabilities, the costs, levels and limits attached to them, and the
+page each is described on, and it opens your own copy of the rulebook
+at that page. You need the rulebook to use it.
+
+The characters in `test/data/` were made for the tests; none is
+copied from the rulebook.
